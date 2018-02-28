@@ -30,7 +30,6 @@ set(MY_SOURCE_FILES
 
 include_directories(
 	${OPENGL_INCLUDE_DIR}
-	${GLEW_INCLUDE_DIRS}
 	./lib/assimp/include
 	"./inc"
 )
@@ -42,5 +41,4 @@ add_executable(minecrouft
 target_link_libraries(minecrouft
 	${OPENGL_gl_LIBRARY} # filled by "find_package(OpenGL REQUIRED)"
 	glfw
-	${GLEW_LIBRARIES}
 )
