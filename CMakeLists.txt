@@ -8,7 +8,7 @@ find_package(OpenGL REQUIRED)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(./lib/glfw-3.2.1)
+add_subdirectory(./lib/glfw)
 add_subdirectory(./lib/assimp)
 
 set(MY_HEADER_FILES
@@ -16,6 +16,7 @@ set(MY_HEADER_FILES
 	"src/Window.hpp"
 	"src/Shader.hpp"
 	"src/Mesh.hpp"
+	"src/Keyboard.hpp"
 )
 
 set(MY_SOURCE_FILES
@@ -23,6 +24,7 @@ set(MY_SOURCE_FILES
 	"src/Camera.cpp"
 	"src/Shader.cpp"
 	"src/Mesh.cpp"
+	"src/Keyboard.cpp"
 	"src/glad.c"
 )
 

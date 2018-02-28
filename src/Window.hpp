@@ -1,23 +1,12 @@
 #pragma once
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <exception>
+#include "Keyboard.hpp"
 
 constexpr char WINDOW_TITLE[] = "Minecrouft";
 constexpr int WINDOW_WIDTH = 640;
 constexpr int WINDOW_HEIGHT = 480;
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	static bool wireframeMode = false;
-	if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-			if (!wireframeMode) {
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				wireframeMode = true;
-			} else {
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-				wireframeMode = false;
-			}
-	}
-}
 
 static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -58,8 +47,8 @@ public:
 		// configure global opengl state
 		glEnable(GL_DEPTH_TEST);
 
-		// Hacky callback for tests
-		glfwSetKeyCallback(this->glWindow, key_callback);
+		// @HARDCODED
+		Keyboard::Init(*this);
 	}
 
 	~Window() {
@@ -79,14 +68,33 @@ public:
 	}
 
 	void PollEvents() {
+		//@HARDCODED
+		Keyboard::Update();
 		glfwPollEvents();
 	}
 
 	void ProcessInput() {
-		if (glfwGetKey(this->glWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		// @HARDCODED : wireframe mode hardcoded
+		static bool wireframeMode = false;
+
+		if (Keyboard::IsKeyDown(KEY_ESCAPE))
 			glfwSetWindowShouldClose(this->glWindow, GL_TRUE);
+		if (Keyboard::IsKeyPressed(KEY_W)) {
+			if (!wireframeMode) {
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				wireframeMode = true;
+			} else {
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				wireframeMode = false;
+			}
+		}
+	}
+
+	// I added a getter on this member because it should only be queried for keyboard setup
+	GLFWwindow* GetGlfwWindow() {
+		return this->glWindow;
 	}
 
 private:
-	GLFWwindow *glWindow;
+	GLFWwindow* glWindow;
 };
