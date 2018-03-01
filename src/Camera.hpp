@@ -37,6 +37,9 @@ public:
 	// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
 	glm::mat4 GetViewMatrix();
 
+	// Reads input and update view
+	void Update(float dt);
+
 private:
 	void updateCameraVectors();
 

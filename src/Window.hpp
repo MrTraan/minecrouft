@@ -5,8 +5,8 @@
 #include "Keyboard.hpp"
 
 constexpr char WINDOW_TITLE[] = "Minecrouft";
-constexpr int WINDOW_WIDTH = 640;
-constexpr int WINDOW_HEIGHT = 480;
+constexpr int WINDOW_WIDTH = 1080;
+constexpr int WINDOW_HEIGHT = 720;
 
 static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -46,9 +46,6 @@ public:
 
 		// configure global opengl state
 		glEnable(GL_DEPTH_TEST);
-
-		// @HARDCODED
-		Keyboard::Init(*this);
 	}
 
 	~Window() {
@@ -79,7 +76,7 @@ public:
 
 		if (Keyboard::IsKeyDown(KEY_ESCAPE))
 			glfwSetWindowShouldClose(this->glWindow, GL_TRUE);
-		if (Keyboard::IsKeyPressed(KEY_W)) {
+		if (Keyboard::IsKeyPressed(KEY_V)) {
 			if (!wireframeMode) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				wireframeMode = true;

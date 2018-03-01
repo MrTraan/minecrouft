@@ -17,6 +17,16 @@ set(MY_HEADER_FILES
 	"src/Shader.hpp"
 	"src/Mesh.hpp"
 	"src/Keyboard.hpp"
+	"src/Texture.hpp"
+	"src/Mouse.hpp"
+
+	"./inc/stb_image.h"
+
+	#imgui
+	"./src/imgui/imconfig.h"
+	"./src/imgui/imgui.h"
+	"./src/imgui/imgui_internal.h"
+	"./src/imgui/imgui_impl_glfw_gl3.h"
 )
 
 set(MY_SOURCE_FILES
@@ -25,12 +35,21 @@ set(MY_SOURCE_FILES
 	"src/Shader.cpp"
 	"src/Mesh.cpp"
 	"src/Keyboard.cpp"
+	"src/Mouse.cpp"
+	"src/Texture.cpp"
 	"src/glad.c"
+
+	# imgui
+	"./src/imgui/imgui.cpp"
+	"./src/imgui/imgui_demo.cpp"
+	"./src/imgui/imgui_draw.cpp"
+	"./src/imgui/imgui_impl_glfw_gl3.cpp"
 )
 
 include_directories(
 	${OPENGL_INCLUDE_DIR}
 	./lib/assimp/include
+	"./src"
 	"./inc"
 )
 
