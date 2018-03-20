@@ -18,6 +18,8 @@ void Mouse::Update() {
 	static bool firstLoop = true;
 	double xpos, ypos;
 
+	ImGui::Text("Mouse pos: %f %f", Pos.x, Pos.y);
+
 	if (Keyboard::IsKeyPressed(eKey::KEY_LEFT_SHIFT)) {
 		if (Mouse::CursorDisabled) {
 			glfwSetInputMode(Mouse::glWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -42,9 +44,6 @@ void Mouse::Update() {
 	glm::vec2 lastPos = Mouse::Pos;
 	Mouse::Pos = glm::vec2(xpos, ypos);
 	Mouse::Offset = glm::vec2(xpos - lastPos.x, ypos - lastPos.y);
-
-	ImGui::Text("Mouse pos: %f %f", Pos.x, Pos.y);
-
 }
 
 glm::vec2 Mouse::Pos;
