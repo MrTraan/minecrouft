@@ -9,7 +9,6 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(./lib/glfw)
-add_subdirectory(./lib/assimp)
 
 set(MY_HEADER_FILES
 	"src/Camera.hpp"
@@ -48,7 +47,6 @@ set(MY_SOURCE_FILES
 
 include_directories(
 	${OPENGL_INCLUDE_DIR}
-	./lib/assimp/include
 	"./src"
 	"./inc"
 )
