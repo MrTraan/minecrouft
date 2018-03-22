@@ -1,17 +1,21 @@
 #include <glad/glad.h>
+
 #include <GLFW/glfw3.h>
-#include "Window.hpp"
 #include "Keyboard.hpp"
+#include "Window.hpp"
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-
+void key_callback(GLFWwindow* window,
+                  int key,
+                  int scancode,
+                  int action,
+                  int mods) {
 	if (action == GLFW_PRESS)
 		Keyboard::RegisterKeyPress(key);
 	else if (action == GLFW_RELEASE)
 		Keyboard::RegisterKeyRelease(key);
 }
 
-void Keyboard::Init(Window &window) {
+void Keyboard::Init(Window& window) {
 	GLFWwindow* glWindow = window.GetGlfwWindow();
 
 	glfwSetKeyCallback(glWindow, key_callback);

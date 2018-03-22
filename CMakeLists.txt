@@ -25,6 +25,7 @@ set(MY_HEADER_FILES
 	"src/Keyboard.hpp"
 	"src/Texture.hpp"
 	"src/Mouse.hpp"
+	"src/Cube.hpp"
 
 	"./inc/stb_image.h"
 
@@ -43,6 +44,7 @@ set(MY_SOURCE_FILES
 	"src/Keyboard.cpp"
 	"src/Mouse.cpp"
 	"src/Texture.cpp"
+	"src/Cube.cpp"
 	"src/glad.c"
 
 	# imgui

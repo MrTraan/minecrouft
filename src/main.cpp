@@ -17,6 +17,8 @@
 #include "Texture.hpp"
 #include "Window.hpp"
 
+#include <Cube.hpp>
+
 constexpr char windowName[] = "Minecrouft";
 
 int main(void) {
@@ -33,50 +35,7 @@ int main(void) {
 	Keyboard::Init(window);
 	Mouse::Init(window);
 
-	std::vector<Vertex> vertices = {
-	    {glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.25f, 0.333334f)},  // 0
-	    {glm::vec3(1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.5f, 0.333334f)},  // 1
-	    {glm::vec3(1.0f, 1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.5f, 0.666667f)},  // 2
-	    {glm::vec3(-1.0f, 1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.25f, 0.666667f)},  // 3
-
-	    {glm::vec3(-1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.5f, 0.333334f)},  // 4
-	    {glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.25f, 0.333334f)},  // 5
-	    {glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.25f, 0.666667f)},  // 6
-	    {glm::vec3(-1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.5f, 0.666667f)},  // 7
-
-	    {glm::vec3(1.0f, 1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.5f, 1.0f)},  // 8
-	    {glm::vec3(-1.0f, 1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.25f, 1.0f)},  // 9
-	    {glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.5f, 0.6666667f)},  // 10
-	    {glm::vec3(-1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.25f, 0.6666667f)},  // 11
-
-	    {glm::vec3(1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.5f, 0.333334f)},  // 12
-	    {glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.25f, 0.333334f)},  // 13
-	    {glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.5f, 0.0f)},  // 14
-	    {glm::vec3(-1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	     glm::vec2(0.25f, 0.0f)},  // 15
-	};
-
-	std::vector<unsigned int> indices = {
-	    0, 1, 2, 0, 2, 3, 1, 5,  2, 2, 6,  5,  5,  7,  6,  4,  7,  5,
-	    3, 4, 7, 0, 4, 3, 9, 11, 8, 8, 10, 11, 12, 13, 14, 13, 14, 15,
-	};
-
-	Mesh mesh(vertices, indices);
+	Cube cube(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	glm::mat4 proj = glm::perspective(
 	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 100.0f);
@@ -111,8 +70,6 @@ int main(void) {
 
 		camera.Update(dt);
 		view = camera.GetViewMatrix();
-		// model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0.5f, 1.0f,
-		// 0.0f));
 
 		shader.Use();
 		texture.Bind();
@@ -127,16 +84,9 @@ int main(void) {
 		int projLoc = glGetUniformLocation(shader.ID, "projection");
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 
-		for (int y = 0; y < maxY; y++) {
-			for (int x = 0; x < maxX; x++) {
-				model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-				int modelLoc = glGetUniformLocation(shader.ID, "model");
-				glUniformMatrix4fv(modelLoc, 1, GL_FALSE,
-				                   glm::value_ptr(model));
-				mesh.Draw(shader);
-			}
-			model = glm::translate(model, glm::vec3(-2.0f * maxX, 0.0f, 2.0f));
-		}
+		int modelLoc = glGetUniformLocation(shader.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		cube.Draw(shader);
 
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());

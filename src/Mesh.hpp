@@ -12,15 +12,17 @@ struct Vertex {
 };
 
 class Mesh {
-public:
+   public:
 	std::vector<Vertex> Vertices;
 	std::vector<unsigned int> Indices;
 
 	void Draw(Shader shader);
 	void initMesh();
 
+	// default constructor
+	Mesh() {}
 	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
 
-private:
+   private:
 	unsigned int VAO, VBO, EBO;
 };
