@@ -5,10 +5,17 @@ project (minecrouft)
 
 find_package(OpenGL REQUIRED)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(./lib/glfw)
+
+
+## glm
+find_package(GLM REQUIRED)
+include_directories(${GLM_INCLUDE_DIRS})
 
 set(MY_HEADER_FILES
 	"src/Camera.hpp"

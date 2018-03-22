@@ -1,11 +1,12 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <glfw/glfw3.h>
+
+#include <GLFW/glfw3.h>
 
 class Window;
 
-# define MAX_CONCURRENT_KEY_DOWN 8
+#define MAX_CONCURRENT_KEY_DOWN 8
 
 enum eKey {
 	KEY_NONE = 0,
@@ -25,8 +26,8 @@ enum eKey {
 };
 
 class Keyboard {
-public:
-	static void Init(Window &window);
+   public:
+	static void Init(Window& window);
 	static void Update();
 
 	static void RegisterKeyPress(int key);
@@ -34,7 +35,8 @@ public:
 
 	static bool IsKeyDown(eKey key);
 	static bool IsKeyPressed(eKey key);
-private:
+
+   private:
 	static int keyDowns[MAX_CONCURRENT_KEY_DOWN];
 	static int keyPressed[MAX_CONCURRENT_KEY_DOWN];
 };

@@ -1,39 +1,39 @@
 #pragma once
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <exception>
+#include <glad/glad.h>
+#include <stdexcept>
 #include "Keyboard.hpp"
 
 constexpr char WINDOW_TITLE[] = "Minecrouft";
 constexpr int WINDOW_WIDTH = 1080;
 constexpr int WINDOW_HEIGHT = 720;
 
-static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
-{
+static void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
 class Window {
-public:
-	char *Title;
+   public:
+	char* Title;
 	int Width;
 	int Height;
 
-	Window(
-		int width = WINDOW_WIDTH,
-		int height = WINDOW_HEIGHT,
-		char *title = (char *)WINDOW_TITLE
-	) : Width(width), Height(height), Title(title) {
+	Window(int width = WINDOW_WIDTH,
+	       int height = WINDOW_HEIGHT,
+	       char* title = (char*)WINDOW_TITLE)
+	    : Width(width), Height(height), Title(title) {
 		if (!glfwInit()) {
-			throw std::exception("Fatal Error: Could not instantiate glfw");
+			throw std::runtime_error("Fatal Error: Could not instantiate glfw");
 		}
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		
-		this->glWindow = glfwCreateWindow(this->Width, this->Height, this->Title, NULL, NULL);
+
+		this->glWindow = glfwCreateWindow(this->Width, this->Height,
+		                                  this->Title, NULL, NULL);
 		if (!this->glWindow) {
-			throw std::exception("Fatal Error: Could not create GLFW Window");
+			throw std::runtime_error(
+			    "Fatal Error: Could not create GLFW Window");
 		}
 
 		glfwMakeContextCurrent(this->glWindow);
@@ -41,7 +41,7 @@ public:
 
 		// glad: load all OpenGL function pointers
 		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-			throw std::exception("Failed to initialize glad\n");
+			throw std::runtime_error("Failed to initialize glad\n");
 
 
 		// configure global opengl state
@@ -87,11 +87,12 @@ public:
 		}
 	}
 
-	// I added a getter on this member because it should only be queried for keyboard setup
+	// I added a getter on this member because it should only be queried for
+	// keyboard setup
 	GLFWwindow* GetGlfwWindow() {
 		return this->glWindow;
 	}
 
-private:
+   private:
 	GLFWwindow* glWindow;
 };
