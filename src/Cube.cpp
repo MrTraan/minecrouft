@@ -7,15 +7,15 @@ static unsigned int cubeIndices[36] = {
     // Front
     0, 1, 2, 0, 2, 3,
     // Right
-    1, 5, 2, 2, 6, 5,
+    1, 5, 6, 1, 2, 6,
     // Back
-    5, 7, 6, 4, 7, 5,
+    4, 5, 6, 4, 6, 7,
     // Left
-    3, 4, 7, 0, 4, 3,
+    0, 4, 7, 0, 3, 7,
     // Top
-    9, 11, 8, 8, 10, 11,
+    8, 9, 11, 8, 10, 11,
     // Bottom
-    12, 13, 14, 13, 14, 15};
+    12, 13, 15, 12, 14, 15};
 
 static glm::vec2 cubeTextureCoords[16] = {
     glm::vec2(0.25f, 0.333334f), glm::vec2(0.5f, 0.333334f),
@@ -79,7 +79,6 @@ Face Cube::GetFace(eFaceDirection direction) {
 				break;
 			// write and note that that vertex has been stored
 			if (uniqueIndices[j] == -1) {
-				Debug::PrintVec3(this->vertices[cubeIndex].Position);
 				uniqueIndices[j] = cubeIndex;
 				f.vertices[j] = this->vertices[cubeIndex];
 				break;
@@ -87,6 +86,5 @@ Face Cube::GetFace(eFaceDirection direction) {
 		}
 	}
 
-	Debug::PrintFace(f);
 	return (f);
 }

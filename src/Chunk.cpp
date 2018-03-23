@@ -61,11 +61,6 @@ void Chunk::ConstructMesh() {
 			                     (CHUNK_WIDTH - 1) * CHUNK_WIDTH + k]
 			             ->GetFace(Cube::eFaceDirection::RIGHT));
 
-	printf("Num vertices: %d\n", this->mesh.Vertices.size());
-
-	for (auto v : this->mesh.Vertices)
-		Debug::PrintVec3(v.Position);
-
 	this->mesh.InitMesh();
 }
 

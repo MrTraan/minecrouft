@@ -36,7 +36,15 @@ int main(void) {
 	Keyboard::Init(window);
 	Mouse::Init(window);
 
-	Chunk cube(glm::vec3(0.0f, 0.0f, 0.0f));
+	std::vector<Chunk> chunks;
+
+	for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
+			chunks.push_back(
+			    Chunk(glm::vec3(i * CHUNK_WIDTH, 0.0f, j * CHUNK_HEIGHT)));
+			printf("%d %d\n", i * CHUNK_WIDTH, j * CHUNK_HEIGHT);
+		}
+	}
 
 	glm::mat4 proj = glm::perspective(
 	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 100.0f);
@@ -87,7 +95,8 @@ int main(void) {
 
 		int modelLoc = glGetUniformLocation(shader.ID, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		cube.Draw(shader);
+		for (auto c : chunks)
+			c.Draw(shader);
 
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
