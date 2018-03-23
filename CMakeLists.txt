@@ -28,6 +28,7 @@ set(MY_HEADER_FILES
 	"src/Cube.hpp"
 	"src/Chunk.hpp"
 	"src/Debug.hpp"
+	"src/TextureManager.hpp"
 
 	"./inc/stb_image.h"
 
@@ -48,6 +49,7 @@ set(MY_SOURCE_FILES
 	"src/Texture.cpp"
 	"src/Cube.cpp"
 	"src/Chunk.cpp"
+	"src/TextureManager.cpp"
 	"src/glad.c"
 
 	# imgui

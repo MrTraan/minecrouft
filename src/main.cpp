@@ -37,7 +37,7 @@ int main(void) {
 	Mouse::Init(window);
 
 	std::vector<Chunk> chunks;
-	chunks.push_back(Chunk(glm::vec3(0.0f, 0.0f, 0.0f)));
+	chunks.push_back(Chunk(eBiome::GRASS, glm::vec3(0.0f, 0.0f, 0.0f)));
 
 	glm::mat4 proj = glm::perspective(
 	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 100.0f);
@@ -46,8 +46,6 @@ int main(void) {
 
 	float dt = 0.0f;
 	float lastFrame = 0.0f;
-
-	Texture texture("../resources/dirt.png", eImageFormat::RGB);
 
 	int maxY = 10;
 	int maxX = 10;
@@ -74,8 +72,6 @@ int main(void) {
 		view = camera.GetViewMatrix();
 
 		shader.Use();
-		texture.Bind();
-
 
 		model = glm::mat4();
 		model = glm::translate(model, glm::vec3(0.f, -3.0f, -3.0f));

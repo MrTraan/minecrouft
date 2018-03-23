@@ -4,24 +4,24 @@
 #include <stb_image.h>
 #include <string>
 
-enum eImageFormat {
-	RGB = GL_RGB,
-	RGBA = GL_RGBA
-};
+enum eImageFormat { RGB = GL_RGB, RGBA = GL_RGBA };
 
 class Texture {
-public:
+   public:
 	unsigned int ID;
 	int Height;
 	int Width;
 	int NbrChannels;
 
-	Texture(const std::string &path, eImageFormat format);
+	Texture(){};
+	Texture(const std::string& path, eImageFormat format);
 
 	void Bind();
 
-	static void Clear() { glBindTexture(GL_TEXTURE_2D, 0); }
+	static void Clear() {
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
 
-private:
-	stbi_uc *data;
+   private:
+	stbi_uc* data;
 };
