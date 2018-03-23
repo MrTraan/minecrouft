@@ -17,7 +17,7 @@ class Mesh {
 	std::vector<unsigned int> Indices;
 
 	void Draw(Shader shader);
-	void initMesh();
+	void InitMesh();
 
 	// default constructor
 	Mesh() {}

@@ -2,7 +2,7 @@
 
 #include "Mesh.hpp"
 
-void Mesh::initMesh() {
+void Mesh::InitMesh() {
 	glGenVertexArrays(1, &(this->VAO));
 	glGenBuffers(1, &(this->VBO));
 	glGenBuffers(1, &(this->EBO));
@@ -46,5 +46,5 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices) {
 	this->Vertices = vertices;
 	this->Indices = indices;
 
-	this->initMesh();
+	this->InitMesh();
 }

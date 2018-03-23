@@ -17,6 +17,7 @@
 #include "Texture.hpp"
 #include "Window.hpp"
 
+#include <Chunk.hpp>
 #include <Cube.hpp>
 
 constexpr char windowName[] = "Minecrouft";
@@ -35,7 +36,7 @@ int main(void) {
 	Keyboard::Init(window);
 	Mouse::Init(window);
 
-	Cube cube(glm::vec3(0.0f, 0.0f, 0.0f));
+	Chunk cube(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	glm::mat4 proj = glm::perspective(
 	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 100.0f);

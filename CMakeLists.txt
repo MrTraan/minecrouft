@@ -26,6 +26,8 @@ set(MY_HEADER_FILES
 	"src/Texture.hpp"
 	"src/Mouse.hpp"
 	"src/Cube.hpp"
+	"src/Chunk.hpp"
+	"src/Debug.hpp"
 
 	"./inc/stb_image.h"
 
@@ -45,6 +47,7 @@ set(MY_SOURCE_FILES
 	"src/Mouse.cpp"
 	"src/Texture.cpp"
 	"src/Cube.cpp"
+	"src/Chunk.cpp"
 	"src/glad.c"
 
 	# imgui
