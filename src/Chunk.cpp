@@ -2,10 +2,10 @@
 #include <Debug.hpp>
 
 Chunk::Chunk(glm::vec3 position) {
-	for (int i = 0; i < CHUNK_HEIGHT; i++) {
-		for (int j = 0; j < CHUNK_WIDTH; j++) {
-			for (int k = 0; k < CHUNK_DEPTH; k++) {
-				this->cubes.push_back(new Cube(position + glm::vec3(j, i, k)));
+	for (int i = 0; i < CHUNK_SIZE; i++) {
+		for (int j = 0; j < CHUNK_SIZE; j++) {
+			for (int k = 0; k < CHUNK_SIZE; k++) {
+				this->cubes[i][j][k] = new Cube(position + glm::vec3(j, i, k));
 			}
 		}
 	}
@@ -23,43 +23,38 @@ void Chunk::pushFace(Face f) {
 
 void Chunk::ConstructMesh() {
 	// draw front
-	for (int i = 0; i < CHUNK_HEIGHT; i++)
-		for (int j = 0; j < CHUNK_WIDTH; j++)
+	for (int i = 0; i < CHUNK_SIZE; i++)
+		for (int j = 0; j < CHUNK_SIZE; j++)
 			pushFace(
-			    this->cubes[i * CHUNK_DEPTH * CHUNK_WIDTH + j * CHUNK_WIDTH]
-			        ->GetFace(Cube::eFaceDirection::FRONT));
+			    this->cubes[i][j][0]->GetFace(Cube::eFaceDirection::FRONT));
 
 	// draw back
-	for (int i = 0; i < CHUNK_HEIGHT; i++)
-		for (int j = 0; j < CHUNK_WIDTH; j++)
-			pushFace(this->cubes[i * CHUNK_DEPTH * CHUNK_WIDTH +
-			                     j * CHUNK_WIDTH + CHUNK_DEPTH - 1]
-			             ->GetFace(Cube::eFaceDirection::BACK));
+	for (int i = 0; i < CHUNK_SIZE; i++)
+		for (int j = 0; j < CHUNK_SIZE; j++)
+			pushFace(this->cubes[i][j][CHUNK_SIZE - 1]->GetFace(
+			    Cube::eFaceDirection::BACK));
 
 	// draw bottom
-	for (int j = 0; j < CHUNK_WIDTH; j++)
-		for (int k = 0; k < CHUNK_DEPTH; k++)
-			pushFace(this->cubes[j * CHUNK_WIDTH + k]->GetFace(
-			    Cube::eFaceDirection::BOTTOM));
+	for (int j = 0; j < CHUNK_SIZE; j++)
+		for (int k = 0; k < CHUNK_SIZE; k++)
+			pushFace(
+			    this->cubes[0][j][k]->GetFace(Cube::eFaceDirection::BOTTOM));
 
 	// draw top
-	for (int j = 0; j < CHUNK_WIDTH; j++)
-		for (int k = 0; k < CHUNK_DEPTH; k++)
-			pushFace(this->cubes[j * CHUNK_WIDTH + k +
-			                     (CHUNK_HEIGHT - 1) * CHUNK_WIDTH * CHUNK_DEPTH]
-			             ->GetFace(Cube::eFaceDirection::TOP));
+	for (int j = 0; j < CHUNK_SIZE; j++)
+		for (int k = 0; k < CHUNK_SIZE; k++)
+			pushFace(this->cubes[CHUNK_SIZE - 1][j][k]->GetFace(
+			    Cube::eFaceDirection::TOP));
 
 	// draw left
-	for (int i = 0; i < CHUNK_HEIGHT; i++)
-		for (int k = 0; k < CHUNK_DEPTH; k++)
-			pushFace(this->cubes[i * CHUNK_HEIGHT * CHUNK_WIDTH + k]->GetFace(
-			    Cube::eFaceDirection::LEFT));
+	for (int i = 0; i < CHUNK_SIZE; i++)
+		for (int k = 0; k < CHUNK_SIZE; k++)
+			pushFace(this->cubes[i][0][k]->GetFace(Cube::eFaceDirection::LEFT));
 	// draw right
-	for (int i = 0; i < CHUNK_HEIGHT; i++)
-		for (int k = 0; k < CHUNK_DEPTH; k++)
-			pushFace(this->cubes[i * CHUNK_HEIGHT * CHUNK_WIDTH +
-			                     (CHUNK_WIDTH - 1) * CHUNK_WIDTH + k]
-			             ->GetFace(Cube::eFaceDirection::RIGHT));
+	for (int i = 0; i < CHUNK_SIZE; i++)
+		for (int k = 0; k < CHUNK_SIZE; k++)
+			pushFace(this->cubes[i][CHUNK_SIZE - 1][k]->GetFace(
+			    Cube::eFaceDirection::RIGHT));
 
 	this->mesh.InitMesh();
 }

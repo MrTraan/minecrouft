@@ -37,14 +37,7 @@ int main(void) {
 	Mouse::Init(window);
 
 	std::vector<Chunk> chunks;
-
-	for (int i = 0; i < 64; i++) {
-		for (int j = 0; j < 64; j++) {
-			chunks.push_back(
-			    Chunk(glm::vec3(i * CHUNK_WIDTH, 0.0f, j * CHUNK_HEIGHT)));
-			printf("%d %d\n", i * CHUNK_WIDTH, j * CHUNK_HEIGHT);
-		}
-	}
+	chunks.push_back(Chunk(glm::vec3(0.0f, 0.0f, 0.0f)));
 
 	glm::mat4 proj = glm::perspective(
 	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 100.0f);

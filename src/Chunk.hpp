@@ -7,9 +7,7 @@
 #include <Mesh.hpp>
 #include <Shader.hpp>
 
-constexpr int CHUNK_HEIGHT = 4;
-constexpr int CHUNK_WIDTH = 4;
-constexpr int CHUNK_DEPTH = 4;
+constexpr int CHUNK_SIZE = 16;
 
 class Chunk {
    public:
@@ -19,7 +17,8 @@ class Chunk {
 	void ConstructMesh();
 
    private:
-	std::vector<Cube*> cubes;
+	// 3 dimensionnal xyz cube pointer arrays, because why not
+	Cube* cubes[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 	Mesh mesh;
 
 	void pushFace(Face f);

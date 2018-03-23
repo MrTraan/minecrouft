@@ -57,6 +57,9 @@ set(MY_SOURCE_FILES
 	"./src/imgui/imgui_impl_glfw_gl3.cpp"
 )
 
+## Used for ycm
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 include_directories(
 	${OPENGL_INCLUDE_DIR}
 	"./src"

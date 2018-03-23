@@ -16,6 +16,10 @@ struct Face {
 class Cube {
    public:
 	Cube(glm::vec3 position);
+	// Default constructor
+	Cube(){};
+
+	void Init(glm::vec3 position);
 
 	Face Front;
 	Face Back;

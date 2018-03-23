@@ -46,12 +46,13 @@ static glm::vec3 cubeTransform[16] = {
     glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f),
 };
 
-
 Cube::Cube(glm::vec3 position) {
+	this->Init(position);
+}
+
+void Cube::Init(glm::vec3 position) {
 	// A cube has 16 vertices
 	// Each vertices has a position, a normal and a texture coord
-	std::vector<Vertex> vertices;
-
 	for (int i = 0; i < 16; i++) {
 		this->vertices[i].Position = position + cubeTransform[i];
 		this->vertices[i].Normal = glm::vec3(1.0f, 1.0f, 1.0f);
