@@ -19,7 +19,7 @@ class Chunk {
 	void Draw(Shader shader);
 	void ConstructMesh();
 
-	Cube* GetFirstCube(int x, int y, int z, Cube::eFaceDirection direction);
+	void DrawCubeLine(int x, int y, int z, Cube::eFaceDirection direction);
 
    private:
 	// 3 dimensionnal xyz cube pointer arrays, because why not
