@@ -1,22 +1,48 @@
 #include <Chunk.hpp>
 #include <Debug.hpp>
 
+
+#include <noise/noise.h>
+#include <noiseutils.h>
+
 Chunk::Chunk(eBiome biome, glm::vec3 position) {
+	noise::module::Perlin gen;
+	noise::utils::NoiseMap heightMap;
+	noise::utils::NoiseMapBuilderPlane heightMapBuilder;
+
+	heightMapBuilder.SetSourceModule(gen);
+	heightMapBuilder.SetDestNoiseMap(heightMap);
+	heightMapBuilder.SetDestSize(CHUNK_SIZE, CHUNK_SIZE);
+	heightMapBuilder.SetBounds(
+	    position.x / CHUNK_SIZE, position.x / CHUNK_SIZE + 1,
+	    position.z / CHUNK_SIZE, position.z / CHUNK_SIZE + 1);
+	heightMapBuilder.Build();
+
 	for (int i = 0; i < CHUNK_SIZE; i++) {
-		for (int j = 0; j < CHUNK_SIZE; j++) {
-			for (int k = 0; k < CHUNK_SIZE; k++) {
-				if (i % 2)
-					this->cubes[i][j][k] = NULL;
-				else
-					this->cubes[i][j][k] =
-					    new Cube(position + glm::vec3(i, j, k));
-			}
+		for (int k = 0; k < CHUNK_SIZE; k++) {
+			int seed = (int)((heightMap.GetValue(i, k) + 1) * CHUNK_SIZE / 2);
+			for (int j = 0; j < seed; j++)
+				this->cubes[i][j][k] = new Cube(position + glm::vec3(i, j, k));
+			for (int j = seed; j < CHUNK_SIZE; j++)
+				this->cubes[i][j][k] = NULL;
 		}
 	}
 
 	this->biome = biome;
 	this->ConstructMesh();
 }
+
+Chunk::~Chunk() {
+	for (int i = 0; i < CHUNK_SIZE; i++) {
+		for (int j = 0; j < CHUNK_SIZE; j++) {
+			for (int k = 0; k < CHUNK_SIZE; k++) {
+				if (this->cubes[i][j][k] != NULL)
+					delete (this->cubes[i][j][k]);
+			}
+		}
+	}
+}
+
 
 void Chunk::pushFace(Face f) {
 	int currentSize = this->mesh.Vertices.size();

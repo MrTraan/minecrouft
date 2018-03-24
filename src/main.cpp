@@ -36,8 +36,15 @@ int main(void) {
 	Keyboard::Init(window);
 	Mouse::Init(window);
 
-	std::vector<Chunk> chunks;
-	chunks.push_back(Chunk(eBiome::GRASS, glm::vec3(0.0f, 0.0f, 0.0f)));
+	std::vector<Chunk*> chunks;
+	chunks.push_back(new Chunk(eBiome::GRASS, glm::vec3(0.0f, 0.0f, 0.0f)));
+
+	chunks.push_back(
+	    new Chunk(eBiome::GRASS, glm::vec3(0.0f, 0.0f, CHUNK_SIZE)));
+	chunks.push_back(
+	    new Chunk(eBiome::GRASS, glm::vec3(CHUNK_SIZE, 0.0f, 0.0f)));
+	chunks.push_back(
+	    new Chunk(eBiome::GRASS, glm::vec3(CHUNK_SIZE, 0.0f, CHUNK_SIZE)));
 
 	glm::mat4 proj = glm::perspective(
 	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 100.0f);
@@ -85,13 +92,16 @@ int main(void) {
 		int modelLoc = glGetUniformLocation(shader.ID, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		for (auto c : chunks)
-			c.Draw(shader);
+			c->Draw(shader);
 
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
 		window.SwapBuffers();
 	}
+
+	for (auto c : chunks)
+		delete c;
 
 	ImGui_ImplGlfwGL3_Shutdown();
 	ImGui::DestroyContext();

@@ -9,12 +9,13 @@
 #include <Texture.hpp>
 #include <TextureManager.hpp>
 
-constexpr int CHUNK_SIZE = 16;
+constexpr int CHUNK_SIZE = 64;
 
 
 class Chunk {
    public:
 	Chunk(eBiome biome, glm::vec3 position);
+	~Chunk();
 
 	void Draw(Shader shader);
 	void ConstructMesh();

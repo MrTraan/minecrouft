@@ -29,6 +29,7 @@ set(MY_HEADER_FILES
 	"src/Chunk.hpp"
 	"src/Debug.hpp"
 	"src/TextureManager.hpp"
+	"src/noiseutils.h"
 
 	"./inc/stb_image.h"
 
@@ -51,6 +52,7 @@ set(MY_SOURCE_FILES
 	"src/Chunk.cpp"
 	"src/TextureManager.cpp"
 	"src/glad.c"
+	"src/noiseutils.cpp"
 
 	# imgui
 	"./src/imgui/imgui.cpp"
@@ -74,5 +76,6 @@ add_executable(minecrouft
 )
 target_link_libraries(minecrouft
 	${OPENGL_gl_LIBRARY} # filled by "find_package(OpenGL REQUIRED)"
+	noise
 	glfw
 )
