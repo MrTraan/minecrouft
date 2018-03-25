@@ -1,30 +1,16 @@
 #include <Chunk.hpp>
 #include <Debug.hpp>
+#include <HeightMap.hpp>
 
-
-#include <noise/noise.h>
-#include <noiseutils.h>
-
-Chunk::Chunk(eBiome biome, glm::vec3 position) {
-	noise::module::Perlin gen;
-	noise::utils::NoiseMap heightMap;
-	noise::utils::NoiseMapBuilderPlane heightMapBuilder;
-
-	heightMapBuilder.SetSourceModule(gen);
-	heightMapBuilder.SetDestNoiseMap(heightMap);
-	heightMapBuilder.SetDestSize(CHUNK_SIZE, CHUNK_SIZE);
-	heightMapBuilder.SetBounds(
-	    position.x / CHUNK_SIZE, position.x / CHUNK_SIZE + 1,
-	    position.z / CHUNK_SIZE, position.z / CHUNK_SIZE + 1);
-	heightMapBuilder.Build();
-
+Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
+    : position(position) {
 	for (int i = 0; i < CHUNK_SIZE; i++) {
 		for (int k = 0; k < CHUNK_SIZE; k++) {
-			int seed = (int)((heightMap.GetValue(i, k) + 1) * CHUNK_SIZE / 2);
+			int seed = heightMap->GetValue(i, k);
 			for (int j = 0; j < seed; j++)
-				this->cubes[i][j][k] = new Cube(position + glm::vec3(i, j, k));
+				this->cubes[i][j][k] = true;
 			for (int j = seed; j < CHUNK_SIZE; j++)
-				this->cubes[i][j][k] = NULL;
+				this->cubes[i][j][k] = false;
 		}
 	}
 
@@ -32,75 +18,164 @@ Chunk::Chunk(eBiome biome, glm::vec3 position) {
 	this->ConstructMesh();
 }
 
-Chunk::~Chunk() {
-	for (int i = 0; i < CHUNK_SIZE; i++) {
-		for (int j = 0; j < CHUNK_SIZE; j++) {
-			for (int k = 0; k < CHUNK_SIZE; k++) {
-				if (this->cubes[i][j][k] != NULL)
-					delete (this->cubes[i][j][k]);
-			}
-		}
-	}
+Chunk::~Chunk() {}
+
+glm::vec3 Chunk::GetPosition() {
+	return this->position;
 }
 
-
-void Chunk::pushFace(Face f) {
+void Chunk::pushFace(int x, int y, int z, eDirection direction) {
 	int currentSize = this->mesh.Vertices.size();
-	for (int i = 0; i < 4; i++)
-		this->mesh.Vertices.push_back(f.vertices[i]);
-	for (int i = 0; i < 6; i++)
-		this->mesh.Indices.push_back(f.indices[i] + currentSize);
+	Vertex v;
+
+	if (direction == eDirection::FRONT) {
+		v.Position = glm::vec3(x, y, z) + this->position;
+		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.x += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.y += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.666667f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.x -= 1.0f;
+		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		this->mesh.Vertices.push_back(v);
+	}
+
+	if (direction == eDirection::BACK) {
+		v.Position = glm::vec3(x, y, z + 1.0f) + this->position;
+		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.x += 1.0f;
+		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.y += 1.0f;
+		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.x -= 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.666667f);
+		this->mesh.Vertices.push_back(v);
+	}
+
+	if (direction == eDirection::TOP) {
+		v.Position = glm::vec3(x, y + 1, z) + this->position;
+		v.TexCoords = glm::vec2(0.25f, 1.0f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.x += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 1.0f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.z += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.6666667f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.x -= 1.0f;
+		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		this->mesh.Vertices.push_back(v);
+	}
+
+	if (direction == eDirection::BOTTOM) {
+		v.Position = glm::vec3(x, y, z) + this->position;
+		v.TexCoords = glm::vec2(0.25f, 0.0f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.x += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.0f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.z += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.x -= 1.0f;
+		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+	}
+
+	if (direction == eDirection::LEFT) {
+		v.Position = glm::vec3(x, y, z) + this->position;
+		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.z += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.y += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.666667f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.z -= 1.0f;
+		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		this->mesh.Vertices.push_back(v);
+	}
+
+	if (direction == eDirection::RIGHT) {
+		v.Position = glm::vec3(x + 1, y, z) + this->position;
+		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.z += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.y += 1.0f;
+		v.TexCoords = glm::vec2(0.5f, 0.666667f);
+		this->mesh.Vertices.push_back(v);
+		v.Position.z -= 1.0f;
+		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		this->mesh.Vertices.push_back(v);
+	}
+
+	this->mesh.Indices.push_back(currentSize + 0);
+	this->mesh.Indices.push_back(currentSize + 1);
+	this->mesh.Indices.push_back(currentSize + 2);
+	this->mesh.Indices.push_back(currentSize + 0);
+	this->mesh.Indices.push_back(currentSize + 2);
+	this->mesh.Indices.push_back(currentSize + 3);
 }
 
-void Chunk::DrawCubeLine(int x, int y, int z, Cube::eFaceDirection direction) {
+void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 	if (this->cubes[x][y][z])
-		pushFace(this->cubes[x][y][z]->GetFace(direction));
+		pushFace(x, y, z, direction);
 
-	if (direction == Cube::eFaceDirection::FRONT) {
+	if (direction == eDirection::FRONT) {
 		while (z < CHUNK_SIZE - 1) {
-			if (this->cubes[x][y][z] == NULL && this->cubes[x][y][z + 1])
-				pushFace(this->cubes[x][y][z + 1]->GetFace(direction));
+			if (this->cubes[x][y][z] == false && this->cubes[x][y][z + 1])
+				pushFace(x, y, z + 1, direction);
 			z++;
 		}
 	}
 
-	if (direction == Cube::eFaceDirection::BACK) {
+	if (direction == eDirection::BACK) {
 		while (z >= 1) {
-			if (this->cubes[x][y][z] == NULL && this->cubes[x][y][z - 1])
-				pushFace(this->cubes[x][y][z - 1]->GetFace(direction));
+			if (this->cubes[x][y][z] == false && this->cubes[x][y][z - 1])
+				pushFace(x, y, z - 1, direction);
 			z--;
 		}
 	}
 
-	if (direction == Cube::eFaceDirection::BOTTOM) {
-		while (y < CHUNK_SIZE - 1) {
-			if (this->cubes[x][y][z] == NULL && this->cubes[x][y + 1][z])
-				pushFace(this->cubes[x][y + 1][z]->GetFace(direction));
-			y++;
-		}
-	}
-
-	if (direction == Cube::eFaceDirection::TOP) {
+	if (direction == eDirection::TOP) {
 		while (y >= 1) {
-			if (this->cubes[x][y][z] == NULL && this->cubes[x][y - 1][z])
-				pushFace(this->cubes[x][y - 1][z]->GetFace(direction));
+			if (this->cubes[x][y][z] == false && this->cubes[x][y - 1][z])
+				pushFace(x, y - 1, z, direction);
 			y--;
 		}
 	}
 
 
-	if (direction == Cube::eFaceDirection::LEFT) {
+	if (direction == eDirection::BOTTOM) {
+		while (y < CHUNK_SIZE - 1) {
+			if (this->cubes[x][y][z] == false && this->cubes[x][y + 1][z])
+				pushFace(x, y + 1, z, direction);
+			y++;
+		}
+	}
+
+
+	if (direction == eDirection::LEFT) {
 		while (x < CHUNK_SIZE - 1) {
-			if (this->cubes[x][y][z] == NULL && this->cubes[x + 1][y][z])
-				pushFace(this->cubes[x + 1][y][z]->GetFace(direction));
+			if (this->cubes[x][y][z] == false && this->cubes[x + 1][y][z])
+				pushFace(x + 1, y, z, direction);
 			x++;
 		}
 	}
 
-	if (direction == Cube::eFaceDirection::RIGHT) {
+	if (direction == eDirection::RIGHT) {
 		while (x >= 1) {
-			if (this->cubes[x][y][z] == NULL && this->cubes[x - 1][y][z])
-				pushFace(this->cubes[x - 1][y][z]->GetFace(direction));
+			if (this->cubes[x][y][z] == false && this->cubes[x - 1][y][z])
+				pushFace(x - 1, y, z, direction);
 			x--;
 		}
 	}
@@ -108,41 +183,42 @@ void Chunk::DrawCubeLine(int x, int y, int z, Cube::eFaceDirection direction) {
 
 
 void Chunk::ConstructMesh() {
-	Cube::eFaceDirection dir;
+	eDirection dir;
 
 	// draw front
-	dir = Cube::eFaceDirection::FRONT;
+	dir = eDirection::FRONT;
 	for (int i = 0; i < CHUNK_SIZE; i++)
 		for (int j = 0; j < CHUNK_SIZE; j++)
 			DrawCubeLine(i, j, 0, dir);
 
 
 	// draw back
-	dir = Cube::eFaceDirection::BACK;
+	dir = eDirection::BACK;
 	for (int i = 0; i < CHUNK_SIZE; i++)
 		for (int j = 0; j < CHUNK_SIZE; j++)
 			DrawCubeLine(i, j, CHUNK_SIZE - 1, dir);
 
-	// draw bottom
-	dir = Cube::eFaceDirection::BOTTOM;
-	for (int i = 0; i < CHUNK_SIZE; i++)
-		for (int k = 0; k < CHUNK_SIZE; k++)
-			DrawCubeLine(i, 0, k, dir);
-
 	// draw top
-	dir = Cube::eFaceDirection::TOP;
+	dir = eDirection::TOP;
 	for (int i = 0; i < CHUNK_SIZE; i++)
 		for (int k = 0; k < CHUNK_SIZE; k++)
 			DrawCubeLine(i, CHUNK_SIZE - 1, k, dir);
 
+	// draw bottom
+	dir = eDirection::BOTTOM;
+	for (int i = 0; i < CHUNK_SIZE; i++)
+		for (int k = 0; k < CHUNK_SIZE; k++)
+			DrawCubeLine(i, 0, k, dir);
+
+
 	// draw left
-	dir = Cube::eFaceDirection::LEFT;
+	dir = eDirection::LEFT;
 	for (int j = 0; j < CHUNK_SIZE; j++)
 		for (int k = 0; k < CHUNK_SIZE; k++)
 			DrawCubeLine(0, j, k, dir);
 
 	// draw right
-	dir = Cube::eFaceDirection::RIGHT;
+	dir = eDirection::RIGHT;
 	for (int j = 0; j < CHUNK_SIZE; j++)
 		for (int k = 0; k < CHUNK_SIZE; k++)
 			DrawCubeLine(CHUNK_SIZE - 1, j, k, dir);

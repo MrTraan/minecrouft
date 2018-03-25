@@ -8,23 +8,22 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw_gl3.h>
 
-#include <Keyboard.hpp>
-#include <Mouse.hpp>
-#include <vector>
-#include "Camera.hpp"
-#include "Mesh.hpp"
-#include "Shader.hpp"
-#include "Texture.hpp"
-#include "Window.hpp"
-
+#include <Camera.hpp>
 #include <Chunk.hpp>
-#include <Cube.hpp>
+#include <ChunkManager.hpp>
+#include <Keyboard.hpp>
+#include <Mesh.hpp>
+#include <Mouse.hpp>
+#include <Shader.hpp>
+#include <Texture.hpp>
+#include <Window.hpp>
+#include <vector>
 
 constexpr char windowName[] = "Minecrouft";
 
 int main(void) {
 	Window window;
-	Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+	Camera camera(glm::vec3(0.0f, CHUNK_SIZE, 0.0f));
 	Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
 
 	// Setup imgui
@@ -36,26 +35,15 @@ int main(void) {
 	Keyboard::Init(window);
 	Mouse::Init(window);
 
-	std::vector<Chunk*> chunks;
-	chunks.push_back(new Chunk(eBiome::GRASS, glm::vec3(0.0f, 0.0f, 0.0f)));
-
-	chunks.push_back(
-	    new Chunk(eBiome::GRASS, glm::vec3(0.0f, 0.0f, CHUNK_SIZE)));
-	chunks.push_back(
-	    new Chunk(eBiome::GRASS, glm::vec3(CHUNK_SIZE, 0.0f, 0.0f)));
-	chunks.push_back(
-	    new Chunk(eBiome::GRASS, glm::vec3(CHUNK_SIZE, 0.0f, CHUNK_SIZE)));
-
 	glm::mat4 proj = glm::perspective(
-	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 100.0f);
+	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 160.0f);
+	glm::mat4 model = glm::mat4();
 	glm::mat4 view;
-	glm::mat4 model;
+
+	ChunkManager chunkManager(camera.Position);
 
 	float dt = 0.0f;
 	float lastFrame = 0.0f;
-
-	int maxY = 10;
-	int maxX = 10;
 
 	while (!window.ShouldClose()) {
 		float currentFrame = glfwGetTime();
@@ -72,16 +60,13 @@ int main(void) {
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
 		            1000.0f / ImGui::GetIO().Framerate,
 		            ImGui::GetIO().Framerate);
-		ImGui::SliderInt("Max X", &maxX, 0, 100);
-		ImGui::SliderInt("Max Y", &maxY, 0, 100);
 
 		camera.Update(dt);
 		view = camera.GetViewMatrix();
 
-		shader.Use();
+		chunkManager.Update(camera.Position);
 
-		model = glm::mat4();
-		model = glm::translate(model, glm::vec3(0.f, -3.0f, -3.0f));
+		shader.Use();
 
 		int viewLoc = glGetUniformLocation(shader.ID, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -91,17 +76,14 @@ int main(void) {
 
 		int modelLoc = glGetUniformLocation(shader.ID, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		for (auto c : chunks)
-			c->Draw(shader);
+
+		chunkManager.Draw(shader);
 
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
 		window.SwapBuffers();
 	}
-
-	for (auto c : chunks)
-		delete c;
 
 	ImGui_ImplGlfwGL3_Shutdown();
 	ImGui::DestroyContext();

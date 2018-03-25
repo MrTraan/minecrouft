@@ -5,6 +5,9 @@ project (minecrouft)
 
 find_package(OpenGL REQUIRED)
 
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS_DEBUG} -fsanitize=address")
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -25,10 +28,10 @@ set(MY_HEADER_FILES
 	"src/Keyboard.hpp"
 	"src/Texture.hpp"
 	"src/Mouse.hpp"
-	"src/Cube.hpp"
 	"src/Chunk.hpp"
 	"src/Debug.hpp"
 	"src/TextureManager.hpp"
+	"src/ChunkManager.hpp"
 	"src/noiseutils.h"
 
 	"./inc/stb_image.h"
@@ -48,9 +51,9 @@ set(MY_SOURCE_FILES
 	"src/Keyboard.cpp"
 	"src/Mouse.cpp"
 	"src/Texture.cpp"
-	"src/Cube.cpp"
 	"src/Chunk.cpp"
 	"src/TextureManager.cpp"
+	"src/ChunkManager.cpp"
 	"src/glad.c"
 	"src/noiseutils.cpp"
 
