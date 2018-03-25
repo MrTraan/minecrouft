@@ -18,7 +18,9 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 	this->ConstructMesh();
 }
 
-Chunk::~Chunk() {}
+Chunk::~Chunk() {
+	printf("Destroying chunk\n");
+}
 
 glm::vec3 Chunk::GetPosition() {
 	return this->position;
