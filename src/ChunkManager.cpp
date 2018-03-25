@@ -10,9 +10,6 @@ ChunkManager::ChunkManager(glm::vec3 playerPos) {
 	if (playerPos.z < 0)
 		chunkPosition.z -= CHUNK_SIZE;
 
-	this->heightMap.SetBounds(chunkPosition.x, chunkPosition.z);
-	this->heightMap.Build();
-
 	this->chunks.push_back(
 	    new Chunk(eBiome::GRASS, chunkPosition, &(this->heightMap)));
 }
@@ -39,9 +36,6 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			return;
 	}
 	printf("Changing chunk\n");
-
-	this->heightMap.SetBounds(chunkPosition.x, chunkPosition.z);
-	this->heightMap.Build();
 
 	delete this->chunks.back();
 	this->chunks.pop_back();

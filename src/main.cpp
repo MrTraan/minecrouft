@@ -24,7 +24,11 @@ constexpr char windowName[] = "Minecrouft";
 int main(void) {
 	Window window;
 	Camera camera(glm::vec3(0.0f, CHUNK_SIZE, 0.0f));
+#ifdef WIN32
+	Shader shader("C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\vertex.glsl", "C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\fragment.glsl");
+#else
 	Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
+#endif
 
 	// Setup imgui
 	ImGui::CreateContext();

@@ -226,6 +226,8 @@ void Chunk::ConstructMesh() {
 			DrawCubeLine(CHUNK_SIZE - 1, j, k, dir);
 
 	this->mesh.InitMesh();
+
+	printf("%d\n", this->mesh.Vertices.size());
 }
 
 void Chunk::Draw(Shader shader) {
