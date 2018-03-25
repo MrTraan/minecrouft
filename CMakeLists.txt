@@ -11,8 +11,12 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(./lib/glfw)
-add_subdirectory(./lib/liboise)
 
+IF(WIN32)
+  SET(LIBNOISE_LIBRARY ./lib/libnoise.lib)
+ ELSE()
+  SET(LIBNOISE_LIBRARY noise)
+ENDIF()
 
 ## glm
 find_package(GLM REQUIRED)
@@ -77,6 +81,6 @@ add_executable(minecrouft
 )
 target_link_libraries(minecrouft
 	${OPENGL_gl_LIBRARY} # filled by "find_package(OpenGL REQUIRED)"
-	noise
+	${LIBNOISE_LIBRARY}
 	glfw
 )

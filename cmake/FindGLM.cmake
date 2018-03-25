@@ -25,7 +25,7 @@ if (WIN32)
 		PATHS
 		$ENV{PROGRAMFILES}/include
 		${GLM_ROOT_DIR}/include
-		$(CMAKE_CURRENT_SOURCE_DIR}/lib/glm
+		${CMAKE_CURRENT_SOURCE_DIR}/lib/glm
 		DOC "The directory where glm/glm.hpp resides")
 else()
 	# Find include files
