@@ -17,7 +17,6 @@ set(data_SHADOW
 	./shaders/vertex.glsl
 	./shaders/fragment.glsl
 	./resources/dirt.png
-	./lib/libnoise.dll
 )
 
 # we don't want to copy if we're building in the source dir
@@ -51,7 +50,6 @@ set(MY_HEADER_FILES
 	"src/Debug.hpp"
 	"src/TextureManager.hpp"
 	"src/ChunkManager.hpp"
-	"src/noiseutils.h"
 
 	"./inc/stb_image.h"
 

@@ -6,7 +6,7 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
     : position(position) {
 	for (int i = 0; i < CHUNK_SIZE; i++) {
 		for (int k = 0; k < CHUNK_SIZE; k++) {
-			int seed = heightMap->GetValue(i, k);
+			int seed = heightMap->GetValue(i + position.x, k + position.z);
 			for (int j = 0; j < seed; j++)
 				this->cubes[i][j][k] = true;
 			for (int j = seed; j < CHUNK_SIZE; j++)

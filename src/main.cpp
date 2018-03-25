@@ -25,7 +25,8 @@ int main(void) {
 	Window window;
 	Camera camera(glm::vec3(0.0f, CHUNK_SIZE, 0.0f));
 #ifdef WIN32
-	Shader shader("C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\vertex.glsl", "C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\fragment.glsl");
+	Shader shader("C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\vertex.glsl",
+	              "C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\fragment.glsl");
 #else
 	Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
 #endif
@@ -40,7 +41,7 @@ int main(void) {
 	Mouse::Init(window);
 
 	glm::mat4 proj = glm::perspective(
-	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 160.0f);
+	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 400.0f);
 	glm::mat4 model = glm::mat4();
 	glm::mat4 view;
 
