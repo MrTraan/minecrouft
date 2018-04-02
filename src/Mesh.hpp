@@ -19,8 +19,9 @@ class Mesh {
 	void InitMesh();
 
 	// default constructor
-	Mesh() {}
+	Mesh() : isInit(false) {}
 
    private:
+	bool isInit;
 	unsigned int VAO, VBO, EBO;
 };

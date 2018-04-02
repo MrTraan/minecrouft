@@ -1,4 +1,5 @@
 #include <glad/glad.h>
+#include <vector>
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -11,13 +12,13 @@
 #include <Camera.hpp>
 #include <Chunk.hpp>
 #include <ChunkManager.hpp>
+#include <Frustrum.hpp>
 #include <Keyboard.hpp>
 #include <Mesh.hpp>
 #include <Mouse.hpp>
 #include <Shader.hpp>
 #include <Texture.hpp>
 #include <Window.hpp>
-#include <vector>
 
 constexpr char windowName[] = "Minecrouft";
 
@@ -45,7 +46,8 @@ int main(void) {
 	glm::mat4 model = glm::mat4();
 	glm::mat4 view;
 
-	ChunkManager chunkManager(camera.Position);
+	Frustrum frustrum(proj);
+	ChunkManager chunkManager(camera.Position, &frustrum);
 
 	float dt = 0.0f;
 	float lastFrame = 0.0f;
@@ -68,6 +70,7 @@ int main(void) {
 
 		camera.Update(dt);
 		view = camera.GetViewMatrix();
+		frustrum.Update(view);
 
 		chunkManager.Update(camera.Position);
 

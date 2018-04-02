@@ -18,9 +18,7 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 	this->ConstructMesh();
 }
 
-Chunk::~Chunk() {
-	printf("Destroying chunk\n");
-}
+Chunk::~Chunk() {}
 
 glm::vec3 Chunk::GetPosition() {
 	return this->position;
@@ -224,10 +222,6 @@ void Chunk::ConstructMesh() {
 	for (int j = 0; j < CHUNK_SIZE; j++)
 		for (int k = 0; k < CHUNK_SIZE; k++)
 			DrawCubeLine(CHUNK_SIZE - 1, j, k, dir);
-
-	this->mesh.InitMesh();
-
-	printf("%d\n", this->mesh.Vertices.size());
 }
 
 void Chunk::Draw(Shader shader) {

@@ -28,9 +28,12 @@ void Mesh::InitMesh() {
 	                      (void*)offsetof(Vertex, TexCoords));
 
 	glBindVertexArray(0);
+	this->isInit = true;
 }
 
 void Mesh::Draw(Shader shader) {
+	if (!this->isInit)
+		this->InitMesh();
 	shader.Use();
 	glBindVertexArray(this->VAO);
 	glDrawElements(GL_TRIANGLES, this->Indices.size(), GL_UNSIGNED_INT, 0);

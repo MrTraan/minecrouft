@@ -50,6 +50,7 @@ set(MY_HEADER_FILES
 	"src/Debug.hpp"
 	"src/TextureManager.hpp"
 	"src/ChunkManager.hpp"
+	"src/Frustrum.hpp"
 
 	"./inc/stb_image.h"
 
@@ -74,6 +75,7 @@ set(MY_SOURCE_FILES
 	"src/TextureManager.cpp"
 	"src/ChunkManager.cpp"
 	"src/glad.c"
+	"src/Frustrum.cpp"
 
 	# imgui
 	"./src/imgui/imgui.cpp"
