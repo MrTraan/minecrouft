@@ -5,11 +5,14 @@
 #include <Frustrum.hpp>
 #include <Shader.hpp>
 #include <glm/glm.hpp>
+#include <map>
 
 struct chunkArguments {
 	eBiome biome;
 	glm::vec3 pos;
 };
+
+typedef std::tuple<float, float, float> index3D;
 
 
 class ChunkManager {
@@ -20,21 +23,25 @@ class ChunkManager {
 	void Update(glm::vec3 playerPos);
 	void Draw(Shader s);
 
-	pthread_mutex_t* GetBuilderMutex() {
-		return &(this->builderMutex);
-	}
-
-	pthread_cond_t* GetBuildCondition() {
-		return &(this->buildCondition);
-	}
+	bool ThreadShouldRun;
 	std::vector<chunkArguments> BuildingQueue;
 
-	HeightMap* GetHeightMap() {
+
+	inline HeightMap* GetHeightMap() {
 		return &(this->heightMap);
 	}
 
-	void PushChunk(Chunk* c) {
-		this->chunks.push_back(c);
+	inline pthread_mutex_t* GetBuilderMutex() {
+		return &(this->builderMutex);
+	}
+
+	inline pthread_cond_t* GetBuildCondition() {
+		return &(this->buildCondition);
+	}
+
+	inline void PushChunk(glm::vec3 pos, Chunk* c) {
+		this->chunks.insert(
+		    std::pair<index3D, Chunk*>(index3D(pos.x, pos.y, pos.z), c));
 	}
 
    private:
@@ -45,7 +52,7 @@ class ChunkManager {
 
 	void signalBuilding();
 
-	std::vector<Chunk*> chunks;
+	std::map<index3D, Chunk*> chunks;
 	Frustrum* frustrum;
 
 

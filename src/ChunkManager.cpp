@@ -4,11 +4,10 @@
 
 #include <unistd.h>
 
-
 static void* fnBuilderThread(void* vManager) {
 	ChunkManager* manager = (ChunkManager*)vManager;
 	std::vector<chunkArguments> todoList;
-	while (1) {
+	while (manager->ThreadShouldRun) {
 		pthread_mutex_lock(manager->GetBuilderMutex());
 		printf("Waiting for build condition\n");
 		pthread_cond_wait(manager->GetBuildCondition(),
@@ -24,7 +23,7 @@ static void* fnBuilderThread(void* vManager) {
 		for (auto args : todoList) {
 			Chunk* c = new Chunk(args.biome, args.pos, manager->GetHeightMap());
 			pthread_mutex_lock(manager->GetBuilderMutex());
-			manager->PushChunk(c);
+			manager->PushChunk(args.pos, c);
 			pthread_mutex_unlock(manager->GetBuilderMutex());
 		}
 		printf("Done: %lu chunks created\n", todoList.size());
@@ -36,7 +35,8 @@ static void* fnBuilderThread(void* vManager) {
 
 ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
     : builderMutex(PTHREAD_MUTEX_INITIALIZER),
-      buildCondition(PTHREAD_COND_INITIALIZER) {
+      buildCondition(PTHREAD_COND_INITIALIZER),
+      ThreadShouldRun(true) {
 	// Setting up threads
 	this->frustrum = frustrum;
 	glm::vec3 chunkPosition((int)(playerPos.x / CHUNK_SIZE) * CHUNK_SIZE, 0,
@@ -47,14 +47,16 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
 	if (playerPos.z < 0)
 		chunkPosition.z -= CHUNK_SIZE;
 
-	this->chunks.push_back(
-	    new Chunk(eBiome::FOREST, chunkPosition, &(this->heightMap)));
+	this->PushChunk(chunkPosition, new Chunk(eBiome::FOREST, chunkPosition,
+	                                         &(this->heightMap)));
 	int success = pthread_create(&builderThread, NULL, fnBuilderThread, this);
 }
 
 ChunkManager::~ChunkManager() {
-	for (auto c : chunks)
-		delete c;
+	this->ThreadShouldRun = false;
+	pthread_mutex_lock(this->GetBuilderMutex());
+	for (auto& c : chunks)
+		delete c.second;
 }
 
 void ChunkManager::signalBuilding() {
@@ -70,17 +72,20 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	if (playerPos.z < 0)
 		chunkPosition.z -= CHUNK_SIZE;
 
-	int chunkMaxDistance = 8;
+	int chunkMaxDistance = 4;
 
 	pthread_mutex_lock(this->GetBuilderMutex());
-	for (int i = this->chunks.size() - 1; i >= 0; i--) {
-		glm::vec3 dist = this->chunks[i]->GetPosition() - chunkPosition;
 
-		if (fabs(dist.x) > chunkMaxDistance * CHUNK_SIZE ||
-		    fabs(dist.z) > chunkMaxDistance * CHUNK_SIZE) {
-			delete this->chunks[i];
-			this->chunks[i] = this->chunks.back();
-			this->chunks.pop_back();
+	auto it = std::begin(chunks);
+	while (it != std::end(chunks)) {
+		if (fabs(std::get<0>(it->first) - chunkPosition.x) >
+		        chunkMaxDistance * CHUNK_SIZE ||
+		    fabs(std::get<2>(it->first) - chunkPosition.z) >
+		        chunkMaxDistance * CHUNK_SIZE) {
+			delete it->second;
+			it = chunks.erase(it);
+		} else {
+			++it;
 		}
 	}
 
@@ -91,12 +96,9 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			glm::vec3 cursor(chunkPosition.x + (x * CHUNK_SIZE), 0,
 			                 chunkPosition.z + (z * CHUNK_SIZE));
 			bool hasBeenLoaded = false;
-			for (auto c : chunks) {
-				if (c->GetPosition() == cursor) {
-					hasBeenLoaded = true;
-					break;
-				}
-			}
+			if (chunks.find(index3D(cursor.x, cursor.y, cursor.z)) !=
+			    chunks.end())
+				hasBeenLoaded = true;
 			for (auto args : BuildingQueue) {
 				if (args.pos == cursor) {
 					hasBeenLoaded = true;
@@ -123,10 +125,14 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 void ChunkManager::Draw(Shader s) {
 	pthread_mutex_lock(this->GetBuilderMutex());
 	long long vertices_drawn = 0;
-	for (auto c : chunks) {
-		if (frustrum->IsPointIn(glm::vec3(c->GetPosition().x + CHUNK_SIZE / 2, c->GetPosition().y + CHUNK_SIZE / 2, c->GetPosition().z + CHUNK_SIZE / 2), 1)) {
-			c->Draw(s);
-			vertices_drawn += c->mesh.Vertices.size();
+	for (auto& c : chunks) {
+		if (frustrum->IsPointIn(
+		        glm::vec3(std::get<0>(c.first) + CHUNK_SIZE / 2,
+		                  std::get<1>(c.first) + CHUNK_SIZE / 2,
+		                  std::get<2>(c.first) + CHUNK_SIZE / 2),
+		        1)) {
+			c.second->Draw(s);
+			vertices_drawn += c.second->mesh.Vertices.size();
 		}
 	}
 	pthread_mutex_unlock(this->GetBuilderMutex());
