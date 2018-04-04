@@ -8,9 +8,9 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 		for (int k = 0; k < CHUNK_SIZE; k++) {
 			int seed = heightMap->GetValue(i + position.x, k + position.z);
 			for (int j = 0; j < seed; j++)
-				this->cubes[i][j][k] = true;
+				this->cubes[i][j][k] = eBlockType::DIRT;
 			for (int j = seed; j < CHUNK_SIZE; j++)
-				this->cubes[i][j][k] = false;
+				this->cubes[i][j][k] = eBlockType::INACTIVE;
 		}
 	}
 
@@ -132,7 +132,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::FRONT) {
 		while (z < CHUNK_SIZE - 1) {
-			if (this->cubes[x][y][z] == false && this->cubes[x][y][z + 1])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x][y][z + 1])
 				pushFace(x, y, z + 1, direction);
 			z++;
 		}
@@ -140,7 +140,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::BACK) {
 		while (z >= 1) {
-			if (this->cubes[x][y][z] == false && this->cubes[x][y][z - 1])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x][y][z - 1])
 				pushFace(x, y, z - 1, direction);
 			z--;
 		}
@@ -148,7 +148,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::TOP) {
 		while (y >= 1) {
-			if (this->cubes[x][y][z] == false && this->cubes[x][y - 1][z])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x][y - 1][z])
 				pushFace(x, y - 1, z, direction);
 			y--;
 		}
@@ -157,7 +157,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::BOTTOM) {
 		while (y < CHUNK_SIZE - 1) {
-			if (this->cubes[x][y][z] == false && this->cubes[x][y + 1][z])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x][y + 1][z])
 				pushFace(x, y + 1, z, direction);
 			y++;
 		}
@@ -166,7 +166,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::LEFT) {
 		while (x < CHUNK_SIZE - 1) {
-			if (this->cubes[x][y][z] == false && this->cubes[x + 1][y][z])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x + 1][y][z])
 				pushFace(x + 1, y, z, direction);
 			x++;
 		}
@@ -174,7 +174,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::RIGHT) {
 		while (x >= 1) {
-			if (this->cubes[x][y][z] == false && this->cubes[x - 1][y][z])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x - 1][y][z])
 				pushFace(x - 1, y, z, direction);
 			x--;
 		}

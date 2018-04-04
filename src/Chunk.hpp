@@ -9,6 +9,7 @@ constexpr int CHUNK_SIZE = 64;
 #include <Texture.hpp>
 #include <TextureManager.hpp>
 
+enum eBlockType : char { INACTIVE = 0, WATER, GRASS, DIRT, SAND, SNOW, ROCK };
 
 enum eDirection {
 	FRONT = 0,
@@ -32,10 +33,10 @@ class Chunk {
 
 	glm::vec3 GetPosition();
 
+	Mesh mesh;
    private:
 	// 3 dimensionnal to note cube presence, because why not
-	bool cubes[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
-	Mesh mesh;
+	eBlockType cubes[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 
 	glm::vec3 position;
 

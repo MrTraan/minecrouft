@@ -5,7 +5,7 @@
 #include <map>
 
 enum eBiome {
-	GRASS,
+	FOREST,
 };
 
 class TextureManager {

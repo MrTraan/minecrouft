@@ -13,7 +13,7 @@ Texture TextureManager::LoadTexture(eBiome biome) {
 	std::string path;
 
 	switch (biome) {
-		case GRASS:
+		case FOREST:
 #ifdef WIN32
 			path = "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\dirt.png";
 #else

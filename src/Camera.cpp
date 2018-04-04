@@ -32,7 +32,7 @@ void Camera::updateCameraVectors() {
 }
 
 void Camera::Update(float dt) {
-	float speed = 4.5f * dt;
+	float speed = 20 * dt;
 
 	if (Keyboard::IsKeyDown(eKey::KEY_SPACE))
 		speed *= 10.0f;

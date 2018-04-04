@@ -48,7 +48,7 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
 		chunkPosition.z -= CHUNK_SIZE;
 
 	this->chunks.push_back(
-	    new Chunk(eBiome::GRASS, chunkPosition, &(this->heightMap)));
+	    new Chunk(eBiome::FOREST, chunkPosition, &(this->heightMap)));
 	int success = pthread_create(&builderThread, NULL, fnBuilderThread, this);
 }
 
@@ -70,7 +70,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	if (playerPos.z < 0)
 		chunkPosition.z -= CHUNK_SIZE;
 
-	int chunkMaxDistance = 4;
+	int chunkMaxDistance = 8;
 
 	pthread_mutex_lock(this->GetBuilderMutex());
 	for (int i = this->chunks.size() - 1; i >= 0; i--) {
@@ -106,7 +106,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			if (!hasBeenLoaded) {
 				buildNeeded = true;
 				this->BuildingQueue.push_back(
-				    (chunkArguments){eBiome::GRASS, cursor});
+				    (chunkArguments){eBiome::FOREST, cursor});
 			}
 		}
 	}
@@ -122,7 +122,13 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 void ChunkManager::Draw(Shader s) {
 	pthread_mutex_lock(this->GetBuilderMutex());
-	for (auto c : chunks)
-		c->Draw(s);
+	long long vertices_drawn = 0;
+	for (auto c : chunks) {
+		if (frustrum->IsPointIn(glm::vec3(c->GetPosition().x + CHUNK_SIZE / 2, c->GetPosition().y + CHUNK_SIZE / 2, c->GetPosition().z + CHUNK_SIZE / 2), 1)) {
+			c->Draw(s);
+			vertices_drawn += c->mesh.Vertices.size();
+		}
+	}
 	pthread_mutex_unlock(this->GetBuilderMutex());
+	ImGui::Text("Vertices drawn: %lld", vertices_drawn);
 }
