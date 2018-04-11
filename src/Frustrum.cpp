@@ -35,11 +35,11 @@ void Frustrum::Update(glm::mat4 view) {
 	planes[5][3] = matrix[3][3] - matrix[3][2];
 }
 
-bool Frustrum::IsPointIn(glm::vec3 point, int renderSize) {
+bool Frustrum::IsPointIn(glm::vec3 point) {
 	for (unsigned int i = 0; i < 6; i++) {
 		if (planes[i][0] * point.x + (CHUNK_SIZE / 2) + planes[i][1] * point.y +
 		        planes[i][2] * point.z + planes[i][3] <=
-		    -CHUNK_SIZE * renderSize)
+		    -CHUNK_SIZE)
 			return false;
 	}
 	return true;

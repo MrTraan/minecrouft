@@ -10,7 +10,7 @@ class Frustrum {
 	glm::mat4 Projection;
 
 	void Update(glm::mat4 view);
-	bool IsPointIn(glm::vec3 point, int renderSize);
+	bool IsPointIn(glm::vec3 point);
 
    private:
 	float planes[6][4];

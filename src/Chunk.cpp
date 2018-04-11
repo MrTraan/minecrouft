@@ -30,91 +30,91 @@ void Chunk::pushFace(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::FRONT) {
 		v.Position = glm::vec3(x, y, z) + this->position;
-		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		v.TexCoords = glm::vec2(0.5f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.666667f);
+		v.TexCoords = glm::vec2(0.5f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::BACK) {
 		v.Position = glm::vec3(x, y, z + 1.0f) + this->position;
-		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		v.TexCoords = glm::vec2(0.5f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		v.TexCoords = glm::vec2(0.5f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.666667f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::TOP) {
 		v.Position = glm::vec3(x, y + 1, z) + this->position;
-		v.TexCoords = glm::vec2(0.25f, 1.0f);
+		v.TexCoords = glm::vec2(0.0f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 1.0f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.6666667f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		v.TexCoords = glm::vec2(0.0f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::BOTTOM) {
 		v.Position = glm::vec3(x, y, z) + this->position;
-		v.TexCoords = glm::vec2(0.25f, 0.0f);
+		v.TexCoords = glm::vec2(0.75f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.0f);
+		v.TexCoords = glm::vec2(1.0f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		v.TexCoords = glm::vec2(1.0f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		v.TexCoords = glm::vec2(0.75f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::LEFT) {
 		v.Position = glm::vec3(x, y, z) + this->position;
-		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		v.TexCoords = glm::vec2(0.5f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.666667f);
+		v.TexCoords = glm::vec2(0.5f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.z -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::RIGHT) {
 		v.Position = glm::vec3(x + 1, y, z) + this->position;
-		v.TexCoords = glm::vec2(0.25f, 0.333334f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.333334f);
+		v.TexCoords = glm::vec2(0.5f, 0.5f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.666667f);
+		v.TexCoords = glm::vec2(0.5f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 		v.Position.z -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 0.666667f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f);
 		this->mesh.Vertices.push_back(v);
 	}
 
@@ -132,7 +132,8 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::FRONT) {
 		while (z < CHUNK_SIZE - 1) {
-			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x][y][z + 1])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x][y][z + 1])
 				pushFace(x, y, z + 1, direction);
 			z++;
 		}
@@ -140,7 +141,8 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::BACK) {
 		while (z >= 1) {
-			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x][y][z - 1])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x][y][z - 1])
 				pushFace(x, y, z - 1, direction);
 			z--;
 		}
@@ -148,7 +150,8 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::TOP) {
 		while (y >= 1) {
-			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x][y - 1][z])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x][y - 1][z])
 				pushFace(x, y - 1, z, direction);
 			y--;
 		}
@@ -157,7 +160,8 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::BOTTOM) {
 		while (y < CHUNK_SIZE - 1) {
-			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x][y + 1][z])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x][y + 1][z])
 				pushFace(x, y + 1, z, direction);
 			y++;
 		}
@@ -166,7 +170,8 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::LEFT) {
 		while (x < CHUNK_SIZE - 1) {
-			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x + 1][y][z])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x + 1][y][z])
 				pushFace(x + 1, y, z, direction);
 			x++;
 		}
@@ -174,7 +179,8 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 	if (direction == eDirection::RIGHT) {
 		while (x >= 1) {
-			if (this->cubes[x][y][z] == eBlockType::INACTIVE && this->cubes[x - 1][y][z])
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x - 1][y][z])
 				pushFace(x - 1, y, z, direction);
 			x--;
 		}

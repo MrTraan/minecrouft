@@ -15,14 +15,15 @@ Texture TextureManager::LoadTexture(eBiome biome) {
 	switch (biome) {
 		case FOREST:
 #ifdef WIN32
-			path = "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\dirt.png";
+			path =
+			    "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\textures.png";
 #else
-			path = "../resources/dirt.png";
+			path = "../resources/textures.png";
 #endif
 			break;
 	}
 
-	TextureManager::textures[biome] = Texture(path, eImageFormat::RGB);
+	TextureManager::textures[biome] = Texture(path, eImageFormat::RGBA);
 	return (TextureManager::textures[biome]);
 }
 

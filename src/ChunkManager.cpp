@@ -72,7 +72,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	if (playerPos.z < 0)
 		chunkPosition.z -= CHUNK_SIZE;
 
-	int chunkMaxDistance = 4;
+	int chunkMaxDistance = 6;
 
 	pthread_mutex_lock(this->GetBuilderMutex());
 
@@ -92,20 +92,25 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	bool buildNeeded = false;
 
 	for (int x = -chunkMaxDistance; x < chunkMaxDistance; x++) {
-		for (int z = -chunkMaxDistance; z < chunkMaxDistance; z++) {
+		for (int z = chunkMaxDistance; z >= -chunkMaxDistance; z--) {
 			glm::vec3 cursor(chunkPosition.x + (x * CHUNK_SIZE), 0,
 			                 chunkPosition.z + (z * CHUNK_SIZE));
-			bool hasBeenLoaded = false;
+			if (!frustrum->IsPointIn(
+			        glm::vec3(CHUNK_SIZE / 2, CHUNK_SIZE / 2, CHUNK_SIZE / 2) +
+			        cursor))
+				continue;
+			bool isBeingBuilt = false;
 			if (chunks.find(index3D(cursor.x, cursor.y, cursor.z)) !=
 			    chunks.end())
-				hasBeenLoaded = true;
+				continue;
+
 			for (auto args : BuildingQueue) {
 				if (args.pos == cursor) {
-					hasBeenLoaded = true;
+					isBeingBuilt = true;
 					break;
 				}
 			}
-			if (!hasBeenLoaded) {
+			if (!isBeingBuilt) {
 				buildNeeded = true;
 				this->BuildingQueue.push_back(
 				    (chunkArguments){eBiome::FOREST, cursor});
@@ -129,8 +134,7 @@ void ChunkManager::Draw(Shader s) {
 		if (frustrum->IsPointIn(
 		        glm::vec3(std::get<0>(c.first) + CHUNK_SIZE / 2,
 		                  std::get<1>(c.first) + CHUNK_SIZE / 2,
-		                  std::get<2>(c.first) + CHUNK_SIZE / 2),
-		        1)) {
+		                  std::get<2>(c.first) + CHUNK_SIZE / 2))) {
 			c.second->Draw(s);
 			vertices_drawn += c.second->mesh.Vertices.size();
 		}
