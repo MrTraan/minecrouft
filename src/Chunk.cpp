@@ -7,8 +7,12 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 	for (int i = 0; i < CHUNK_SIZE; i++) {
 		for (int k = 0; k < CHUNK_SIZE; k++) {
 			int seed = heightMap->GetValue(i + position.x, k + position.z);
-			for (int j = 0; j < seed; j++)
-				this->cubes[i][j][k] = eBlockType::DIRT;
+			for (int j = 0; j < seed; j++) {
+				if (biome == eBiome::FOREST)
+					this->cubes[i][j][k] = eBlockType::GRASS;
+				else if (biome == eBiome::MOUNTAIN)
+					this->cubes[i][j][k] = eBlockType::SNOW;
+			}
 			for (int j = seed; j < CHUNK_SIZE; j++)
 				this->cubes[i][j][k] = eBlockType::INACTIVE;
 		}
@@ -24,97 +28,102 @@ glm::vec3 Chunk::GetPosition() {
 	return this->position;
 }
 
-void Chunk::pushFace(int x, int y, int z, eDirection direction) {
+void Chunk::pushFace(int x,
+                     int y,
+                     int z,
+                     eDirection direction,
+                     eBlockType type) {
+	glm::vec2 uvModifier = glm::vec2(0, type == eBlockType::SNOW ? 0.5f : 0);
 	int currentSize = this->mesh.Vertices.size();
 	Vertex v;
 
 	if (direction == eDirection::FRONT) {
 		v.Position = glm::vec3(x, y, z) + this->position;
-		v.TexCoords = glm::vec2(0.25f, 0.5f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.5f);
+		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 1.0f);
+		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::BACK) {
 		v.Position = glm::vec3(x, y, z + 1.0f) + this->position;
-		v.TexCoords = glm::vec2(0.25f, 0.5f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.5f);
+		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 1.0f);
+		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::TOP) {
 		v.Position = glm::vec3(x, y + 1, z) + this->position;
-		v.TexCoords = glm::vec2(0.0f, 0.5f);
+		v.TexCoords = glm::vec2(0.0f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 0.5f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.0f, 1.0f);
+		v.TexCoords = glm::vec2(0.0f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::BOTTOM) {
 		v.Position = glm::vec3(x, y, z) + this->position;
-		v.TexCoords = glm::vec2(0.75f, 0.5f);
+		v.TexCoords = glm::vec2(0.75f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(1.0f, 0.5f);
+		v.TexCoords = glm::vec2(1.0f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(1.0f, 1.0f);
+		v.TexCoords = glm::vec2(1.0f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.75f, 1.0f);
+		v.TexCoords = glm::vec2(0.75f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::LEFT) {
 		v.Position = glm::vec3(x, y, z) + this->position;
-		v.TexCoords = glm::vec2(0.25f, 0.5f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.5f);
+		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 1.0f);
+		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.z -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 	}
 
 	if (direction == eDirection::RIGHT) {
 		v.Position = glm::vec3(x + 1, y, z) + this->position;
-		v.TexCoords = glm::vec2(0.25f, 0.5f);
+		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.5f);
+		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 1.0f);
+		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 		v.Position.z -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f);
+		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
 		this->mesh.Vertices.push_back(v);
 	}
 
@@ -128,13 +137,13 @@ void Chunk::pushFace(int x, int y, int z, eDirection direction) {
 
 void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 	if (this->cubes[x][y][z])
-		pushFace(x, y, z, direction);
+		pushFace(x, y, z, direction, this->cubes[x][y][z]);
 
 	if (direction == eDirection::FRONT) {
 		while (z < CHUNK_SIZE - 1) {
 			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
 			    this->cubes[x][y][z + 1])
-				pushFace(x, y, z + 1, direction);
+				pushFace(x, y, z + 1, direction, this->cubes[x][y][z + 1]);
 			z++;
 		}
 	}
@@ -143,7 +152,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 		while (z >= 1) {
 			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
 			    this->cubes[x][y][z - 1])
-				pushFace(x, y, z - 1, direction);
+				pushFace(x, y, z - 1, direction, this->cubes[x][y][z - 1]);
 			z--;
 		}
 	}
@@ -152,7 +161,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 		while (y >= 1) {
 			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
 			    this->cubes[x][y - 1][z])
-				pushFace(x, y - 1, z, direction);
+				pushFace(x, y - 1, z, direction, this->cubes[x][y - 1][z]);
 			y--;
 		}
 	}
@@ -162,7 +171,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 		while (y < CHUNK_SIZE - 1) {
 			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
 			    this->cubes[x][y + 1][z])
-				pushFace(x, y + 1, z, direction);
+				pushFace(x, y + 1, z, direction, this->cubes[x][y + 1][z]);
 			y++;
 		}
 	}
@@ -172,7 +181,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 		while (x < CHUNK_SIZE - 1) {
 			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
 			    this->cubes[x + 1][y][z])
-				pushFace(x + 1, y, z, direction);
+				pushFace(x + 1, y, z, direction, this->cubes[x + 1][y][z]);
 			x++;
 		}
 	}
@@ -181,7 +190,7 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 		while (x >= 1) {
 			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
 			    this->cubes[x - 1][y][z])
-				pushFace(x - 1, y, z, direction);
+				pushFace(x - 1, y, z, direction, this->cubes[x - 1][y][z]);
 			x--;
 		}
 	}
@@ -231,6 +240,6 @@ void Chunk::ConstructMesh() {
 }
 
 void Chunk::Draw(Shader shader) {
-	TextureManager::GetTexture(this->biome).Bind();
+	TextureManager::GetTexture(eTextureFile::BLOCKS).Bind();
 	this->mesh.Draw(shader);
 }

@@ -1,19 +1,19 @@
 #include <TextureManager.hpp>
 
-Texture TextureManager::GetTexture(eBiome biome) {
-	auto texture = TextureManager::textures.find(biome);
+Texture TextureManager::GetTexture(eTextureFile file) {
+	auto texture = TextureManager::textures.find(file);
 
 	// If texture hasnt been loaded yet, load it now
 	if (texture == TextureManager::textures.end())
-		return TextureManager::LoadTexture(biome);
+		return TextureManager::LoadTexture(file);
 	return texture->second;
 }
 
-Texture TextureManager::LoadTexture(eBiome biome) {
+Texture TextureManager::LoadTexture(eTextureFile file) {
 	std::string path;
 
-	switch (biome) {
-		case FOREST:
+	switch (file) {
+		case BLOCKS:
 #ifdef WIN32
 			path =
 			    "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\textures.png";
@@ -23,8 +23,8 @@ Texture TextureManager::LoadTexture(eBiome biome) {
 			break;
 	}
 
-	TextureManager::textures[biome] = Texture(path, eImageFormat::RGBA);
-	return (TextureManager::textures[biome]);
+	TextureManager::textures[file] = Texture(path, eImageFormat::RGBA);
+	return (TextureManager::textures[file]);
 }
 
-std::map<eBiome, Texture> TextureManager::textures;
+std::map<eTextureFile, Texture> TextureManager::textures;

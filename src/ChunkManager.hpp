@@ -12,6 +12,7 @@ struct chunkArguments {
 	glm::vec3 pos;
 };
 
+
 typedef std::tuple<float, float, float> index3D;
 
 

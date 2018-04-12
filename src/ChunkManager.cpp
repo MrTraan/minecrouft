@@ -113,7 +113,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			if (!isBeingBuilt) {
 				buildNeeded = true;
 				this->BuildingQueue.push_back(
-				    (chunkArguments){eBiome::FOREST, cursor});
+				    (chunkArguments){eBiome::MOUNTAIN, cursor});
 			}
 		}
 	}

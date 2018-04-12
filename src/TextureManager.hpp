@@ -4,16 +4,16 @@
 
 #include <map>
 
-enum eBiome {
-	FOREST,
+enum eTextureFile {
+	BLOCKS,
 };
 
 class TextureManager {
    public:
-	static Texture GetTexture(eBiome biome);
+	static Texture GetTexture(eTextureFile biome);
 
-	static Texture LoadTexture(eBiome biome);
+	static Texture LoadTexture(eTextureFile biome);
 
    private:
-	static std::map<eBiome, Texture> textures;
+	static std::map<eTextureFile, Texture> textures;
 };
