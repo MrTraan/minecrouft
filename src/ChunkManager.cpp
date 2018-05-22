@@ -1,30 +1,27 @@
 #include <imgui/imgui.h>
 #include <ChunkManager.hpp>
 
-
-#include <unistd.h>
-
 static void* fnBuilderThread(void* vManager) {
 	ChunkManager* manager = (ChunkManager*)vManager;
 	std::vector<chunkArguments> todoList;
+	std::unique_lock<std::mutex> lock(*(manager->GetBuilderMutex()));
 	while (manager->ThreadShouldRun) {
-		pthread_mutex_lock(manager->GetBuilderMutex());
 		printf("Waiting for build condition\n");
-		pthread_cond_wait(manager->GetBuildCondition(),
-		                  manager->GetBuilderMutex());
+		manager->GetBuildCondition()->wait(lock);
 		printf("Received build condition, creating todo list...\n");
+		manager->GetBuilderMutex()->lock();
 		while (!manager->BuildingQueue.empty()) {
 			todoList.push_back(manager->BuildingQueue.back());
 			manager->BuildingQueue.pop_back();
 		}
 		printf("Todo  list created\n");
-		pthread_mutex_unlock(manager->GetBuilderMutex());
+		manager->GetBuilderMutex()->unlock();
 		printf("Released mutex, creating chunks\n");
 		for (auto args : todoList) {
 			Chunk* c = new Chunk(args.biome, args.pos, manager->GetHeightMap());
-			pthread_mutex_lock(manager->GetBuilderMutex());
+			manager->GetBuilderMutex()->lock();
 			manager->PushChunk(args.pos, c);
-			pthread_mutex_unlock(manager->GetBuilderMutex());
+			manager->GetBuilderMutex()->unlock();
 		}
 		printf("Done: %lu chunks created\n", todoList.size());
 		todoList.clear();
@@ -34,8 +31,9 @@ static void* fnBuilderThread(void* vManager) {
 
 
 ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
-    : builderMutex(PTHREAD_MUTEX_INITIALIZER),
-      buildCondition(PTHREAD_COND_INITIALIZER),
+    : builderMutex(),
+      buildCondition(),
+	  builderThread(fnBuilderThread, this),
       ThreadShouldRun(true) {
 	// Setting up threads
 	this->frustrum = frustrum;
@@ -49,18 +47,17 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
 
 	this->PushChunk(chunkPosition, new Chunk(eBiome::FOREST, chunkPosition,
 	                                         &(this->heightMap)));
-	int success = pthread_create(&builderThread, NULL, fnBuilderThread, this);
 }
 
 ChunkManager::~ChunkManager() {
 	this->ThreadShouldRun = false;
-	pthread_mutex_lock(this->GetBuilderMutex());
+	GetBuilderMutex()->lock();
 	for (auto& c : chunks)
 		delete c.second;
 }
 
 void ChunkManager::signalBuilding() {
-	pthread_cond_signal(this->GetBuildCondition());
+	this->GetBuildCondition()->notify_one();
 }
 
 void ChunkManager::Update(glm::vec3 playerPos) {
@@ -74,7 +71,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 	int chunkMaxDistance = 6;
 
-	pthread_mutex_lock(this->GetBuilderMutex());
+	GetBuilderMutex()->lock();
 
 	auto it = std::begin(chunks);
 	while (it != std::end(chunks)) {
@@ -112,12 +109,12 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			}
 			if (!isBeingBuilt) {
 				buildNeeded = true;
-				this->BuildingQueue.push_back(
-				    (chunkArguments){eBiome::MOUNTAIN, cursor});
+				chunkArguments args = { eBiome::MOUNTAIN, cursor };
+				this->BuildingQueue.push_back(args);
 			}
 		}
 	}
-	pthread_mutex_unlock(this->GetBuilderMutex());
+	GetBuilderMutex()->unlock();
 	if (buildNeeded)
 		this->signalBuilding();
 
@@ -128,7 +125,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 }
 
 void ChunkManager::Draw(Shader s) {
-	pthread_mutex_lock(this->GetBuilderMutex());
+	GetBuilderMutex()->lock();
 	long long vertices_drawn = 0;
 	for (auto& c : chunks) {
 		if (frustrum->IsPointIn(
@@ -139,6 +136,6 @@ void ChunkManager::Draw(Shader s) {
 			vertices_drawn += c.second->mesh.Vertices.size();
 		}
 	}
-	pthread_mutex_unlock(this->GetBuilderMutex());
+	GetBuilderMutex()->unlock();
 	ImGui::Text("Vertices drawn: %lld", vertices_drawn);
 }

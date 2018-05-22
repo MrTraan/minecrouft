@@ -1,6 +1,8 @@
 #pragma once
 
-#include <pthread.h>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 #include <Chunk.hpp>
 #include <Frustrum.hpp>
 #include <Shader.hpp>
@@ -32,11 +34,11 @@ class ChunkManager {
 		return &(this->heightMap);
 	}
 
-	inline pthread_mutex_t* GetBuilderMutex() {
+	inline std::mutex* GetBuilderMutex() {
 		return &(this->builderMutex);
 	}
 
-	inline pthread_cond_t* GetBuildCondition() {
+	inline std::condition_variable* GetBuildCondition() {
 		return &(this->buildCondition);
 	}
 
@@ -46,9 +48,9 @@ class ChunkManager {
 	}
 
    private:
-	pthread_t builderThread;
-	pthread_mutex_t builderMutex;
-	pthread_cond_t buildCondition;
+	std::thread builderThread;
+	std::mutex builderMutex;
+	std::condition_variable buildCondition;
 
 
 	void signalBuilding();
