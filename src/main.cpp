@@ -22,6 +22,7 @@
 
 constexpr char windowName[] = "Minecrouft";
 
+#include <unistd.h>
 int main(void) {
 	Window window;
 	Camera camera(glm::vec3(0.0f, CHUNK_SIZE, 0.0f));
@@ -31,6 +32,8 @@ int main(void) {
 #else
 	Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
 #endif
+
+
 
 	// Setup imgui
 	ImGui::CreateContext();
@@ -51,6 +54,18 @@ int main(void) {
 
 	float dt = 0.0f;
 	float lastFrame = 0.0f;
+
+	char buffer[1000];
+	getcwd(buffer, 1000);
+	printf("cwd: %s\n", buffer);
+
+	int major, minor, version;
+	glfwGetVersion(&major, &minor, &version);
+	printf("Glfw version: %d.%d.%d\n", major, minor, version);
+    printf("OpenGL version: %s\n", glGetString(GL_VERSION));
+	printf("GLM version: %d\n", GLM_VERSION);
+
+
 
 	while (!window.ShouldClose()) {
 		float currentFrame = glfwGetTime();

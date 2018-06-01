@@ -37,9 +37,12 @@ else()
 		/usr/local/include
 		/sw/include
 		/opt/local/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm
 		${GLM_ROOT_DIR}/include
 		DOC "The directory where glm/glm.hpp resides")
 endif()
+
+message("Glm stuff: ${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Handle REQUIRD argument, define *_FOUND variable
 find_package_handle_standard_args(GLM DEFAULT_MSG GLM_INCLUDE_DIR)
@@ -48,6 +51,8 @@ find_package_handle_standard_args(GLM DEFAULT_MSG GLM_INCLUDE_DIR)
 if (GLM_FOUND)
 	set(GLM_INCLUDE_DIRS ${GLM_INCLUDE_DIR})
 endif()
+
+message("Path in bundle: ${GLM_INCLUDE_DIR}")
 
 # Hide some variables
 mark_as_advanced(GLM_INCLUDE_DIR)
