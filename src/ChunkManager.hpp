@@ -49,6 +49,7 @@ class ChunkManager {
 	std::mutex queueMutex;
 	std::mutex builderMutex;
 	std::condition_variable buildCondition;
+	std::thread builderThread;
    private:
 	std::map<index3D, Chunk*> chunks;
 	Frustrum* frustrum;

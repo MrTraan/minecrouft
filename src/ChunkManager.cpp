@@ -42,13 +42,13 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
 
     this->PushChunk(chunkPosition, new Chunk(eBiome::FOREST, chunkPosition,
                                              &(this->heightMap)));
-    std::thread builderThread(fnBuilderThread, this);
-    builderThread.detach();
+    builderThread = std::thread(fnBuilderThread, this);
 }
 
 ChunkManager::~ChunkManager() {
     this->ThreadShouldRun = false;
-    GetBuilderMutex()->lock();
+	buildCondition.notify_one();
+	builderThread.join();
     for (auto& c : chunks)
         delete c.second;
 }

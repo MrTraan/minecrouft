@@ -19,6 +19,7 @@
 #include <Shader.hpp>
 #include <Texture.hpp>
 #include <Window.hpp>
+#include <cassert>
 
 constexpr char windowName[] = "Minecrouft";
 
@@ -91,6 +92,9 @@ int main(void) {
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
 		window.SwapBuffers();
+		auto err = glGetError();
+		assert(err == GL_NO_ERROR);
+
 	}
 
 	ImGui_ImplGlfwGL3_Shutdown();
