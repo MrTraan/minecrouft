@@ -16,13 +16,7 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(./lib/glfw)
 
-# files are only copied if a target depends on them
-add_custom_target(data-target ALL DEPENDS "${data_SHADOW}")
-
-## glm
-find_package(GLM REQUIRED)
-message("GLM include: ${GLM_INCLUDE_DIRS}")
-include_directories(${GLM_INCLUDE_DIRS})
+set(GLM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/")
 
 set(MY_HEADER_FILES
 	"src/Camera.hpp"
@@ -78,6 +72,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(
 	${OPENGL_INCLUDE_DIR}
+	${GLM_INCLUDE_DIRS}
 	"./src"
 	"./inc"
 	"./lib"

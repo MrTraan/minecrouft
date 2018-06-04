@@ -47,8 +47,8 @@ int main(void) {
 
 	glm::mat4 proj = glm::perspective(
 	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 400.0f);
-	glm::mat4 model = glm::mat4();
-	glm::mat4 view;
+	glm::mat4 model = glm::mat4(1.0);
+	glm::mat4 view = glm::mat4(1.0);
 
 	Frustrum frustrum(proj);
 	ChunkManager chunkManager(camera.Position, &frustrum);
