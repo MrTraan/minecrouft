@@ -22,7 +22,12 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 	this->ConstructMesh();
 }
 
-Chunk::~Chunk() {}
+Chunk::~Chunk() {
+	if (mesh.Vertices)
+		delete mesh.Vertices;
+	if (mesh.Indices)
+		delete mesh.Indices;
+}
 
 glm::vec3 Chunk::GetPosition() {
 	return this->position;
@@ -34,106 +39,107 @@ void Chunk::pushFace(int x,
                      eDirection direction,
                      eBlockType type) {
 	glm::vec2 uvModifier = glm::vec2(0, type == eBlockType::SNOW ? 0.5f : 0);
-	int currentSize = this->mesh.Vertices.size();
+	int currentSize = drawIndex;
 	Vertex v;
 
 	if (direction == eDirection::FRONT) {
 		v.Position = glm::vec3(x, y, z) + this->position;
 		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
 		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.y += 1.0f;
 		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.x -= 1.0f;
 		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::BACK) {
 		v.Position = glm::vec3(x, y, z + 1.0f) + this->position;
 		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
 		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.y += 1.0f;
 		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.x -= 1.0f;
 		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::TOP) {
 		v.Position = glm::vec3(x, y + 1, z) + this->position;
 		v.TexCoords = glm::vec2(0.0f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
 		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
 		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.x -= 1.0f;
 		v.TexCoords = glm::vec2(0.0f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::BOTTOM) {
 		v.Position = glm::vec3(x, y, z) + this->position;
 		v.TexCoords = glm::vec2(0.75f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
 		v.TexCoords = glm::vec2(1.0f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
 		v.TexCoords = glm::vec2(1.0f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.x -= 1.0f;
 		v.TexCoords = glm::vec2(0.75f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::LEFT) {
 		v.Position = glm::vec3(x, y, z) + this->position;
 		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
 		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.y += 1.0f;
 		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.z -= 1.0f;
 		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::RIGHT) {
 		v.Position = glm::vec3(x + 1, y, z) + this->position;
 		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
 		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.y += 1.0f;
 		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 		v.Position.z -= 1.0f;
 		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
-		this->mesh.Vertices.push_back(v);
+		mesh.Vertices[drawIndex++] = v;
 	}
 
-	this->mesh.Indices.push_back(currentSize + 0);
-	this->mesh.Indices.push_back(currentSize + 1);
-	this->mesh.Indices.push_back(currentSize + 2);
-	this->mesh.Indices.push_back(currentSize + 0);
-	this->mesh.Indices.push_back(currentSize + 2);
-	this->mesh.Indices.push_back(currentSize + 3);
+	mesh.Indices[drawIndiciesIndex++] = currentSize + 0;
+	mesh.Indices[drawIndiciesIndex++] = currentSize + 1;
+	mesh.Indices[drawIndiciesIndex++] = currentSize + 2;
+	mesh.Indices[drawIndiciesIndex++] = currentSize + 0;
+	mesh.Indices[drawIndiciesIndex++] = currentSize + 2;
+	mesh.Indices[drawIndiciesIndex++] = currentSize + 3;
 }
+
 
 void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 	if (this->cubes[x][y][z])
@@ -196,8 +202,119 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 	}
 }
 
+u32 Chunk::CountCubeLineSize(int x, int y, int z, eDirection direction) {
+	u32 total = 0;
+	if (this->cubes[x][y][z])
+		total++;
+
+	if (direction == eDirection::FRONT) {
+		while (z < CHUNK_SIZE - 1) {
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x][y][z + 1])
+				total++;
+			z++;
+		}
+	}
+
+	if (direction == eDirection::BACK) {
+		while (z >= 1) {
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x][y][z - 1])
+				total++;
+			z--;
+		}
+	}
+
+	if (direction == eDirection::TOP) {
+		while (y >= 1) {
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x][y - 1][z])
+				total++;
+			y--;
+		}
+	}
+
+
+	if (direction == eDirection::BOTTOM) {
+		while (y < CHUNK_SIZE - 1) {
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x][y + 1][z])
+				total++;
+			y++;
+		}
+	}
+
+
+	if (direction == eDirection::LEFT) {
+		while (x < CHUNK_SIZE - 1) {
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x + 1][y][z])
+				total++;
+			x++;
+		}
+	}
+
+	if (direction == eDirection::RIGHT) {
+		while (x >= 1) {
+			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
+			    this->cubes[x - 1][y][z])
+				total++;
+			x--;
+		}
+	}
+	return total;
+}
+
+u32 Chunk::CountMeshFaceSize() {
+	eDirection dir;
+	u32 total = 0;
+
+	dir = eDirection::FRONT;
+	for (int i = 0; i < CHUNK_SIZE; i++)
+		for (int j = 0; j < CHUNK_SIZE; j++)
+			total += CountCubeLineSize(i, j, 0, dir);
+
+
+	dir = eDirection::BACK;
+	for (int i = 0; i < CHUNK_SIZE; i++)
+		for (int j = 0; j < CHUNK_SIZE; j++)
+			total += CountCubeLineSize(i, j, CHUNK_SIZE - 1, dir);
+
+	dir = eDirection::TOP;
+	for (int i = 0; i < CHUNK_SIZE; i++)
+		for (int k = 0; k < CHUNK_SIZE; k++)
+			total += CountCubeLineSize(i, CHUNK_SIZE - 1, k, dir);
+
+	dir = eDirection::BOTTOM;
+	for (int i = 0; i < CHUNK_SIZE; i++)
+		for (int k = 0; k < CHUNK_SIZE; k++)
+			total += CountCubeLineSize(i, 0, k, dir);
+
+
+	dir = eDirection::LEFT;
+	for (int j = 0; j < CHUNK_SIZE; j++)
+		for (int k = 0; k < CHUNK_SIZE; k++)
+			total += CountCubeLineSize(0, j, k, dir);
+
+	dir = eDirection::RIGHT;
+	for (int j = 0; j < CHUNK_SIZE; j++)
+		for (int k = 0; k < CHUNK_SIZE; k++)
+			total += CountCubeLineSize(CHUNK_SIZE - 1, j, k, dir);
+
+	return total;
+}
+
 
 void Chunk::ConstructMesh() {
+	u32 numFaces = CountMeshFaceSize();
+
+	mesh.IndicesCount = 6 * numFaces;
+	mesh.Indices = new u32[mesh.IndicesCount];
+	mesh.VerticesCount = 4 * numFaces;
+	mesh.Vertices = new Vertex[mesh.VerticesCount];
+	drawIndex = 0;
+	drawIndiciesIndex = 0;
+
 	eDirection dir;
 
 	// draw front

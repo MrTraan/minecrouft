@@ -10,12 +10,11 @@ void Mesh::InitMesh() {
 	glBindVertexArray(this->VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
 
-	glBufferData(GL_ARRAY_BUFFER, this->Vertices.size() * sizeof(Vertex),
+	glBufferData(GL_ARRAY_BUFFER, VerticesCount * sizeof(Vertex),
 	             &(this->Vertices[0]), GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-	             this->Indices.size() * sizeof(unsigned int),
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, IndicesCount * sizeof(unsigned int),
 	             &(this->Indices[0]), GL_STATIC_DRAW);
 
 	// vertex positions
@@ -36,6 +35,6 @@ void Mesh::Draw(Shader shader) {
 		this->InitMesh();
 	shader.Use();
 	glBindVertexArray(this->VAO);
-	glDrawElements(GL_TRIANGLES, this->Indices.size(), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, IndicesCount, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }

@@ -32,6 +32,7 @@ set(MY_HEADER_FILES
 	"src/ChunkManager.hpp"
 	"src/Frustrum.hpp"
     "src/HeightMap.hpp"
+    "src/constants.hpp"
 
 	"./inc/stb_image.h"
 

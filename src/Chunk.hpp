@@ -36,6 +36,10 @@ class Chunk {
 
 	void DrawCubeLine(int x, int y, int z, eDirection direction);
 
+	u32 CountCubeLineSize(int x, int y, int z, eDirection direction);
+	u32 CountMeshFaceSize();
+
+
 	glm::vec3 GetPosition();
 
 	Mesh mesh;
@@ -49,4 +53,8 @@ class Chunk {
 	eBiome biome;
 
 	void pushFace(int x, int y, int z, eDirection direction, eBlockType type);
+	void addVertex(const Vertex& v);
+
+	u32 drawIndex = 0;
+	u32 drawIndiciesIndex = 0;
 };
