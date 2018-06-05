@@ -24,9 +24,9 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 
 Chunk::~Chunk() {
 	if (mesh.Vertices)
-		delete mesh.Vertices;
+		delete[] mesh.Vertices;
 	if (mesh.Indices)
-		delete mesh.Indices;
+		delete[] mesh.Indices;
 }
 
 glm::vec3 Chunk::GetPosition() {

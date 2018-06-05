@@ -22,9 +22,9 @@ glm::mat4 Camera::GetViewMatrix() {
 void Camera::updateCameraVectors() {
 	glm::vec3 front;
 
-	front.x = cos(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
-	front.y = sin(glm::radians(this->Pitch));
-	front.z = sin(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
+	front.x = cosf(glm::radians(this->Yaw)) * cosf(glm::radians(this->Pitch));
+	front.y = sinf(glm::radians(this->Pitch));
+	front.z = sinf(glm::radians(this->Yaw)) * cosf(glm::radians(this->Pitch));
 	this->Front = glm::normalize(front);
 
 	this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));
