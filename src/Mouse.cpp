@@ -10,8 +10,8 @@
 
 void Mouse::Init(Window &window) {
 	Mouse::glWindow = window.GetGlfwWindow();
-	glfwSetInputMode(window.GetGlfwWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	Mouse::CursorDisabled = true;
+//	glfwSetInputMode(window.GetGlfwWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	Mouse::CursorDisabled = false;
 }
 
 void Mouse::Update() {

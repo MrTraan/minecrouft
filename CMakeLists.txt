@@ -1,8 +1,11 @@
 # CMake entry point.
 
 cmake_minimum_required (VERSION 2.6)
+message("CMake version: ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
 project (minecrouft)
 set (CMAKE_CXX_STANDARD 14)
+
+set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(OpenGL REQUIRED)
 
@@ -13,31 +16,7 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(./lib/glfw)
 
-# list of files for which we add a copy rule
-set(data_SHADOW 
-	./shaders/vertex.glsl
-	./shaders/fragment.glsl
-	./resources/dirt.png
-)
-
-# we don't want to copy if we're building in the source dir
-if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
-    foreach(item IN LISTS data_SHADOW)
-        message(STATUS ${item})
-        add_custom_command(
-            OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${item}"
-            COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${item}" "${CMAKE_CURRENT_BINARY_DIR}/${item}"
-            DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${item}"
-        )
-    endforeach()
-endif()
-
-# files are only copied if a target depends on them
-add_custom_target(data-target ALL DEPENDS "${data_SHADOW}")
-
-## glm
-find_package(GLM REQUIRED)
-include_directories(${GLM_INCLUDE_DIRS})
+set(GLM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/")
 
 set(MY_HEADER_FILES
 	"src/Camera.hpp"
@@ -52,6 +31,7 @@ set(MY_HEADER_FILES
 	"src/TextureManager.hpp"
 	"src/ChunkManager.hpp"
 	"src/Frustrum.hpp"
+    "src/HeightMap.hpp"
 
 	"./inc/stb_image.h"
 
@@ -92,6 +72,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(
 	${OPENGL_INCLUDE_DIR}
+	${GLM_INCLUDE_DIRS}
 	"./src"
 	"./inc"
 	"./lib"

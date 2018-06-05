@@ -19,9 +19,11 @@
 #include <Shader.hpp>
 #include <Texture.hpp>
 #include <Window.hpp>
+#include <cassert>
 
 constexpr char windowName[] = "Minecrouft";
 
+#include <unistd.h>
 int main(void) {
 	Window window;
 	Camera camera(glm::vec3(0.0f, CHUNK_SIZE, 0.0f));
@@ -31,6 +33,8 @@ int main(void) {
 #else
 	Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
 #endif
+
+
 
 	// Setup imgui
 	ImGui::CreateContext();
@@ -43,14 +47,26 @@ int main(void) {
 
 	glm::mat4 proj = glm::perspective(
 	    glm::radians(45.0f), (float)window.Width / window.Height, 0.1f, 400.0f);
-	glm::mat4 model = glm::mat4();
-	glm::mat4 view;
+	glm::mat4 model = glm::mat4(1.0);
+	glm::mat4 view = glm::mat4(1.0);
 
 	Frustrum frustrum(proj);
 	ChunkManager chunkManager(camera.Position, &frustrum);
 
 	float dt = 0.0f;
 	float lastFrame = 0.0f;
+
+	char buffer[1000];
+	getcwd(buffer, 1000);
+	printf("cwd: %s\n", buffer);
+
+	int major, minor, version;
+	glfwGetVersion(&major, &minor, &version);
+	printf("Glfw version: %d.%d.%d\n", major, minor, version);
+    printf("OpenGL version: %s\n", glGetString(GL_VERSION));
+	printf("GLM version: %d\n", GLM_VERSION);
+
+
 
 	while (!window.ShouldClose()) {
 		float currentFrame = glfwGetTime();
@@ -91,6 +107,9 @@ int main(void) {
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
 		window.SwapBuffers();
+		auto err = glGetError();
+		assert(err == GL_NO_ERROR);
+
 	}
 
 	ImGui_ImplGlfwGL3_Shutdown();

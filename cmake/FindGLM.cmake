@@ -23,9 +23,9 @@ if (WIN32)
 		GLM_INCLUDE_DIR
 		NAMES glm/glm.hpp
 		PATHS
+		${CMAKE_CURRENT_SOURCE_DIR}/lib/glm
 		$ENV{PROGRAMFILES}/include
 		${GLM_ROOT_DIR}/include
-		${CMAKE_CURRENT_SOURCE_DIR}/lib/glm
 		DOC "The directory where glm/glm.hpp resides")
 else()
 	# Find include files
@@ -33,6 +33,7 @@ else()
 		GLM_INCLUDE_DIR
 		NAMES glm/glm.hpp
 		PATHS
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm
 		/usr/include
 		/usr/local/include
 		/sw/include
@@ -41,6 +42,8 @@ else()
 		DOC "The directory where glm/glm.hpp resides")
 endif()
 
+message("ls ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm")
+
 # Handle REQUIRD argument, define *_FOUND variable
 find_package_handle_standard_args(GLM DEFAULT_MSG GLM_INCLUDE_DIR)
 
@@ -48,6 +51,8 @@ find_package_handle_standard_args(GLM DEFAULT_MSG GLM_INCLUDE_DIR)
 if (GLM_FOUND)
 	set(GLM_INCLUDE_DIRS ${GLM_INCLUDE_DIR})
 endif()
+
+message("Path in bundle: ${GLM_INCLUDE_DIR}")
 
 # Hide some variables
 mark_as_advanced(GLM_INCLUDE_DIR)
