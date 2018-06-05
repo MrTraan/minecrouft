@@ -27,7 +27,8 @@ class ChunkManager {
 	void Draw(Shader s);
 
 	bool ThreadShouldRun;
-	std::vector<chunkArguments> BuildingQueue;
+	std::vector<chunkArguments> BuildingQueueIn;
+	std::vector<Chunk *> BuildingQueueOut;
 
 
 	inline HeightMap* GetHeightMap() {
@@ -46,7 +47,8 @@ class ChunkManager {
 		this->chunks.insert(
 		    std::pair<index3D, Chunk*>(index3D(pos.x, pos.y, pos.z), c));
 	}
-	std::mutex queueMutex;
+	std::mutex queueInMutex;
+	std::mutex queueOutMutex;
 	std::mutex builderMutex;
 	std::condition_variable buildCondition;
 	std::thread builderThread;
