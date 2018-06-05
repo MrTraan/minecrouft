@@ -34,7 +34,6 @@ int main(void) {
 #endif
 
 
-
 	// Setup imgui
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
@@ -58,9 +57,8 @@ int main(void) {
 	int major, minor, version;
 	glfwGetVersion(&major, &minor, &version);
 	printf("Glfw version: %d.%d.%d\n", major, minor, version);
-    printf("OpenGL version: %s\n", glGetString(GL_VERSION));
+	printf("OpenGL version: %s\n", glGetString(GL_VERSION));
 	printf("GLM version: %d\n", GLM_VERSION);
-
 
 
 	while (!window.ShouldClose()) {
@@ -98,13 +96,16 @@ int main(void) {
 
 		chunkManager.Draw(shader);
 
+		ImGui::Text("Built: %d, Destroyed: %d, diff: %d\n", Chunk::totalBuilt,
+		            Chunk::totalDestroy,
+		            Chunk::totalBuilt - Chunk::totalDestroy);
+
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
 		window.SwapBuffers();
 		auto err = glGetError();
 		assert(err == GL_NO_ERROR);
-
 	}
 
 	ImGui_ImplGlfwGL3_Shutdown();

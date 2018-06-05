@@ -50,11 +50,12 @@ class Window {
 	}
 
 	~Window() {
+        glfwDestroyWindow(glWindow);
 		glfwTerminate();
 	}
 
 	bool ShouldClose() {
-		return glfwWindowShouldClose(this->glWindow);
+		return glfwWindowShouldClose(this->glWindow) != 0;
 	}
 
 	void Clear() {

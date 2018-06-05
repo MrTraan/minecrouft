@@ -2,11 +2,15 @@
 #include <Debug.hpp>
 #include <HeightMap.hpp>
 
+#include <imgui/imgui.h>
+
 Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
     : position(position) {
+	totalBuilt++;
 	for (int i = 0; i < CHUNK_SIZE; i++) {
 		for (int k = 0; k < CHUNK_SIZE; k++) {
-			int seed = heightMap->GetValue(i + position.x, k + position.z);
+			int seed =
+			    heightMap->GetValue(i + (int)position.x, k + (int)position.z);
 			for (int j = 0; j < seed; j++) {
 				if (biome == eBiome::FOREST)
 					this->cubes[i][j][k] = eBlockType::GRASS;
@@ -23,6 +27,7 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 }
 
 Chunk::~Chunk() {
+	totalDestroy++;
 	if (mesh.Vertices)
 		delete[] mesh.Vertices;
 	if (mesh.Indices)
@@ -39,7 +44,7 @@ void Chunk::pushFace(int x,
                      eDirection direction,
                      eBlockType type) {
 	glm::vec2 uvModifier = glm::vec2(0, type == eBlockType::SNOW ? 0.5f : 0);
-	int currentSize = drawIndex;
+	u32 currentSize = drawIndex;
 	Vertex v;
 
 	if (direction == eDirection::FRONT) {
@@ -358,5 +363,9 @@ void Chunk::ConstructMesh() {
 
 void Chunk::Draw(Shader shader) {
 	TextureManager::GetTexture(eTextureFile::BLOCKS).Bind();
+
 	this->mesh.Draw(shader);
 }
+
+int Chunk::totalBuilt = 0;
+int Chunk::totalDestroy = 0;

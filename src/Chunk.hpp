@@ -44,6 +44,9 @@ class Chunk {
 
 	Mesh mesh;
 
+	static int totalBuilt;
+	static int totalDestroy;
+
    private:
 	// 3 dimensionnal to note cube presence, because why not
 	eBlockType cubes[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];

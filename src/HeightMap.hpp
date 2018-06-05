@@ -7,11 +7,12 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <ctime>
+#include <constants.hpp>
 
 class HeightMap {
    public:
 	HeightMap() {
-		std::srand(std::time(NULL));
+		std::srand((u32)std::time(0));
 		int seed = std::rand();
 		fn.SetSeed(seed);
 		fn.SetNoiseType(FastNoise::Perlin);

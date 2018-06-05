@@ -29,39 +29,39 @@ void Keyboard::Init(Window& window) {
 // Keys will be registered through callback,
 // So we just want to flush key state
 void Keyboard::Update() {
-	for (int i = 0; i < MAX_CONCURRENT_KEY_DOWN; i++)
-		Keyboard::keyPressed[i] = KEY_NONE;
+	for (int &i : Keyboard::keyPressed)
+		i = KEY_NONE;
 }
 
 void Keyboard::RegisterKeyPress(int key) {
-	for (int i = 0; i < MAX_CONCURRENT_KEY_DOWN; i++) {
-		if (Keyboard::keyDowns[i] == KEY_NONE) {
-			Keyboard::keyDowns[i] = key;
+	for (int &keyDown : Keyboard::keyDowns) {
+		if (keyDown == KEY_NONE) {
+			keyDown = key;
 			break;
 		}
 	}
 
-	for (int i = 0; i < MAX_CONCURRENT_KEY_DOWN; i++) {
-		if (Keyboard::keyPressed[i] == KEY_NONE) {
-			Keyboard::keyPressed[i] = key;
+	for (int &i : Keyboard::keyPressed) {
+		if (i == KEY_NONE) {
+			i = key;
 			break;
 		}
 	}
 }
 
 void Keyboard::RegisterKeyRelease(int key) {
-	for (int i = 0; i < MAX_CONCURRENT_KEY_DOWN; i++) {
-		if (Keyboard::keyDowns[i] == key) {
+	for (int &keyDown : Keyboard::keyDowns) {
+		if (keyDown == key) {
 			// We could break here but at least we make sure to clean if a key
 			// has been registered as pressed twice, and it doesnt cost much
-			Keyboard::keyDowns[i] = KEY_NONE;
+			keyDown = KEY_NONE;
 		}
 	}
 }
 
 bool Keyboard::IsKeyDown(eKey key) {
-	for (int i = 0; i < MAX_CONCURRENT_KEY_DOWN; i++) {
-		if (Keyboard::keyDowns[i] == key) {
+	for (int keyDown : Keyboard::keyDowns) {
+		if (keyDown == key) {
 			return true;
 		}
 	}
@@ -70,8 +70,8 @@ bool Keyboard::IsKeyDown(eKey key) {
 
 // This is only true for the frame the key has been pressed
 bool Keyboard::IsKeyPressed(eKey key) {
-	for (int i = 0; i < MAX_CONCURRENT_KEY_DOWN; i++) {
-		if (Keyboard::keyPressed[i] == key) {
+	for (int i : Keyboard::keyPressed) {
+		if (i == key) {
 			return true;
 		}
 	}

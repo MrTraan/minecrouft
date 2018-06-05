@@ -69,7 +69,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 		    chunks.end())
 			PushChunk(position, elem);
 		else {
-			printf("Unused chunk construct\n");
+			// Race condition: the element was built twice
 			delete elem;
 		}
 	}
