@@ -23,7 +23,6 @@
 
 constexpr char windowName[] = "Minecrouft";
 
-#include <unistd.h>
 int main(void) {
 	Window window;
 	Camera camera(glm::vec3(0.0f, CHUNK_SIZE, 0.0f));
@@ -55,10 +54,6 @@ int main(void) {
 
 	float dt = 0.0f;
 	float lastFrame = 0.0f;
-
-	char buffer[1000];
-	getcwd(buffer, 1000);
-	printf("cwd: %s\n", buffer);
 
 	int major, minor, version;
 	glfwGetVersion(&major, &minor, &version);
