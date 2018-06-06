@@ -58,7 +58,6 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	if (playerPos.z < 0)
 		chunkPosition.z -= CHUNK_SIZE;
 
-	int chunkMaxDistance = 6;
 
 	queueOutMutex.lock();
 	while (!BuildingQueueOut.empty()) {
@@ -126,6 +125,8 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	ImGui::Text("Chunk Position: %f %f %f\n", chunkPosition.x, chunkPosition.y,
 	            chunkPosition.z);
 	ImGui::Text("Chunks loaded: %lu\n", chunks.size());
+
+	ImGui::SliderInt("Chunk radius", &chunkMaxDistance, 1, 20);
 }
 
 void ChunkManager::Draw(Shader s) {

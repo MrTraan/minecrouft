@@ -21,6 +21,9 @@
 #include <Window.hpp>
 #include <cassert>
 
+#define GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX 0x9048
+#define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
+
 constexpr char windowName[] = "Minecrouft";
 
 int main(void) {
@@ -56,6 +59,11 @@ int main(void) {
 
 	int major, minor, version;
 	glfwGetVersion(&major, &minor, &version);
+	const GLubyte* vendor = glGetString(GL_VENDOR);
+	printf("Vendor name: %s\n", vendor);
+	std::string sVendor = (char*)vendor;
+	std::string sNvidia = "NVIDIA";
+	bool isGraphicCardNvidia = sVendor.find(sNvidia) != std::string::npos;
 	printf("Glfw version: %d.%d.%d\n", major, minor, version);
 	printf("OpenGL version: %s\n", glGetString(GL_VERSION));
 	printf("GLM version: %d\n", GLM_VERSION);
@@ -96,9 +104,19 @@ int main(void) {
 
 		chunkManager.Draw(shader);
 
-		ImGui::Text("Built: %d, Destroyed: %d, diff: %d\n", Chunk::totalBuilt,
-		            Chunk::totalDestroy,
-		            Chunk::totalBuilt - Chunk::totalDestroy);
+		if (isGraphicCardNvidia) {
+			GLint total_mem_kb = 0;
+			glGetIntegerv(GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX,
+			              &total_mem_kb);
+
+			GLint cur_avail_mem_kb = 0;
+			glGetIntegerv(GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX,
+			              &cur_avail_mem_kb);
+			ImGui::Text("Vram: %dmb / %dmb",
+			            (total_mem_kb - cur_avail_mem_kb) / 1000,
+			            total_mem_kb / 1000);
+		}
+
 
 		ImGui::Render();
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());

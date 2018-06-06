@@ -6,7 +6,6 @@
 
 Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
     : position(position) {
-	totalBuilt++;
 	for (int i = 0; i < CHUNK_SIZE; i++) {
 		for (int k = 0; k < CHUNK_SIZE; k++) {
 			int seed =
@@ -27,7 +26,6 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 }
 
 Chunk::~Chunk() {
-	totalDestroy++;
 	if (mesh.Vertices)
 		delete[] mesh.Vertices;
 	if (mesh.Indices)
@@ -366,6 +364,3 @@ void Chunk::Draw(Shader shader) {
 
 	this->mesh.Draw(shader);
 }
-
-int Chunk::totalBuilt = 0;
-int Chunk::totalDestroy = 0;

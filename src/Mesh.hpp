@@ -22,6 +22,7 @@ class Mesh {
 
 	// default constructor
 	Mesh() : isInit(false) {}
+	~Mesh();
 
    private:
 	bool isInit;

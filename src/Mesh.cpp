@@ -30,6 +30,14 @@ void Mesh::InitMesh() {
 	this->isInit = true;
 }
 
+Mesh::~Mesh() {
+	if (isInit) {
+		glDeleteBuffers(1, &EBO);
+		glDeleteBuffers(1, &VBO);
+		glDeleteVertexArrays(1, &VAO);
+	}
+}
+
 void Mesh::Draw(Shader shader) {
 	if (!this->isInit)
 		this->InitMesh();

@@ -28,7 +28,7 @@ class ChunkManager {
 
 	bool ThreadShouldRun;
 	std::vector<chunkArguments> BuildingQueueIn;
-	std::vector<Chunk *> BuildingQueueOut;
+	std::vector<Chunk*> BuildingQueueOut;
 
 
 	inline HeightMap* GetHeightMap() {
@@ -52,6 +52,9 @@ class ChunkManager {
 	std::mutex builderMutex;
 	std::condition_variable buildCondition;
 	std::thread builderThread;
+
+	int chunkMaxDistance = 6;
+
    private:
 	std::map<index3D, Chunk*> chunks;
 	Frustrum* frustrum;
