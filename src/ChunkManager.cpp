@@ -5,7 +5,7 @@ static void fnBuilderThread(ChunkManager* manager) {
 	std::unique_lock<std::mutex> ulock(manager->builderMutex);
 
 	while (manager->ThreadShouldRun) {
-		manager->GetBuildCondition()->wait(ulock);
+		manager->buildCondition.wait(ulock);
 
 		while (!manager->BuildingQueueIn.empty()) {
 			manager->queueInMutex.lock();
@@ -25,48 +25,74 @@ static void fnBuilderThread(ChunkManager* manager) {
 	}
 }
 
-ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
-    : ThreadShouldRun(true) {
-	this->frustrum = frustrum;
-	glm::vec3 chunkPosition((int)(playerPos.x / CHUNK_SIZE) * CHUNK_SIZE, 0,
-	                        (int)(playerPos.z / CHUNK_SIZE) * CHUNK_SIZE);
+glm::vec3 ChunkManager::GetChunkPosition(glm::vec3 pos) {
+	glm::vec3 chunkPosition((int)(pos.x / CHUNK_SIZE) * CHUNK_SIZE,
+	                        (int)(pos.y / CHUNK_SIZE) * CHUNK_SIZE,
+	                        (int)(pos.z / CHUNK_SIZE) * CHUNK_SIZE);
 
-	if (playerPos.x < 0)
+	if (pos.x < 0)
 		chunkPosition.x -= CHUNK_SIZE;
-	if (playerPos.z < 0)
+	if (pos.y < 0)
+		chunkPosition.y -= CHUNK_SIZE;
+	if (pos.z < 0)
 		chunkPosition.z -= CHUNK_SIZE;
 
-	this->PushChunk(chunkPosition, new Chunk(eBiome::FOREST, chunkPosition,
-	                                         &(this->heightMap)));
+	return chunkPosition;
+}
+
+ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
+    : frustrum(frustrum) {
+	playerPos.y = 0.0f;
+	auto chunkPosition = GetChunkPosition(playerPos);
+
+	chunks.push_back(new Chunk(eBiome::FOREST, chunkPosition, &(heightMap)));
 	builderThread = std::thread(fnBuilderThread, this);
 }
 
+bool ChunkManager::ChunkIsLoaded(glm::vec3 pos) {
+	s32 ax = (s32)pos.x;
+	s32 ay = (s32)pos.y;
+	s32 az = (s32)pos.z;
+	for (auto& it : chunks) {
+		s32 bx = (s32)it->GetPosition().x;
+		s32 by = (s32)it->GetPosition().y;
+		s32 bz = (s32)it->GetPosition().z;
+		if (ax == bx && ay == by && az == bz)
+			return true;
+	}
+	return false;
+}
+
+bool ChunkManager::ChunkIsLoaded(s32 ax, s32 ay, s32 az) {
+	for (auto& it : chunks) {
+		s32 bx = (s32)it->GetPosition().x;
+		s32 by = (s32)it->GetPosition().y;
+		s32 bz = (s32)it->GetPosition().z;
+		if (ax == bx && ay == by && az == bz)
+			return true;
+	}
+	return false;
+}
+
 ChunkManager::~ChunkManager() {
-	this->ThreadShouldRun = false;
+	ThreadShouldRun = false;
 	buildCondition.notify_all();
 	builderThread.join();
 	for (auto& c : chunks)
-		delete c.second;
+		delete c;
 }
 
 void ChunkManager::Update(glm::vec3 playerPos) {
-	glm::vec3 chunkPosition((int)(playerPos.x / CHUNK_SIZE) * CHUNK_SIZE, 0,
-	                        (int)(playerPos.z / CHUNK_SIZE) * CHUNK_SIZE);
-
-	if (playerPos.x < 0)
-		chunkPosition.x -= CHUNK_SIZE;
-	if (playerPos.z < 0)
-		chunkPosition.z -= CHUNK_SIZE;
-
+	playerPos.y = 0.0f;
+	auto chunkPosition = GetChunkPosition(playerPos);
 
 	queueOutMutex.lock();
 	while (!BuildingQueueOut.empty()) {
 		auto elem = BuildingQueueOut.back();
 		BuildingQueueOut.pop_back();
 		auto position = elem->GetPosition();
-		if (chunks.find(index3D(position.x, position.y, position.z)) ==
-		    chunks.end())
-			PushChunk(position, elem);
+		if (!ChunkIsLoaded(elem->GetPosition()))
+			chunks.push_back(elem);
 		else {
 			// Race condition: the element was built twice
 			delete elem;
@@ -77,11 +103,10 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 	auto it = std::begin(chunks);
 	while (it != std::end(chunks)) {
-		if (fabs(std::get<0>(it->first) - chunkPosition.x) >
-		        chunkMaxDistance * CHUNK_SIZE ||
-		    fabs(std::get<2>(it->first) - chunkPosition.z) >
-		        chunkMaxDistance * CHUNK_SIZE) {
-			delete it->second;
+		s32 distance = glm::distance(chunkPosition, (*it)->GetPosition());
+
+		if (distance > chunkUnloadRadius * CHUNK_SIZE) {
+			delete *it;
 			it = chunks.erase(it);
 		} else {
 			++it;
@@ -91,29 +116,38 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	bool buildNeeded = false;
 
 	queueInMutex.lock();
-	for (int x = -chunkMaxDistance; x < chunkMaxDistance; x++) {
-		for (int z = chunkMaxDistance; z >= -chunkMaxDistance; z--) {
-			glm::vec3 cursor(chunkPosition.x + (x * CHUNK_SIZE), 0,
-			                 chunkPosition.z + (z * CHUNK_SIZE));
-			if (!frustrum->IsPointIn(
-			        glm::vec3(CHUNK_SIZE / 2, CHUNK_SIZE / 2, CHUNK_SIZE / 2) +
-			        cursor))
-				continue;
-			bool isBeingBuilt = false;
-			if (chunks.find(index3D(cursor.x, cursor.y, cursor.z)) !=
-			    chunks.end())
+	glm::vec3 vecLoadRadius =
+	    glm::vec3(chunkLoadRadius, chunkLoadRadius, chunkLoadRadius) *
+	    (float)CHUNK_SIZE;
+
+	s32 y = chunkPosition.y - vecLoadRadius.y;
+
+	s32 maxX = chunkPosition.x + vecLoadRadius.x;
+	s32 maxY = chunkPosition.y + vecLoadRadius.y;
+	s32 maxZ = chunkPosition.z + vecLoadRadius.z;
+
+	// TODO: vertical build
+	y = 0;
+
+	for (s32 x = chunkPosition.x - vecLoadRadius.x; x < maxX; x += CHUNK_SIZE) {
+		for (s32 z = chunkPosition.z - vecLoadRadius.z; z < maxZ;
+		     z += CHUNK_SIZE) {
+			if (ChunkIsLoaded(x, y, z))
 				continue;
 
+			bool isBeingBuilt = false;
 			for (auto args : BuildingQueueIn) {
-				if (args.pos == cursor) {
+				if ((s32)args.pos.x == x && (s32)args.pos.y == y &&
+				    (s32)args.pos.z == z) {
 					isBeingBuilt = true;
 					break;
 				}
 			}
+
 			if (!isBeingBuilt) {
 				buildNeeded = true;
-				chunkArguments args = {eBiome::MOUNTAIN, cursor};
-				this->BuildingQueueIn.push_back(args);
+				chunkArguments args = {eBiome::MOUNTAIN, glm::vec3(x, y, z)};
+				BuildingQueueIn.push_back(args);
 			}
 		}
 	}
@@ -126,19 +160,14 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	            chunkPosition.z);
 	ImGui::Text("Chunks loaded: %lu\n", chunks.size());
 
-	ImGui::SliderInt("Chunk radius", &chunkMaxDistance, 1, 20);
+	ImGui::SliderInt("Chunk load radius", &chunkLoadRadius, 1, 20);
+	ImGui::SliderInt("Chunk unload radius", &chunkUnloadRadius, 1, 20);
 }
 
 void ChunkManager::Draw(Shader s) {
-	long long vertices_drawn = 0;
 	for (auto& c : chunks) {
-		if (frustrum->IsPointIn(
-		        glm::vec3(std::get<0>(c.first) + CHUNK_SIZE / 2,
-		                  std::get<1>(c.first) + CHUNK_SIZE / 2,
-		                  std::get<2>(c.first) + CHUNK_SIZE / 2))) {
-			c.second->Draw(s);
-			vertices_drawn += c.second->mesh.VerticesCount;
+		if (frustrum->IsPointIn(c->GetPosition())) {
+			c->Draw(s);
 		}
 	}
-	ImGui::Text("Vertices drawn: %lld", vertices_drawn);
 }

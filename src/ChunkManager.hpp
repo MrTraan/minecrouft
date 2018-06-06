@@ -23,42 +23,34 @@ class ChunkManager {
 	ChunkManager(glm::vec3 playerPos, Frustrum* frustrum);
 	~ChunkManager();
 
-	void Update(glm::vec3 playerPos);
-	void Draw(Shader s);
-
-	bool ThreadShouldRun;
-	std::vector<chunkArguments> BuildingQueueIn;
-	std::vector<Chunk*> BuildingQueueOut;
-
-
-	inline HeightMap* GetHeightMap() {
-		return &(this->heightMap);
-	}
-
-	inline std::mutex* GetBuilderMutex() {
-		return &(this->builderMutex);
-	}
-
-	inline std::condition_variable* GetBuildCondition() {
-		return &(this->buildCondition);
-	}
-
-	inline void PushChunk(glm::vec3 pos, Chunk* c) {
-		this->chunks.insert(
-		    std::pair<index3D, Chunk*>(index3D(pos.x, pos.y, pos.z), c));
-	}
 	std::mutex queueInMutex;
 	std::mutex queueOutMutex;
 	std::mutex builderMutex;
 	std::condition_variable buildCondition;
 	std::thread builderThread;
 
-	int chunkMaxDistance = 6;
+	int chunkLoadRadius = 3;
+	int chunkUnloadRadius = 6;
+	bool ThreadShouldRun = true;
+
+	std::vector<chunkArguments> BuildingQueueIn;
+	std::vector<Chunk*> BuildingQueueOut;
+
+
+	void Update(glm::vec3 playerPos);
+	void Draw(Shader s);
+	glm::vec3 GetChunkPosition(glm::vec3 pos);
+
+	inline HeightMap* GetHeightMap() {
+		return &(this->heightMap);
+	}
+
+	bool ChunkIsLoaded(glm::vec3 pos);
+	bool ChunkIsLoaded(s32 ax, s32 ay, s32 az);
+
 
    private:
-	std::map<index3D, Chunk*> chunks;
+	std::vector<Chunk*> chunks;
 	Frustrum* frustrum;
-
-
 	HeightMap heightMap;
 };
