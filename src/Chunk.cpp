@@ -4,6 +4,7 @@
 
 #include <imgui/imgui.h>
 #include <stdlib.h>
+#include <constants.hpp>
 
 Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
     : position(position) {
@@ -313,9 +314,13 @@ void Chunk::ConstructMesh() {
 	u32 numFaces = CountMeshFaceSize();
 
 	mesh.IndicesCount = 6 * numFaces;
+	assert(IS_SIZE_T_MUL_SAFE(mesh.IndicesCount, sizeof(u32)));
 	mesh.Indices = (u32*)malloc(sizeof(u32) * mesh.IndicesCount);
+
 	mesh.VerticesCount = 4 * numFaces;
+	assert(IS_SIZE_T_MUL_SAFE(mesh.VerticesCount, sizeof(Vertex)));
 	mesh.Vertices = (Vertex*)malloc(sizeof(Vertex) * mesh.VerticesCount);
+
 	drawIndex = 0;
 	drawIndiciesIndex = 0;
 

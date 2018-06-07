@@ -19,6 +19,6 @@ typedef char s8;
 #define U64_MAX ((u64)(-1))
 
 #define IS_SIZE_T_MUL_SAFE(a, b) (!(((a) != 0) && ((SIZE_MAX / (a)) < (b))))
-#define IS_U16_T_MUL_SAFE(a, b) (!(((a) != 0) && ((U16_MAX / (a)) < (b))))
-#define IS_U32_T_MUL_SAFE(a, b) (!(((a) != 0) && ((U32_MAX / (a)) < (b))))
-#define IS_U64_T_MUL_SAFE(a, b) (!(((a) != 0) && ((U64_MAX / (a)) < (b))))
+#define IS_U16_MUL_SAFE(a, b) (!(((a) != 0) && ((U16_MAX / (a)) < (b))))
+#define IS_U32_MUL_SAFE(a, b) (!(((a) != 0) && ((U32_MAX / (a)) < (b))))
+#define IS_U64_MUL_SAFE(a, b) (!(((a) != 0) && ((U64_MAX / (a)) < (b))))
