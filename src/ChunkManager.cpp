@@ -82,6 +82,22 @@ ChunkManager::~ChunkManager() {
 		delete c;
 }
 
+bool ChunkManager::ShouldLoadChunk(glm::vec3 playerPos, glm::vec3 position) {
+	s32 distance = glm::distance(playerPos, position);
+
+	if (distance < chunkLoadRadius * CHUNK_SIZE)
+		return true;
+	return false;
+}
+
+bool ChunkManager::ShouldUnloadChunk(glm::vec3 playerPos, glm::vec3 position) {
+	s32 distance = glm::distance(playerPos, position);
+
+	if (distance < chunkUnloadRadius * CHUNK_SIZE)
+		return false;
+	return true;
+}
+
 void ChunkManager::Update(glm::vec3 playerPos) {
 	playerPos.y = 0.0f;
 	auto chunkPosition = GetChunkPosition(playerPos);
@@ -103,9 +119,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 	auto it = std::begin(chunks);
 	while (it != std::end(chunks)) {
-		s32 distance = glm::distance(chunkPosition, (*it)->GetPosition());
-
-		if (distance > chunkUnloadRadius * CHUNK_SIZE) {
+		if (ShouldUnloadChunk(playerPos, (*it)->GetPosition())) {
 			delete *it;
 			it = chunks.erase(it);
 		} else {
@@ -132,6 +146,8 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	for (s32 x = chunkPosition.x - vecLoadRadius.x; x < maxX; x += CHUNK_SIZE) {
 		for (s32 z = chunkPosition.z - vecLoadRadius.z; z < maxZ;
 		     z += CHUNK_SIZE) {
+			if (!ShouldLoadChunk(playerPos, glm::vec3(x, y, z)))
+				continue;
 			if (ChunkIsLoaded(x, y, z))
 				continue;
 
@@ -165,8 +181,21 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 }
 
 void ChunkManager::Draw(Shader s) {
+	const glm::vec3 xOffset((float)CHUNK_SIZE, 0.0f, 0.0f);
+	const glm::vec3 yOffset(0.0f, (float)CHUNK_SIZE, 0.0f);
+	const glm::vec3 zOffset(0.0f, 0.0f, (float)CHUNK_SIZE);
+
 	for (auto& c : chunks) {
-		if (frustrum->IsPointIn(c->GetPosition())) {
+		// Check if any of eight corners of the chunk is in sight
+		if (frustrum->IsPointIn(c->GetPosition()) ||
+		    frustrum->IsPointIn(c->GetPosition() + xOffset) ||
+		    frustrum->IsPointIn(c->GetPosition() + yOffset) ||
+		    frustrum->IsPointIn(c->GetPosition() + zOffset) ||
+		    frustrum->IsPointIn(c->GetPosition() + xOffset + yOffset) ||
+		    frustrum->IsPointIn(c->GetPosition() + zOffset + yOffset) ||
+		    frustrum->IsPointIn(c->GetPosition() + xOffset + zOffset) ||
+		    frustrum->IsPointIn(c->GetPosition() + xOffset + yOffset +
+		                        zOffset)) {
 			c->Draw(s);
 		}
 	}

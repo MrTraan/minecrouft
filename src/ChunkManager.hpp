@@ -29,7 +29,7 @@ class ChunkManager {
 	std::condition_variable buildCondition;
 	std::thread builderThread;
 
-	int chunkLoadRadius = 3;
+	int chunkLoadRadius = 6;
 	int chunkUnloadRadius = 6;
 	bool ThreadShouldRun = true;
 
@@ -47,6 +47,8 @@ class ChunkManager {
 
 	bool ChunkIsLoaded(glm::vec3 pos);
 	bool ChunkIsLoaded(s32 ax, s32 ay, s32 az);
+	bool ShouldLoadChunk(glm::vec3 playerPosition, glm::vec3 position);
+	bool ShouldUnloadChunk(glm::vec3 playerPosition, glm::vec3 position);
 
 
    private:
