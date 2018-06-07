@@ -3,6 +3,7 @@
 #include <HeightMap.hpp>
 
 #include <imgui/imgui.h>
+#include <stdlib.h>
 
 Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
     : position(position) {
@@ -27,9 +28,9 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 
 Chunk::~Chunk() {
 	if (mesh.Vertices)
-		delete[] mesh.Vertices;
+		free(mesh.Vertices);
 	if (mesh.Indices)
-		delete[] mesh.Indices;
+		free(mesh.Indices);
 }
 
 glm::vec3 Chunk::GetPosition() {
@@ -312,9 +313,9 @@ void Chunk::ConstructMesh() {
 	u32 numFaces = CountMeshFaceSize();
 
 	mesh.IndicesCount = 6 * numFaces;
-	mesh.Indices = new u32[mesh.IndicesCount];
+	mesh.Indices = (u32*)malloc(sizeof(u32) * mesh.IndicesCount);
 	mesh.VerticesCount = 4 * numFaces;
-	mesh.Vertices = new Vertex[mesh.VerticesCount];
+	mesh.Vertices = (Vertex*)malloc(sizeof(Vertex) * mesh.VerticesCount);
 	drawIndex = 0;
 	drawIndiciesIndex = 0;
 
