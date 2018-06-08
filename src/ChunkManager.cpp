@@ -1,5 +1,6 @@
 #include <imgui/imgui.h>
 #include <ChunkManager.hpp>
+#include <algorithm>
 
 static void fnBuilderThread(ChunkManager* manager) {
 	std::unique_lock<std::mutex> ulock(manager->builderMutex);
@@ -9,7 +10,7 @@ static void fnBuilderThread(ChunkManager* manager) {
 
 		while (!manager->BuildingQueueIn.empty()) {
 			manager->queueInMutex.lock();
-			auto it = manager->BuildingQueueIn.end() - 1;
+			auto it = manager->BuildingQueueIn.begin();
 			auto args = *it;
 			manager->queueInMutex.unlock();
 
@@ -19,7 +20,10 @@ static void fnBuilderThread(ChunkManager* manager) {
 			manager->queueOutMutex.unlock();
 
 			manager->queueInMutex.lock();
-			manager->BuildingQueueIn.erase(it);
+			it = std::find_if(manager->BuildingQueueIn.begin(), manager->BuildingQueueIn.end(),
+				[&args](const chunkArguments& it) { return it.pos == args.pos; });
+			if (it != manager->BuildingQueueIn.end())
+				manager->BuildingQueueIn.erase(it);
 			manager->queueInMutex.unlock();
 		}
 	}

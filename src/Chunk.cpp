@@ -29,9 +29,9 @@ Chunk::Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap)
 
 Chunk::~Chunk() {
 	if (mesh.Vertices)
-		free(mesh.Vertices);
+		delete[] mesh.Vertices;
 	if (mesh.Indices)
-		free(mesh.Indices);
+		delete[] mesh.Indices;
 }
 
 glm::vec3 Chunk::GetPosition() {
@@ -313,13 +313,21 @@ u32 Chunk::CountMeshFaceSize() {
 void Chunk::ConstructMesh() {
 	u32 numFaces = CountMeshFaceSize();
 
+	//mesh.IndicesCount = 6 * numFaces;
+	//assert(IS_SIZE_T_MUL_SAFE(mesh.IndicesCount, sizeof(u32)));
+	//mesh.Indices = (u32*)malloc(sizeof(u32) * mesh.IndicesCount);
+
+	//mesh.VerticesCount = 4 * numFaces;
+	//assert(IS_SIZE_T_MUL_SAFE(mesh.VerticesCount, sizeof(Vertex)));
+	//mesh.Vertices = (Vertex*)malloc(sizeof(Vertex) * mesh.VerticesCount);
+	
 	mesh.IndicesCount = 6 * numFaces;
 	assert(IS_SIZE_T_MUL_SAFE(mesh.IndicesCount, sizeof(u32)));
-	mesh.Indices = (u32*)malloc(sizeof(u32) * mesh.IndicesCount);
+	mesh.Indices = new u32[mesh.IndicesCount];
 
 	mesh.VerticesCount = 4 * numFaces;
 	assert(IS_SIZE_T_MUL_SAFE(mesh.VerticesCount, sizeof(Vertex)));
-	mesh.Vertices = (Vertex*)malloc(sizeof(Vertex) * mesh.VerticesCount);
+	mesh.Vertices = new Vertex[mesh.VerticesCount];
 
 	drawIndex = 0;
 	drawIndiciesIndex = 0;
