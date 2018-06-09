@@ -14,7 +14,7 @@ static void fnBuilderThread(ChunkManager* manager) {
 			auto args = *it;
 			manager->queueInMutex.unlock();
 
-			Chunk* c = new Chunk(args.biome, args.pos, manager->GetHeightMap());
+			Chunk* c = new Chunk(args);
 			manager->queueOutMutex.lock();
 			manager->BuildingQueueOut.push_back(c);
 			manager->queueOutMutex.unlock();
@@ -47,7 +47,12 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
 	playerPos.y = 0.0f;
 	auto chunkPosition = GetChunkPosition(playerPos);
 
-	chunks.push_back(new Chunk(eBiome::FOREST, chunkPosition, &(heightMap)));
+	chunkArguments args;
+
+	args.biome = eBiome::FOREST;
+	args.pos = chunkPosition;
+
+	chunks.push_back(new Chunk(args));
 	builderThread = std::thread(fnBuilderThread, this);
 }
 
@@ -143,7 +148,13 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 			if (!isBeingBuilt) {
 				buildNeeded = true;
-				chunkArguments args = {eBiome::MOUNTAIN, cursor};
+				chunkArguments args;
+				args.biome = MOUNTAIN;
+				args.pos = cursor;
+				args.leftNeighbor = GetNeighbor(cursor, eDirection::LEFT);
+				args.rightNeighbor = GetNeighbor(cursor, eDirection::RIGHT);
+				args.frontNeighbor = GetNeighbor(cursor, eDirection::FRONT);
+				args.backNeighbor = GetNeighbor(cursor, eDirection::BACK);
 				BuildingQueueIn.push_back(args);
 			}
 		}
@@ -201,6 +212,7 @@ void ChunkManager::Draw(Shader s) {
 		    frustrum->IsPointIn(c->worldPosition + xOffset + y3Offset +
 		                        zOffset)
 			) {
+			if (c->position.x != 0 || c->position.y != 0)
 			c->Draw(s);
 		}
 	}
@@ -228,15 +240,15 @@ Chunk* ChunkManager::GetNeighbor(glm::i32vec2 pos, eDirection direction) {
 	
 	if (direction == eDirection::FRONT) {
 			auto it = std::find_if(chunks.begin(), chunks.end(),
-				[&pos](auto& it) { return it->position.x == pos.x && it->position.y == pos.y + 1; });
+				[&pos](auto& it) { return it->position.x == pos.x && it->position.y == pos.y - 1; });
 			if (it != chunks.end())
 				return *it;
 			return nullptr;
 	}
 	
-	if (direction == eDirection::FRONT) {
+	if (direction == eDirection::BACK) {
 			auto it = std::find_if(chunks.begin(), chunks.end(),
-				[&pos](auto& it) { return it->position.x == pos.x && it->position.y == pos.y - 1; });
+				[&pos](auto& it) { return it->position.x == pos.x && it->position.y == pos.y + 1; });
 			if (it != chunks.end())
 				return *it;
 			return nullptr;

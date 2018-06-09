@@ -29,10 +29,20 @@ enum eDirection {
 
 eDirection oppositeDirection(eDirection dir);
 
+class Chunk;
+struct chunkArguments {
+	eBiome biome;
+	glm::i32vec2 pos;
+	Chunk* leftNeighbor = nullptr;
+	Chunk* rightNeighbor = nullptr;
+	Chunk* frontNeighbor = nullptr;
+	Chunk* backNeighbor = nullptr;
+};
+
 
 class Chunk {
    public:
-	Chunk(eBiome biome, glm::i32vec2 position, HeightMap* heightMap);
+	Chunk(chunkArguments args);
 	~Chunk();
 
 	void Draw(Shader shader);
@@ -59,4 +69,9 @@ class Chunk {
 
 	u32 drawIndex = 0;
 	u32 drawIndiciesIndex = 0;
+	
+	Chunk* leftNeighbor;
+	Chunk* rightNeighbor;
+	Chunk* frontNeighbor;
+	Chunk* backNeighbor;
 };

@@ -25,12 +25,14 @@ eDirection oppositeDirection(eDirection dir) {
 	}
 }
 
-Chunk::Chunk(eBiome biome, glm::i32vec2 position, HeightMap* heightMap)
-    : position(position), worldPosition((float)position.x * CHUNK_SIZE, 0.0f, (float)position.y * CHUNK_SIZE) {
+Chunk::Chunk(chunkArguments args)
+    : position(args.pos), worldPosition((float)args.pos.x * CHUNK_SIZE, 0.0f, (float)args.pos.y * CHUNK_SIZE) {
+	auto& heightMap = ChunkManager::instance->heightMap;
+
 	for (u32 i = 0; i < CHUNK_SIZE; i++) {
 		for (u32 k = 0; k < CHUNK_SIZE; k++) {
 			u32 seed =
-			    heightMap->GetValue(i + (u32)worldPosition.x, k + (s32)worldPosition.y);
+			    heightMap.GetValue(i + (u32)worldPosition.x, k + (s32)worldPosition.y);
 			for (u32 j = 0; j < seed; j++) {
 				if (biome == eBiome::FOREST)
 					this->cubes[i][j][k] = eBlockType::GRASS;
@@ -41,9 +43,15 @@ Chunk::Chunk(eBiome biome, glm::i32vec2 position, HeightMap* heightMap)
 				this->cubes[i][j][k] = eBlockType::INACTIVE;
 		}
 	}
+	
+	leftNeighbor = args.leftNeighbor;
+	rightNeighbor = args.rightNeighbor;
+	frontNeighbor = args.frontNeighbor;
+	backNeighbor = args.backNeighbor;
 
 	this->biome = biome;
 	this->ConstructMesh();
+
 }
 
 Chunk::~Chunk() {
@@ -162,31 +170,39 @@ void Chunk::pushFace(int x,
 
 
 void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
-	if (direction != TOP && direction != BOTTOM) {
-		Chunk* neighbor = ChunkManager::instance->GetNeighbor(position, direction);
-
-		if (!neighbor) {
-			if (this->cubes[x][y][z])
+	if (direction != TOP && direction != BOTTOM && cubes[x][y][z] != eBlockType::INACTIVE) {
+		if (direction == LEFT && leftNeighbor) {
+			if (leftNeighbor->cubes[CHUNK_SIZE - 1][y][z] == eBlockType::INACTIVE)
 				pushFace(x, y, z, direction, this->cubes[x][y][z]);
 		}
-		else {
-			if (direction == LEFT && neighbor) {
-				if (neighbor->cubes[CHUNK_SIZE - 1][y][z] == eBlockType::INACTIVE)
-					pushFace(x, y, z, direction, this->cubes[x][y][z]);
-			}
-			if (direction == RIGHT && neighbor) {
-				if (neighbor->cubes[0][y][z] == eBlockType::INACTIVE)
-					pushFace(x, y, z, direction, this->cubes[x][y][z]);
-			}
-			if (direction == FRONT && neighbor) {
-				if (neighbor->cubes[x][y][CHUNK_SIZE - 1] == eBlockType::INACTIVE)
-					pushFace(x, y, z, direction, this->cubes[x][y][z]);
-			}
-			if (direction == BACK && neighbor) {
-				if (neighbor->cubes[x][y][0] == eBlockType::INACTIVE)
-					pushFace(x, y, z, direction, this->cubes[x][y][z]);
-			}
+		else if (direction == LEFT) {
+			pushFace(x, y, z, direction, this->cubes[x][y][z]);
 		}
+
+		if (direction == RIGHT && rightNeighbor) {
+			if (rightNeighbor->cubes[0][y][z] == eBlockType::INACTIVE)
+				pushFace(x, y, z, direction, this->cubes[x][y][z]);
+		}
+		else if (direction == RIGHT) {
+			pushFace(x, y, z, direction, this->cubes[x][y][z]);
+		}
+
+		if (direction == FRONT && frontNeighbor) {
+			if (frontNeighbor->cubes[x][y][CHUNK_SIZE - 1] == eBlockType::INACTIVE)
+				pushFace(x, y, z, direction, this->cubes[x][y][z]);
+		}
+		else if (direction == FRONT) {
+			pushFace(x, y, z, direction, this->cubes[x][y][z]);
+		}
+
+		if (direction == BACK && backNeighbor) {
+			if (backNeighbor->cubes[x][y][0] == eBlockType::INACTIVE)
+				pushFace(x, y, z, direction, this->cubes[x][y][z]);
+		}
+		else if (direction == BACK) {
+			pushFace(x, y, z, direction, this->cubes[x][y][z]);
+		}
+
 	} else if (this->cubes[x][y][z]) {
 		pushFace(x, y, z, direction, this->cubes[x][y][z]);
 	}
@@ -250,8 +266,42 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 
 u32 Chunk::CountCubeLineSize(int x, int y, int z, eDirection direction) {
 	u32 total = 0;
-	if (this->cubes[x][y][z])
+	if (direction != TOP && direction != BOTTOM && cubes[x][y][z] != eBlockType::INACTIVE) {
+		if (direction == LEFT && leftNeighbor) {
+			if (leftNeighbor->cubes[CHUNK_SIZE - 1][y][z] == eBlockType::INACTIVE)
+				total++;
+		}
+		else if (direction == LEFT) {
+			total++;
+		}
+
+		if (direction == RIGHT && rightNeighbor) {
+			if (rightNeighbor->cubes[0][y][z] == eBlockType::INACTIVE)
+				total++;
+		}
+		else if (direction == RIGHT) {
+			total++;
+		}
+
+		if (direction == FRONT && frontNeighbor) {
+			if (frontNeighbor->cubes[x][y][CHUNK_SIZE - 1] == eBlockType::INACTIVE)
+				total++;
+		}
+		else if (direction == FRONT) {
+			total++;
+		}
+
+		if (direction == BACK && backNeighbor) {
+			if (backNeighbor->cubes[x][y][0] == eBlockType::INACTIVE)
+				total++;
+		}
+		else if (direction == BACK) {
+			total++;
+		}
+
+	} else if (this->cubes[x][y][z]) {
 		total++;
+	}
 
 	if (direction == eDirection::FRONT) {
 		while (z < CHUNK_SIZE - 1) {

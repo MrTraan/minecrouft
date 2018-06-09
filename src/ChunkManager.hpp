@@ -9,14 +9,7 @@
 #include <glm/glm.hpp>
 #include <map>
 
-struct chunkArguments {
-	eBiome biome;
-	glm::i32vec2 pos;
-};
-
-
 typedef std::tuple<float, float, float> index3D;
-
 
 class ChunkManager {
    public:
@@ -41,10 +34,6 @@ class ChunkManager {
 	void Draw(Shader s);
 	glm::i32vec2 GetChunkPosition(glm::vec3 playerPos);
 
-	inline HeightMap* GetHeightMap() {
-		return &(this->heightMap);
-	}
-
 	Chunk* GetNeighbor(glm::i32vec2 pos, eDirection direction);
 
 	bool ChunkIsLoaded(glm::i32vec2 pos);
@@ -54,7 +43,6 @@ class ChunkManager {
 
 	static ChunkManager* instance;
 
-   private:
 	std::vector<Chunk*> chunks;
 	Frustrum* frustrum;
 	HeightMap heightMap;
