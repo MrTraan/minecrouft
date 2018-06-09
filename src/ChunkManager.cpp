@@ -167,51 +167,19 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	ImGui::Text("Chunk Position: %d %d\n", chunkPosition.x, chunkPosition.y);
 	ImGui::Text("Chunks loaded: %lu\n", chunks.size());
 
-	ImGui::SliderInt("Chunk load radius", &chunkLoadRadius, 1, 20);
-	ImGui::SliderInt("Chunk unload radius", &chunkUnloadRadius, 1, 20);
+	ImGui::SliderInt("Chunk load radius", &chunkLoadRadius, 1, 32);
+	ImGui::SliderInt("Chunk unload radius", &chunkUnloadRadius, 1, 32);
 }
 
 void ChunkManager::Draw(Shader s) {
-	const glm::vec3 xOffset((float)CHUNK_SIZE, 0.0f, 0.0f);
-	const glm::vec3 yOffset(0.0f, (float)CHUNK_HEIGHT, 0.0f);
-	const glm::vec3 y1Offset(0.0f, (float)CHUNK_HEIGHT / 4.0f, 0.0f);
-	const glm::vec3 y2Offset(0.0f, (float)CHUNK_HEIGHT / 2.0f, 0.0f);
-	const glm::vec3 y3Offset(0.0f, 3.0f * (float)CHUNK_HEIGHT / 4.0f, 0.0f);
-	const glm::vec3 zOffset(0.0f, 0.0f, (float)CHUNK_SIZE);
+	static glm::vec3 sizeOffset = glm::vec3((float)CHUNK_SIZE, (float)CHUNK_HEIGHT, (float)CHUNK_SIZE);
+	Aabb bounds;
 
 	for (auto& c : chunks) {
+		bounds.min = c->worldPosition;
+		bounds.max = c->worldPosition + sizeOffset;
 		// Check if any of eight corners of the chunk is in sight
-		if (frustrum->IsPointIn(c->worldPosition) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset) ||
-		    frustrum->IsPointIn(c->worldPosition + yOffset) ||
-		    frustrum->IsPointIn(c->worldPosition + zOffset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + yOffset) ||
-		    frustrum->IsPointIn(c->worldPosition + zOffset + yOffset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + zOffset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + yOffset +
-		                        zOffset) ||
-
-		    frustrum->IsPointIn(c->worldPosition + y1Offset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + y1Offset) ||
-		    frustrum->IsPointIn(c->worldPosition + zOffset + y1Offset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + zOffset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + y1Offset +
-		                        zOffset) ||
-
-		    frustrum->IsPointIn(c->worldPosition + y2Offset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + y2Offset) ||
-		    frustrum->IsPointIn(c->worldPosition + zOffset + y2Offset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + zOffset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + y2Offset +
-		                        zOffset) ||
-
-		    frustrum->IsPointIn(c->worldPosition + y3Offset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + y3Offset) ||
-		    frustrum->IsPointIn(c->worldPosition + zOffset + y3Offset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + zOffset) ||
-		    frustrum->IsPointIn(c->worldPosition + xOffset + y3Offset +
-		                        zOffset)
-			) {
+		if (frustrum->IsCubeIn(bounds)) {
 			if (c->position.x != 0 || c->position.y != 0)
 			c->Draw(s);
 		}

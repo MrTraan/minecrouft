@@ -32,7 +32,7 @@ Chunk::Chunk(chunkArguments args)
 	for (u32 i = 0; i < CHUNK_SIZE; i++) {
 		for (u32 k = 0; k < CHUNK_SIZE; k++) {
 			u32 seed =
-			    heightMap.GetValue(i + (u32)worldPosition.x, k + (s32)worldPosition.z);
+			    heightMap.GetValue(i + (s32)worldPosition.x, k + (s32)worldPosition.z);
 			for (u32 j = 0; j < seed; j++) {
 				if (biome == eBiome::FOREST)
 					this->cubes[i][j][k] = eBlockType::GRASS;
@@ -169,38 +169,26 @@ void Chunk::pushFace(int x,
 }
 
 
-void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
+void Chunk::DrawCubeLine(s32 x, s32 y, s32 z, eDirection direction) {
 	if (direction != TOP && direction != BOTTOM && cubes[x][y][z] != eBlockType::INACTIVE) {
-		if (direction == LEFT && leftNeighbor) {
-			if (leftNeighbor->cubes[CHUNK_SIZE - 1][y][z] == eBlockType::INACTIVE)
+		if (direction == LEFT) {
+			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x - 1, z + (s32)worldPosition.z) <= y)
 				pushFace(x, y, z, direction, this->cubes[x][y][z]);
-		}
-		else if (direction == LEFT) {
-			pushFace(x, y, z, direction, this->cubes[x][y][z]);
 		}
 
-		if (direction == RIGHT && rightNeighbor) {
-			if (rightNeighbor->cubes[0][y][z] == eBlockType::INACTIVE)
+		if (direction == RIGHT) {
+			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x + 1, z + (s32)worldPosition.z) <= y)
 				pushFace(x, y, z, direction, this->cubes[x][y][z]);
-		}
-		else if (direction == RIGHT) {
-			pushFace(x, y, z, direction, this->cubes[x][y][z]);
 		}
 
-		if (direction == FRONT && frontNeighbor) {
-			if (frontNeighbor->cubes[x][y][CHUNK_SIZE - 1] == eBlockType::INACTIVE)
+		if (direction == FRONT) {
+			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x, (s32)worldPosition.z - 1) <= y)
 				pushFace(x, y, z, direction, this->cubes[x][y][z]);
-		}
-		else if (direction == FRONT) {
-			pushFace(x, y, z, direction, this->cubes[x][y][z]);
 		}
 
-		if (direction == BACK && backNeighbor) {
-			if (backNeighbor->cubes[x][y][0] == eBlockType::INACTIVE)
+		if (direction == BACK) {
+			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x, (s32)worldPosition.z + z + 1) <= y)
 				pushFace(x, y, z, direction, this->cubes[x][y][z]);
-		}
-		else if (direction == BACK) {
-			pushFace(x, y, z, direction, this->cubes[x][y][z]);
 		}
 
 	} else if (this->cubes[x][y][z]) {
@@ -267,36 +255,24 @@ void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
 u32 Chunk::CountCubeLineSize(int x, int y, int z, eDirection direction) {
 	u32 total = 0;
 	if (direction != TOP && direction != BOTTOM && cubes[x][y][z] != eBlockType::INACTIVE) {
-		if (direction == LEFT && leftNeighbor) {
-			if (leftNeighbor->cubes[CHUNK_SIZE - 1][y][z] == eBlockType::INACTIVE)
+		if (direction == LEFT) {
+			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x - 1, z + (s32)worldPosition.z) <= y)
 				total++;
-		}
-		else if (direction == LEFT) {
-			total++;
 		}
 
-		if (direction == RIGHT && rightNeighbor) {
-			if (rightNeighbor->cubes[0][y][z] == eBlockType::INACTIVE)
+		if (direction == RIGHT) {
+			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x + 1, z + (s32)worldPosition.z) <= y)
 				total++;
-		}
-		else if (direction == RIGHT) {
-			total++;
 		}
 
-		if (direction == FRONT && frontNeighbor) {
-			if (frontNeighbor->cubes[x][y][CHUNK_SIZE - 1] == eBlockType::INACTIVE)
+		if (direction == FRONT) {
+			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x, (s32)worldPosition.z - 1) <= y)
 				total++;
-		}
-		else if (direction == FRONT) {
-			total++;
 		}
 
-		if (direction == BACK && backNeighbor) {
-			if (backNeighbor->cubes[x][y][0] == eBlockType::INACTIVE)
+		if (direction == BACK) {
+			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x, (s32)worldPosition.z + z + 1) <= y)
 				total++;
-		}
-		else if (direction == BACK) {
-			total++;
 		}
 
 	} else if (this->cubes[x][y][z]) {

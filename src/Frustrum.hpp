@@ -3,6 +3,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+struct Aabb {
+	glm::vec3 min;
+	glm::vec3 max;
+};
+
 class Frustrum {
    public:
 	Frustrum(glm::mat4 projection) : Projection(projection) {}
@@ -10,9 +15,8 @@ class Frustrum {
 	glm::mat4 Projection;
 
 	void Update(glm::mat4 view);
-	bool IsPointIn(glm::vec3 point);
+	bool IsCubeIn(const Aabb& aabb);
 
    private:
-	float planes[6][4];
-	void setPlanes();
+	glm::vec4 planes[6];
 };

@@ -35,12 +35,35 @@ void Frustrum::Update(glm::mat4 view) {
 	planes[5][3] = matrix[3][3] - matrix[3][2];
 }
 
-bool Frustrum::IsPointIn(glm::vec3 point) {
-	for (unsigned int i = 0; i < 6; i++) {
-		if (planes[i][0] * point.x + (CHUNK_SIZE / 2) + planes[i][1] * point.y +
-		        planes[i][2] * point.z + planes[i][3] <=
-		    -CHUNK_SIZE)
+bool Frustrum::IsCubeIn(const Aabb& aabb) {
+	glm::vec4 points[] =
+	{
+	{ aabb.min.x, aabb.min.y, aabb.min.z, 1.0f },
+	{ aabb.max.x, aabb.min.y, aabb.min.z, 1.0f },
+	{ aabb.max.x, aabb.max.y, aabb.min.z, 1.0f },
+	{ aabb.min.x, aabb.max.y, aabb.min.z, 1.0f },
+
+	{ aabb.min.x, aabb.min.y, aabb.max.z, 1.0f },
+	{ aabb.max.x, aabb.min.y, aabb.max.z, 1.0f },
+	{ aabb.max.x, aabb.max.y, aabb.max.z, 1.0f },
+	{ aabb.min.x, aabb.max.y, aabb.max.z, 1.0f }
+	};
+
+	// for each plane...
+	for (int i = 0; i < 6; ++i)
+	{
+		bool inside = false;
+
+		for (int j = 0; j < 8; ++j) {
+			if (glm::dot(points[j], planes[i]) > 0) {
+				inside = true;
+				break;
+			}
+		}
+
+		if (!inside)
 			return false;
 	}
+
 	return true;
 }
