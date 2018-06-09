@@ -1,3 +1,0 @@
-TODO:
- - Optimize Mesh at junctions between chunks
- - Optimize frutstum check before drawing chunks
