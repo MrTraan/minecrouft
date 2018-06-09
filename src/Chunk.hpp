@@ -27,6 +27,8 @@ enum eDirection {
 	BOTTOM = 5,
 };
 
+eDirection oppositeDirection(eDirection dir);
+
 
 class Chunk {
    public:
@@ -47,7 +49,6 @@ class Chunk {
 	glm::i32vec2 position;
 	glm::vec3 worldPosition;
 
-   private:
 	// 3 dimensionnal to note cube presence, because why not
 	eBlockType cubes[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
 

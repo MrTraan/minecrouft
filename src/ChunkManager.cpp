@@ -43,6 +43,7 @@ glm::i32vec2 ChunkManager::GetChunkPosition(glm::vec3 pos) {
 
 ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
     : frustrum(frustrum) {
+	instance = this;
 	playerPos.y = 0.0f;
 	auto chunkPosition = GetChunkPosition(playerPos);
 
@@ -204,3 +205,44 @@ void ChunkManager::Draw(Shader s) {
 		}
 	}
 }
+
+Chunk* ChunkManager::GetNeighbor(glm::i32vec2 pos, eDirection direction) {
+	if (chunks.size() == 0)
+		return nullptr;
+
+	if (direction == eDirection::LEFT) {
+			auto it = std::find_if(chunks.begin(), chunks.end(),
+				[&pos](auto& it) { return it->position.x == pos.x - 1 && it->position.y == pos.y; });
+			if (it != chunks.end())
+				return *it;
+			return nullptr;
+	}
+
+	if (direction == eDirection::RIGHT) {
+			auto it = std::find_if(chunks.begin(), chunks.end(),
+				[&pos](auto& it) { return it->position.x == pos.x + 1 && it->position.y == pos.y; });
+			if (it != chunks.end())
+				return *it;
+			return nullptr;
+	}
+	
+	if (direction == eDirection::FRONT) {
+			auto it = std::find_if(chunks.begin(), chunks.end(),
+				[&pos](auto& it) { return it->position.x == pos.x && it->position.y == pos.y + 1; });
+			if (it != chunks.end())
+				return *it;
+			return nullptr;
+	}
+	
+	if (direction == eDirection::FRONT) {
+			auto it = std::find_if(chunks.begin(), chunks.end(),
+				[&pos](auto& it) { return it->position.x == pos.x && it->position.y == pos.y - 1; });
+			if (it != chunks.end())
+				return *it;
+			return nullptr;
+	}
+
+	return nullptr;
+}
+
+ChunkManager* ChunkManager::instance = nullptr;

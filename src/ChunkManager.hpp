@@ -45,11 +45,14 @@ class ChunkManager {
 		return &(this->heightMap);
 	}
 
+	Chunk* GetNeighbor(glm::i32vec2 pos, eDirection direction);
+
 	bool ChunkIsLoaded(glm::i32vec2 pos);
 	bool ChunkIsLoaded(s32 ax, s32 ay);
 	bool ShouldLoadChunk(glm::i32vec2 currentPos, glm::i32vec2 position);
 	bool ShouldUnloadChunk(glm::i32vec2 currentPos, glm::i32vec2 position);
 
+	static ChunkManager* instance;
 
    private:
 	std::vector<Chunk*> chunks;

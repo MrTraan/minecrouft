@@ -1,10 +1,29 @@
 #include <Chunk.hpp>
+#include <ChunkManager.hpp>
 #include <Debug.hpp>
 #include <HeightMap.hpp>
 
 #include <imgui/imgui.h>
 #include <stdlib.h>
 #include <constants.hpp>
+
+eDirection oppositeDirection(eDirection dir) {
+	switch (dir)
+	{
+	case FRONT:
+		return BACK;
+	case RIGHT:
+		return LEFT;
+	case BACK:
+		return FRONT;
+	case LEFT:
+		return RIGHT;
+	case TOP:
+		return BOTTOM;
+	case BOTTOM:
+		return TOP;
+	}
+}
 
 Chunk::Chunk(eBiome biome, glm::i32vec2 position, HeightMap* heightMap)
     : position(position), worldPosition((float)position.x * CHUNK_SIZE, 0.0f, (float)position.y * CHUNK_SIZE) {
@@ -143,8 +162,34 @@ void Chunk::pushFace(int x,
 
 
 void Chunk::DrawCubeLine(int x, int y, int z, eDirection direction) {
-	if (this->cubes[x][y][z])
+	if (direction != TOP && direction != BOTTOM) {
+		Chunk* neighbor = ChunkManager::instance->GetNeighbor(position, direction);
+
+		if (!neighbor) {
+			if (this->cubes[x][y][z])
+				pushFace(x, y, z, direction, this->cubes[x][y][z]);
+		}
+		else {
+			if (direction == LEFT && neighbor) {
+				if (neighbor->cubes[CHUNK_SIZE - 1][y][z] == eBlockType::INACTIVE)
+					pushFace(x, y, z, direction, this->cubes[x][y][z]);
+			}
+			if (direction == RIGHT && neighbor) {
+				if (neighbor->cubes[0][y][z] == eBlockType::INACTIVE)
+					pushFace(x, y, z, direction, this->cubes[x][y][z]);
+			}
+			if (direction == FRONT && neighbor) {
+				if (neighbor->cubes[x][y][CHUNK_SIZE - 1] == eBlockType::INACTIVE)
+					pushFace(x, y, z, direction, this->cubes[x][y][z]);
+			}
+			if (direction == BACK && neighbor) {
+				if (neighbor->cubes[x][y][0] == eBlockType::INACTIVE)
+					pushFace(x, y, z, direction, this->cubes[x][y][z]);
+			}
+		}
+	} else if (this->cubes[x][y][z]) {
 		pushFace(x, y, z, direction, this->cubes[x][y][z]);
+	}
 
 	if (direction == eDirection::FRONT) {
 		while (z < CHUNK_SIZE - 1) {
@@ -309,14 +354,6 @@ u32 Chunk::CountMeshFaceSize() {
 void Chunk::ConstructMesh() {
 	u32 numFaces = CountMeshFaceSize();
 
-	//mesh.IndicesCount = 6 * numFaces;
-	//assert(IS_SIZE_T_MUL_SAFE(mesh.IndicesCount, sizeof(u32)));
-	//mesh.Indices = (u32*)malloc(sizeof(u32) * mesh.IndicesCount);
-
-	//mesh.VerticesCount = 4 * numFaces;
-	//assert(IS_SIZE_T_MUL_SAFE(mesh.VerticesCount, sizeof(Vertex)));
-	//mesh.Vertices = (Vertex*)malloc(sizeof(Vertex) * mesh.VerticesCount);
-	
 	mesh.IndicesCount = 6 * numFaces;
 	assert(IS_SIZE_T_MUL_SAFE(mesh.IndicesCount, sizeof(u32)));
 	mesh.Indices = new u32[mesh.IndicesCount];
