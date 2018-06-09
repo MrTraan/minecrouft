@@ -2,3 +2,4 @@ glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 TODO:
 - cache heightmap of neigbor chunks
+- use hashmap to store chunks ?

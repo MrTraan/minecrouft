@@ -133,9 +133,9 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 	for (cursor.x = chunkPosition.x - chunkLoadRadius; cursor.x < chunkPosition.x + chunkLoadRadius; cursor.x++) {
 		for (cursor.y = chunkPosition.y - chunkLoadRadius; cursor.y < chunkPosition.y + chunkLoadRadius; cursor.y++) {
-			if (!ShouldLoadChunk(chunkPosition, cursor))
-				continue;
 			if (ChunkIsLoaded(cursor))
+				continue;
+			if (!ShouldLoadChunk(chunkPosition, cursor))
 				continue;
 
 			bool isBeingBuilt = false;
@@ -175,15 +175,19 @@ void ChunkManager::Draw(Shader s) {
 	static glm::vec3 sizeOffset = glm::vec3((float)CHUNK_SIZE, (float)CHUNK_HEIGHT, (float)CHUNK_SIZE);
 	Aabb bounds;
 
+	u32 skipped = 0;
+
 	for (auto& c : chunks) {
 		bounds.min = c->worldPosition;
 		bounds.max = c->worldPosition + sizeOffset;
 		// Check if any of eight corners of the chunk is in sight
 		if (frustrum->IsCubeIn(bounds)) {
-			if (c->position.x != 0 || c->position.y != 0)
 			c->Draw(s);
+			skipped++;
 		}
+	
 	}
+	ImGui::Text("Chunks drawn: %lu / %lu\n", skipped, chunks.size());
 }
 
 Chunk* ChunkManager::GetNeighbor(glm::i32vec2 pos, eDirection direction) {
