@@ -29,17 +29,14 @@ static void fnBuilderThread(ChunkManager* manager) {
 	}
 }
 
-glm::vec3 ChunkManager::GetChunkPosition(glm::vec3 pos) {
-	glm::vec3 chunkPosition((int)(pos.x / CHUNK_SIZE) * CHUNK_SIZE,
-	                        (int)(pos.y / CHUNK_SIZE) * CHUNK_SIZE,
-	                        (int)(pos.z / CHUNK_SIZE) * CHUNK_SIZE);
+glm::i32vec2 ChunkManager::GetChunkPosition(glm::vec3 pos) {
+	glm::i32vec2 chunkPosition((s32)(pos.x / CHUNK_SIZE),
+	                        (s32)(pos.z / CHUNK_SIZE));
 
 	if (pos.x < 0)
-		chunkPosition.x -= CHUNK_SIZE;
+		chunkPosition.x--;
 	if (pos.y < 0)
-		chunkPosition.y -= CHUNK_SIZE;
-	if (pos.z < 0)
-		chunkPosition.z -= CHUNK_SIZE;
+		chunkPosition.y--;
 
 	return chunkPosition;
 }
@@ -53,26 +50,17 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
 	builderThread = std::thread(fnBuilderThread, this);
 }
 
-bool ChunkManager::ChunkIsLoaded(glm::vec3 pos) {
-	s32 ax = (s32)pos.x;
-	s32 ay = (s32)pos.y;
-	s32 az = (s32)pos.z;
+bool ChunkManager::ChunkIsLoaded(glm::i32vec2 pos) {
 	for (auto& it : chunks) {
-		s32 bx = (s32)it->GetPosition().x;
-		s32 by = (s32)it->GetPosition().y;
-		s32 bz = (s32)it->GetPosition().z;
-		if (ax == bx && ay == by && az == bz)
+		if (it->position.x == pos.x && it->position.y == pos.y)
 			return true;
 	}
 	return false;
 }
 
-bool ChunkManager::ChunkIsLoaded(s32 ax, s32 ay, s32 az) {
+bool ChunkManager::ChunkIsLoaded(s32 ax, s32 ay) {
 	for (auto& it : chunks) {
-		s32 bx = (s32)it->GetPosition().x;
-		s32 by = (s32)it->GetPosition().y;
-		s32 bz = (s32)it->GetPosition().z;
-		if (ax == bx && ay == by && az == bz)
+		if (it->position.x == ax && it->position.y == ay)
 			return true;
 	}
 	return false;
@@ -86,32 +74,32 @@ ChunkManager::~ChunkManager() {
 		delete c;
 }
 
-bool ChunkManager::ShouldLoadChunk(glm::vec3 playerPos, glm::vec3 position) {
-	s32 distance = glm::distance(playerPos, position);
+bool ChunkManager::ShouldLoadChunk(glm::i32vec2 currentPos, glm::i32vec2 position) {
+	glm::i32vec2 ray(position - currentPos);
+	float distance = sqrtf(ray.x * ray.x + ray.y * ray.y);
 
-	if (distance < chunkLoadRadius * CHUNK_SIZE)
+	if (distance < chunkLoadRadius)
 		return true;
 	return false;
 }
 
-bool ChunkManager::ShouldUnloadChunk(glm::vec3 playerPos, glm::vec3 position) {
-	s32 distance = glm::distance(playerPos, position);
+bool ChunkManager::ShouldUnloadChunk(glm::i32vec2 currentPos, glm::i32vec2 position) {
+	glm::i32vec2 ray(position - currentPos);
+	float distance = sqrtf(ray.x * ray.x + ray.y * ray.y);
 
-	if (distance < chunkUnloadRadius * CHUNK_SIZE)
+	if (distance < chunkUnloadRadius)
 		return false;
 	return true;
 }
 
 void ChunkManager::Update(glm::vec3 playerPos) {
-	playerPos.y = 0.0f;
 	auto chunkPosition = GetChunkPosition(playerPos);
 
 	queueOutMutex.lock();
 	while (!BuildingQueueOut.empty()) {
 		auto elem = BuildingQueueOut.back();
 		BuildingQueueOut.pop_back();
-		auto position = elem->GetPosition();
-		if (!ChunkIsLoaded(elem->GetPosition()))
+		if (!ChunkIsLoaded(elem->position))
 			chunks.push_back(elem);
 		else {
 			// Race condition: the element was built twice
@@ -123,7 +111,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 	auto it = std::begin(chunks);
 	while (it != std::end(chunks)) {
-		if (ShouldUnloadChunk(playerPos, (*it)->GetPosition())) {
+		if (ShouldUnloadChunk(chunkPosition, (*it)->position)) {
 			delete *it;
 			it = chunks.erase(it);
 		} else {
@@ -134,31 +122,19 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	bool buildNeeded = false;
 
 	queueInMutex.lock();
-	glm::vec3 vecLoadRadius =
-	    glm::vec3(chunkLoadRadius, chunkLoadRadius, chunkLoadRadius) *
-	    (float)CHUNK_SIZE;
 
-	s32 y = chunkPosition.y - vecLoadRadius.y;
+	glm::ivec2 cursor(0, 0);
 
-	s32 maxX = chunkPosition.x + vecLoadRadius.x;
-	s32 maxY = chunkPosition.y + vecLoadRadius.y;
-	s32 maxZ = chunkPosition.z + vecLoadRadius.z;
-
-	// TODO: vertical build
-	y = 0;
-
-	for (s32 x = chunkPosition.x - vecLoadRadius.x; x < maxX; x += CHUNK_SIZE) {
-		for (s32 z = chunkPosition.z - vecLoadRadius.z; z < maxZ;
-		     z += CHUNK_SIZE) {
-			if (!ShouldLoadChunk(playerPos, glm::vec3(x, y, z)))
+	for (cursor.x = chunkPosition.x - chunkLoadRadius; cursor.x < chunkPosition.x + chunkLoadRadius; cursor.x++) {
+		for (cursor.y = chunkPosition.y - chunkLoadRadius; cursor.y < chunkPosition.y + chunkLoadRadius; cursor.y++) {
+			if (!ShouldLoadChunk(chunkPosition, cursor))
 				continue;
-			if (ChunkIsLoaded(x, y, z))
+			if (ChunkIsLoaded(cursor))
 				continue;
 
 			bool isBeingBuilt = false;
-			for (auto args : BuildingQueueIn) {
-				if ((s32)args.pos.x == x && (s32)args.pos.y == y &&
-				    (s32)args.pos.z == z) {
+			for (auto& args : BuildingQueueIn) {
+				if (args.pos == cursor) {
 					isBeingBuilt = true;
 					break;
 				}
@@ -166,7 +142,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 			if (!isBeingBuilt) {
 				buildNeeded = true;
-				chunkArguments args = {eBiome::MOUNTAIN, glm::vec3(x, y, z)};
+				chunkArguments args = {eBiome::MOUNTAIN, cursor};
 				BuildingQueueIn.push_back(args);
 			}
 		}
@@ -176,8 +152,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 		buildCondition.notify_one();
 
 
-	ImGui::Text("Chunk Position: %f %f %f\n", chunkPosition.x, chunkPosition.y,
-	            chunkPosition.z);
+	ImGui::Text("Chunk Position: %d %d\n", chunkPosition.x, chunkPosition.y);
 	ImGui::Text("Chunks loaded: %lu\n", chunks.size());
 
 	ImGui::SliderInt("Chunk load radius", &chunkLoadRadius, 1, 20);
@@ -186,20 +161,45 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 void ChunkManager::Draw(Shader s) {
 	const glm::vec3 xOffset((float)CHUNK_SIZE, 0.0f, 0.0f);
-	const glm::vec3 yOffset(0.0f, (float)CHUNK_SIZE, 0.0f);
+	const glm::vec3 yOffset(0.0f, (float)CHUNK_HEIGHT, 0.0f);
+	const glm::vec3 y1Offset(0.0f, (float)CHUNK_HEIGHT / 4.0f, 0.0f);
+	const glm::vec3 y2Offset(0.0f, (float)CHUNK_HEIGHT / 2.0f, 0.0f);
+	const glm::vec3 y3Offset(0.0f, 3.0f * (float)CHUNK_HEIGHT / 4.0f, 0.0f);
 	const glm::vec3 zOffset(0.0f, 0.0f, (float)CHUNK_SIZE);
 
 	for (auto& c : chunks) {
 		// Check if any of eight corners of the chunk is in sight
-		if (frustrum->IsPointIn(c->GetPosition()) ||
-		    frustrum->IsPointIn(c->GetPosition() + xOffset) ||
-		    frustrum->IsPointIn(c->GetPosition() + yOffset) ||
-		    frustrum->IsPointIn(c->GetPosition() + zOffset) ||
-		    frustrum->IsPointIn(c->GetPosition() + xOffset + yOffset) ||
-		    frustrum->IsPointIn(c->GetPosition() + zOffset + yOffset) ||
-		    frustrum->IsPointIn(c->GetPosition() + xOffset + zOffset) ||
-		    frustrum->IsPointIn(c->GetPosition() + xOffset + yOffset +
-		                        zOffset)) {
+		if (frustrum->IsPointIn(c->worldPosition) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset) ||
+		    frustrum->IsPointIn(c->worldPosition + yOffset) ||
+		    frustrum->IsPointIn(c->worldPosition + zOffset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + yOffset) ||
+		    frustrum->IsPointIn(c->worldPosition + zOffset + yOffset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + zOffset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + yOffset +
+		                        zOffset) ||
+
+		    frustrum->IsPointIn(c->worldPosition + y1Offset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + y1Offset) ||
+		    frustrum->IsPointIn(c->worldPosition + zOffset + y1Offset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + zOffset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + y1Offset +
+		                        zOffset) ||
+
+		    frustrum->IsPointIn(c->worldPosition + y2Offset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + y2Offset) ||
+		    frustrum->IsPointIn(c->worldPosition + zOffset + y2Offset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + zOffset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + y2Offset +
+		                        zOffset) ||
+
+		    frustrum->IsPointIn(c->worldPosition + y3Offset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + y3Offset) ||
+		    frustrum->IsPointIn(c->worldPosition + zOffset + y3Offset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + zOffset) ||
+		    frustrum->IsPointIn(c->worldPosition + xOffset + y3Offset +
+		                        zOffset)
+			) {
 			c->Draw(s);
 		}
 	}

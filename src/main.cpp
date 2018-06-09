@@ -71,7 +71,7 @@ int main(void) {
 
 
 	while (!window.ShouldClose()) {
-		float currentFrame = glfwGetTime();
+		float currentFrame = (float)glfwGetTime();
 		dt = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 

@@ -11,7 +11,7 @@
 
 struct chunkArguments {
 	eBiome biome;
-	glm::vec3 pos;
+	glm::i32vec2 pos;
 };
 
 
@@ -39,16 +39,16 @@ class ChunkManager {
 
 	void Update(glm::vec3 playerPos);
 	void Draw(Shader s);
-	glm::vec3 GetChunkPosition(glm::vec3 pos);
+	glm::i32vec2 GetChunkPosition(glm::vec3 playerPos);
 
 	inline HeightMap* GetHeightMap() {
 		return &(this->heightMap);
 	}
 
-	bool ChunkIsLoaded(glm::vec3 pos);
-	bool ChunkIsLoaded(s32 ax, s32 ay, s32 az);
-	bool ShouldLoadChunk(glm::vec3 playerPosition, glm::vec3 position);
-	bool ShouldUnloadChunk(glm::vec3 playerPosition, glm::vec3 position);
+	bool ChunkIsLoaded(glm::i32vec2 pos);
+	bool ChunkIsLoaded(s32 ax, s32 ay);
+	bool ShouldLoadChunk(glm::i32vec2 currentPos, glm::i32vec2 position);
+	bool ShouldUnloadChunk(glm::i32vec2 currentPos, glm::i32vec2 position);
 
 
    private:

@@ -18,8 +18,8 @@ class HeightMap {
 		fn.SetNoiseType(FastNoise::Perlin);
 	}
 
-	int GetValue(int x, int y) {
-		return (int)((fn.GetValue(x, y) + 1) * CHUNK_SIZE / 2);
+	u32 GetValue(int x, int y) {
+		return (u32)(((float)fn.GetValue(x, y) + 1) * CHUNK_HEIGHT / 2);
 	}
 
 

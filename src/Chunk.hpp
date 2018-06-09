@@ -2,7 +2,9 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-constexpr int CHUNK_SIZE = 64;
+constexpr int CHUNK_SIZE = 16;
+constexpr int CHUNK_HEIGHT = 256;
+
 #include <HeightMap.hpp>
 #include <Mesh.hpp>
 #include <Shader.hpp>
@@ -28,7 +30,7 @@ enum eDirection {
 
 class Chunk {
    public:
-	Chunk(eBiome biome, glm::vec3 position, HeightMap* heightMap);
+	Chunk(eBiome biome, glm::i32vec2 position, HeightMap* heightMap);
 	~Chunk();
 
 	void Draw(Shader shader);
@@ -40,20 +42,19 @@ class Chunk {
 	u32 CountMeshFaceSize();
 
 
-	glm::vec3 GetPosition();
-
 	Mesh mesh;
+	
+	glm::i32vec2 position;
+	glm::vec3 worldPosition;
 
    private:
 	// 3 dimensionnal to note cube presence, because why not
-	eBlockType cubes[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
+	eBlockType cubes[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
 
-	glm::vec3 position;
 
 	eBiome biome;
 
 	void pushFace(int x, int y, int z, eDirection direction, eBlockType type);
-	void addVertex(const Vertex& v);
 
 	u32 drawIndex = 0;
 	u32 drawIndiciesIndex = 0;
