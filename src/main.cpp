@@ -69,7 +69,6 @@ int main(void) {
 	printf("OpenGL version: %s\n", glGetString(GL_VERSION));
 	printf("GLM version: %d\n", GLM_VERSION);
 
-
 	while (!window.ShouldClose()) {
 		float currentFrame = (float)glfwGetTime();
 		dt = currentFrame - lastFrame;

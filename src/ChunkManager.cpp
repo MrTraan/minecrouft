@@ -99,7 +99,16 @@ bool ChunkManager::ShouldUnloadChunk(glm::i32vec2 currentPos, glm::i32vec2 posit
 }
 
 void ChunkManager::Update(glm::vec3 playerPos) {
+	static glm::i32vec2 lastPos;
+	static bool firstFrame = true;
+
 	auto chunkPosition = GetChunkPosition(playerPos);
+	
+	ImGui::Text("Chunk Position: %d %d\n", chunkPosition.x, chunkPosition.y);
+	ImGui::Text("Chunks loaded: %lu\n", chunks.size());
+
+	ImGui::SliderInt("Chunk load radius", &chunkLoadRadius, 1, 32);
+	ImGui::SliderInt("Chunk unload radius", &chunkUnloadRadius, 1, 32);
 
 	queueOutMutex.lock();
 	while (!BuildingQueueOut.empty()) {
@@ -124,6 +133,9 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			++it;
 		}
 	}
+
+	if (!firstFrame && chunkPosition == lastPos)
+		return;
 
 	bool buildNeeded = false;
 
@@ -163,12 +175,8 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	if (buildNeeded)
 		buildCondition.notify_one();
 
-
-	ImGui::Text("Chunk Position: %d %d\n", chunkPosition.x, chunkPosition.y);
-	ImGui::Text("Chunks loaded: %lu\n", chunks.size());
-
-	ImGui::SliderInt("Chunk load radius", &chunkLoadRadius, 1, 32);
-	ImGui::SliderInt("Chunk unload radius", &chunkUnloadRadius, 1, 32);
+	lastPos = chunkPosition;
+	firstFrame = false;
 }
 
 void ChunkManager::Draw(Shader s) {
