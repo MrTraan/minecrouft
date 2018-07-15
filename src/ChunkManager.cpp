@@ -141,7 +141,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 	queueInMutex.lock();
 
-	glm::ivec2 cursor(0, 0);
+	glm::i32vec2 cursor(0, 0);
 
 	for (cursor.x = chunkPosition.x - chunkLoadRadius; cursor.x < chunkPosition.x + chunkLoadRadius; cursor.x++) {
 		for (cursor.y = chunkPosition.y - chunkLoadRadius; cursor.y < chunkPosition.y + chunkLoadRadius; cursor.y++) {
@@ -163,10 +163,6 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 				chunkArguments args;
 				args.biome = MOUNTAIN;
 				args.pos = cursor;
-				args.leftNeighbor = GetNeighbor(cursor, eDirection::LEFT);
-				args.rightNeighbor = GetNeighbor(cursor, eDirection::RIGHT);
-				args.frontNeighbor = GetNeighbor(cursor, eDirection::FRONT);
-				args.backNeighbor = GetNeighbor(cursor, eDirection::BACK);
 				BuildingQueueIn.push_back(args);
 			}
 		}
@@ -187,7 +183,7 @@ void ChunkManager::Draw(Shader s) {
 
 	for (auto& c : chunks) {
 		bounds.min = c->worldPosition;
-		bounds.max = c->worldPosition + sizeOffset;
+		bounds.max = glm::vec3(c->worldPosition) + sizeOffset;
 		// Check if any of eight corners of the chunk is in sight
 		if (frustrum->IsCubeIn(bounds)) {
 			c->Draw(s);
@@ -196,45 +192,6 @@ void ChunkManager::Draw(Shader s) {
 	
 	}
 	ImGui::Text("Chunks drawn: %lu / %lu\n", skipped, chunks.size());
-}
-
-Chunk* ChunkManager::GetNeighbor(glm::i32vec2 pos, eDirection direction) {
-	if (chunks.size() == 0)
-		return nullptr;
-
-	if (direction == eDirection::LEFT) {
-			auto it = std::find_if(chunks.begin(), chunks.end(),
-				[&pos](auto& it) { return it->position.x == pos.x - 1 && it->position.y == pos.y; });
-			if (it != chunks.end())
-				return *it;
-			return nullptr;
-	}
-
-	if (direction == eDirection::RIGHT) {
-			auto it = std::find_if(chunks.begin(), chunks.end(),
-				[&pos](auto& it) { return it->position.x == pos.x + 1 && it->position.y == pos.y; });
-			if (it != chunks.end())
-				return *it;
-			return nullptr;
-	}
-	
-	if (direction == eDirection::FRONT) {
-			auto it = std::find_if(chunks.begin(), chunks.end(),
-				[&pos](auto& it) { return it->position.x == pos.x && it->position.y == pos.y - 1; });
-			if (it != chunks.end())
-				return *it;
-			return nullptr;
-	}
-	
-	if (direction == eDirection::BACK) {
-			auto it = std::find_if(chunks.begin(), chunks.end(),
-				[&pos](auto& it) { return it->position.x == pos.x && it->position.y == pos.y + 1; });
-			if (it != chunks.end())
-				return *it;
-			return nullptr;
-	}
-
-	return nullptr;
 }
 
 ChunkManager* ChunkManager::instance = nullptr;

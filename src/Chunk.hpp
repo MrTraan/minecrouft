@@ -27,18 +27,10 @@ enum eDirection {
 	BOTTOM = 5,
 };
 
-eDirection oppositeDirection(eDirection dir);
-
-class Chunk;
 struct chunkArguments {
 	eBiome biome;
 	glm::i32vec2 pos;
-	Chunk* leftNeighbor = nullptr;
-	Chunk* rightNeighbor = nullptr;
-	Chunk* frontNeighbor = nullptr;
-	Chunk* backNeighbor = nullptr;
 };
-
 
 class Chunk {
    public:
@@ -57,7 +49,7 @@ class Chunk {
 	Mesh mesh;
 	
 	glm::i32vec2 position;
-	glm::vec3 worldPosition;
+	glm::i32vec3 worldPosition;
 
 	// 3 dimensionnal to note cube presence, because why not
 	eBlockType cubes[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
@@ -68,10 +60,5 @@ class Chunk {
 	void pushFace(int x, int y, int z, eDirection direction, eBlockType type);
 
 	u32 drawIndex = 0;
-	u32 drawIndiciesIndex = 0;
-	
-	Chunk* leftNeighbor;
-	Chunk* rightNeighbor;
-	Chunk* frontNeighbor;
-	Chunk* backNeighbor;
+	u32 drawIndicesIndex = 0;
 };

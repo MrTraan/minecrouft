@@ -7,26 +7,8 @@
 #include <stdlib.h>
 #include <constants.hpp>
 
-eDirection oppositeDirection(eDirection dir) {
-	switch (dir)
-	{
-	case FRONT:
-		return BACK;
-	case RIGHT:
-		return LEFT;
-	case BACK:
-		return FRONT;
-	case LEFT:
-		return RIGHT;
-	case TOP:
-		return BOTTOM;
-	case BOTTOM:
-		return TOP;
-	}
-}
-
 Chunk::Chunk(chunkArguments args)
-    : position(args.pos), worldPosition((float)args.pos.x * CHUNK_SIZE, 0.0f, (float)args.pos.y * CHUNK_SIZE) {
+    : position(args.pos), worldPosition(args.pos.x * CHUNK_SIZE, 0, args.pos.y * CHUNK_SIZE) {
 	auto& heightMap = ChunkManager::instance->heightMap;
 
 	for (u32 i = 0; i < CHUNK_SIZE; i++) {
@@ -44,11 +26,6 @@ Chunk::Chunk(chunkArguments args)
 		}
 	}
 	
-	leftNeighbor = args.leftNeighbor;
-	rightNeighbor = args.rightNeighbor;
-	frontNeighbor = args.frontNeighbor;
-	backNeighbor = args.backNeighbor;
-
 	this->biome = biome;
 	this->ConstructMesh();
 
@@ -61,17 +38,17 @@ Chunk::~Chunk() {
 		delete[] mesh.Indices;
 }
 
-void Chunk::pushFace(int x,
-                     int y,
-                     int z,
+void Chunk::pushFace(s32 x,
+                     s32 y,
+                     s32 z,
                      eDirection direction,
                      eBlockType type) {
-	glm::vec2 uvModifier = glm::vec2(0, type == eBlockType::SNOW ? 0.5f : 0);
+	glm::vec2 uvModifier = glm::vec2(0.0f, type == eBlockType::SNOW ? 0.5f : 0);
 	u32 currentSize = drawIndex;
 	Vertex v;
 
 	if (direction == eDirection::FRONT) {
-		v.Position = glm::vec3(x, y, z) + worldPosition;
+		v.Position = glm::i32vec3(x, y, z) + worldPosition;
 		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
@@ -86,7 +63,7 @@ void Chunk::pushFace(int x,
 	}
 
 	if (direction == eDirection::BACK) {
-		v.Position = glm::vec3(x, y, z + 1.0f) + worldPosition;
+		v.Position = glm::i32vec3(x, y, z + 1.0f) + worldPosition;
 		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
@@ -101,7 +78,7 @@ void Chunk::pushFace(int x,
 	}
 
 	if (direction == eDirection::TOP) {
-		v.Position = glm::vec3(x, y + 1, z) + worldPosition;
+		v.Position = glm::i32vec3(x, y + 1, z) + worldPosition;
 		v.TexCoords = glm::vec2(0.0f, 0.5f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
@@ -116,7 +93,7 @@ void Chunk::pushFace(int x,
 	}
 
 	if (direction == eDirection::BOTTOM) {
-		v.Position = glm::vec3(x, y, z) + worldPosition;
+		v.Position = glm::i32vec3(x, y, z) + worldPosition;
 		v.TexCoords = glm::vec2(0.75f, 0.5f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
@@ -131,7 +108,7 @@ void Chunk::pushFace(int x,
 	}
 
 	if (direction == eDirection::LEFT) {
-		v.Position = glm::vec3(x, y, z) + worldPosition;
+		v.Position = glm::i32vec3(x, y, z) + worldPosition;
 		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
@@ -146,7 +123,7 @@ void Chunk::pushFace(int x,
 	}
 
 	if (direction == eDirection::RIGHT) {
-		v.Position = glm::vec3(x + 1, y, z) + worldPosition;
+		v.Position = glm::i32vec3(x + 1, y, z) + worldPosition;
 		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
@@ -160,38 +137,17 @@ void Chunk::pushFace(int x,
 		mesh.Vertices[drawIndex++] = v;
 	}
 
-	mesh.Indices[drawIndiciesIndex++] = currentSize + 0;
-	mesh.Indices[drawIndiciesIndex++] = currentSize + 1;
-	mesh.Indices[drawIndiciesIndex++] = currentSize + 2;
-	mesh.Indices[drawIndiciesIndex++] = currentSize + 0;
-	mesh.Indices[drawIndiciesIndex++] = currentSize + 2;
-	mesh.Indices[drawIndiciesIndex++] = currentSize + 3;
+	mesh.Indices[drawIndicesIndex++] = currentSize + 0;
+	mesh.Indices[drawIndicesIndex++] = currentSize + 1;
+	mesh.Indices[drawIndicesIndex++] = currentSize + 2;
+	mesh.Indices[drawIndicesIndex++] = currentSize + 0;
+	mesh.Indices[drawIndicesIndex++] = currentSize + 2;
+	mesh.Indices[drawIndicesIndex++] = currentSize + 3;
 }
 
 
 void Chunk::DrawCubeLine(s32 x, s32 y, s32 z, eDirection direction) {
-	if (direction != TOP && direction != BOTTOM && cubes[x][y][z] != eBlockType::INACTIVE) {
-		if (direction == LEFT) {
-			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x - 1, z + (s32)worldPosition.z) <= y)
-				pushFace(x, y, z, direction, this->cubes[x][y][z]);
-		}
-
-		if (direction == RIGHT) {
-			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x + 1, z + (s32)worldPosition.z) <= y)
-				pushFace(x, y, z, direction, this->cubes[x][y][z]);
-		}
-
-		if (direction == FRONT) {
-			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x, (s32)worldPosition.z - 1) <= y)
-				pushFace(x, y, z, direction, this->cubes[x][y][z]);
-		}
-
-		if (direction == BACK) {
-			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x, (s32)worldPosition.z + z + 1) <= y)
-				pushFace(x, y, z, direction, this->cubes[x][y][z]);
-		}
-
-	} else if (this->cubes[x][y][z]) {
+	if (this->cubes[x][y][z]) {
 		pushFace(x, y, z, direction, this->cubes[x][y][z]);
 	}
 
@@ -222,7 +178,6 @@ void Chunk::DrawCubeLine(s32 x, s32 y, s32 z, eDirection direction) {
 		}
 	}
 
-
 	if (direction == eDirection::BOTTOM) {
 		while (y < CHUNK_HEIGHT - 1) {
 			if (this->cubes[x][y][z] == eBlockType::INACTIVE &&
@@ -231,7 +186,6 @@ void Chunk::DrawCubeLine(s32 x, s32 y, s32 z, eDirection direction) {
 			y++;
 		}
 	}
-
 
 	if (direction == eDirection::LEFT) {
 		while (x < CHUNK_SIZE - 1) {
@@ -254,28 +208,7 @@ void Chunk::DrawCubeLine(s32 x, s32 y, s32 z, eDirection direction) {
 
 u32 Chunk::CountCubeLineSize(int x, int y, int z, eDirection direction) {
 	u32 total = 0;
-	if (direction != TOP && direction != BOTTOM && cubes[x][y][z] != eBlockType::INACTIVE) {
-		if (direction == LEFT) {
-			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x - 1, z + (s32)worldPosition.z) <= y)
-				total++;
-		}
-
-		if (direction == RIGHT) {
-			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x + 1, z + (s32)worldPosition.z) <= y)
-				total++;
-		}
-
-		if (direction == FRONT) {
-			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x, (s32)worldPosition.z - 1) <= y)
-				total++;
-		}
-
-		if (direction == BACK) {
-			if (ChunkManager::instance->heightMap.GetValue((s32)worldPosition.x + x, (s32)worldPosition.z + z + 1) <= y)
-				total++;
-		}
-
-	} else if (this->cubes[x][y][z]) {
+	if (this->cubes[x][y][z]) {
 		total++;
 	}
 
@@ -376,7 +309,6 @@ u32 Chunk::CountMeshFaceSize() {
 	return total;
 }
 
-
 void Chunk::ConstructMesh() {
 	u32 numFaces = CountMeshFaceSize();
 
@@ -389,7 +321,7 @@ void Chunk::ConstructMesh() {
 	mesh.Vertices = new Vertex[mesh.VerticesCount];
 
 	drawIndex = 0;
-	drawIndiciesIndex = 0;
+	drawIndicesIndex = 0;
 
 	eDirection dir;
 
