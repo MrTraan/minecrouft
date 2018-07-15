@@ -11,6 +11,11 @@
 
 typedef std::tuple<float, float, float> index3D;
 
+struct chunkArguments {
+	eBiome biome;
+	glm::i32vec2 pos;
+};
+
 class ChunkManager {
    public:
 	ChunkManager(glm::vec3 playerPos, Frustrum* frustrum);

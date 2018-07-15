@@ -7,14 +7,13 @@
 #include <stdlib.h>
 #include <constants.hpp>
 
-Chunk::Chunk(chunkArguments args)
-    : position(args.pos), worldPosition(args.pos.x * CHUNK_SIZE, 0, args.pos.y * CHUNK_SIZE) {
-	auto& heightMap = ChunkManager::instance->heightMap;
+Chunk::Chunk(eBiome biome, glm::i32vec2 pos, HeightMap* heightMap)
+    : position(pos), worldPosition(pos.x * CHUNK_SIZE, 0, pos.y * CHUNK_SIZE) {
 
 	for (u32 i = 0; i < CHUNK_SIZE; i++) {
 		for (u32 k = 0; k < CHUNK_SIZE; k++) {
 			u32 seed =
-			    heightMap.GetValue(i + (s32)worldPosition.x, k + (s32)worldPosition.z);
+			    heightMap->GetValue(i + (s32)worldPosition.x, k + (s32)worldPosition.z);
 			for (u32 j = 0; j < seed; j++) {
 				if (biome == eBiome::FOREST)
 					this->cubes[i][j][k] = eBlockType::GRASS;

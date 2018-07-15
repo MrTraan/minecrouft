@@ -27,14 +27,9 @@ enum eDirection {
 	BOTTOM = 5,
 };
 
-struct chunkArguments {
-	eBiome biome;
-	glm::i32vec2 pos;
-};
-
 class Chunk {
    public:
-	Chunk(chunkArguments args);
+	Chunk(eBiome biome, glm::i32vec2 position, HeightMap* heightMap);
 	~Chunk();
 
 	void Draw(Shader shader);

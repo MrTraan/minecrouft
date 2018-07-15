@@ -14,7 +14,7 @@ static void fnBuilderThread(ChunkManager* manager) {
 			auto args = *it;
 			manager->queueInMutex.unlock();
 
-			Chunk* c = new Chunk(args);
+			Chunk* c = new Chunk(args.biome, args.pos, &(manager->heightMap));
 			manager->queueOutMutex.lock();
 			manager->BuildingQueueOut.push_back(c);
 			manager->queueOutMutex.unlock();
@@ -47,12 +47,7 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum)
 	playerPos.y = 0.0f;
 	auto chunkPosition = GetChunkPosition(playerPos);
 
-	chunkArguments args;
-
-	args.biome = eBiome::FOREST;
-	args.pos = chunkPosition;
-
-	chunks.push_back(new Chunk(args));
+	chunks.push_back(new Chunk(eBiome::FOREST, chunkPosition, &heightMap));
 	builderThread = std::thread(fnBuilderThread, this);
 }
 
