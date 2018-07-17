@@ -1,5 +1,5 @@
 glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 TODO:
-- cache heightmap of neigbor chunks
+- make a thread safe queue for chunk manager
 - use hashmap to store chunks ?

@@ -20,6 +20,7 @@
 #include <Texture.hpp>
 #include <Window.hpp>
 #include <cassert>
+#include <Skybox.hpp>
 
 #define GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX 0x9048
 #define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
@@ -54,6 +55,7 @@ int main(void) {
 
 	Frustrum frustrum(proj);
 	ChunkManager chunkManager(camera.Position, &frustrum);
+	Skybox skybox;
 
 	float dt = 0.0f;
 	float lastFrame = 0.0f;
@@ -85,8 +87,10 @@ int main(void) {
 		            1000.0f / ImGui::GetIO().Framerate,
 		            ImGui::GetIO().Framerate);
 
+
 		camera.Update(dt);
 		view = camera.GetViewMatrix();
+		skybox.Draw(view, proj);
 		frustrum.Update(view);
 
 		chunkManager.Update(camera.Position);

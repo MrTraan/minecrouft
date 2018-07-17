@@ -33,8 +33,9 @@ set(MY_HEADER_FILES
 	"src/Frustrum.hpp"
     "src/HeightMap.hpp"
     "src/constants.hpp"
+	"src/Skybox.hpp"
 
-	"./inc/stb_image.h"
+        "./inc/stb_image.h"
 
 	#imgui
 	"./src/imgui/imconfig.h"
