@@ -14,8 +14,8 @@ class ChunkManager {
 	ChunkManager(glm::vec3 playerPos, Frustrum* frustrum);
 	~ChunkManager();
 
-	int chunkLoadRadius = 6;
-	int chunkUnloadRadius = 6;
+	int chunkLoadRadius = 2;
+	int chunkUnloadRadius = 2;
 	bool ThreadShouldRun = true;
 
 	void Update(glm::vec3 playerPos);
@@ -23,8 +23,6 @@ class ChunkManager {
 	glm::i32vec2 GetChunkPosition(glm::vec3 playerPos);
 
 	bool ChunkIsLoaded(glm::i32vec2 pos);
-	bool ShouldLoadChunk(glm::i32vec2 currentPos, glm::i32vec2 position);
-	bool ShouldUnloadChunk(glm::i32vec2 currentPos, glm::i32vec2 position);
 
 	std::vector<Chunk*> chunks;
 	Frustrum* frustrum;
@@ -35,7 +33,12 @@ class ChunkManager {
 
 	std::condition_variable updateCondition;
 	std::mutex ucMutex;
+
+	std::mutex queueInMutex;
+	std::vector<glm::i32vec2> buildingQueueIn;
+
 	std::mutex queueOutMutex;
 	std::vector<Chunk*> buildingQueueOut;
+
 	std::thread builderRoutineThread;
 };
