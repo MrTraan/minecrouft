@@ -10,6 +10,7 @@ constexpr int CHUNK_HEIGHT = 256;
 #include <Shader.hpp>
 #include <Texture.hpp>
 #include <TextureManager.hpp>
+#include <constants.hpp>
 
 enum eBiome {
 	FOREST,
@@ -35,7 +36,7 @@ class Chunk {
 	void Draw(Shader shader);
 	void ConstructMesh();
 
-	void DrawCubeLine(int x, int y, int z, eDirection direction);
+	void DrawCubeLine(s32 x, s32 y, s32 z, eDirection direction);
 
 	u32 CountCubeLineSize(int x, int y, int z, eDirection direction);
 	u32 CountMeshFaceSize();
@@ -52,7 +53,7 @@ class Chunk {
 
 	eBiome biome;
 
-	void pushFace(int x, int y, int z, eDirection direction, eBlockType type);
+	void pushFace(s32 x, s32 y, s32 z, eDirection direction, eBlockType type);
 
 	u32 drawIndex = 0;
 	u32 drawIndicesIndex = 0;

@@ -9,8 +9,6 @@
 #include <glm/glm.hpp>
 #include <map>
 
-typedef std::tuple<float, float, float> index3D;
-
 class ChunkManager {
    public:
 	ChunkManager(glm::vec3 playerPos, Frustrum* frustrum);

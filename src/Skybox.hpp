@@ -58,7 +58,7 @@ class Skybox {
 public:
 	Skybox() {
 #ifdef WIN32
-		std::string basePath = "C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\resources\\skybox\\";
+		std::string basePath = "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\skybox\\";
 		shader = new Shader("C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\skybox_vertex.glsl",
 				"C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\skybox_fragment.glsl");
 #else
