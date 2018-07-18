@@ -9,6 +9,8 @@
 #include <glm/glm.hpp>
 #include <map>
 
+#define NUM_MANAGER_THREADS 3
+
 class ChunkManager {
    public:
 	ChunkManager(glm::vec3 playerPos, Frustrum* frustrum);
@@ -40,5 +42,5 @@ class ChunkManager {
 	std::mutex queueOutMutex;
 	std::vector<Chunk*> buildingQueueOut;
 
-	std::thread builderRoutineThread;
+	std::thread builderRoutineThreads[NUM_MANAGER_THREADS];
 };
