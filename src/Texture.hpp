@@ -14,7 +14,7 @@ class Texture {
 	int NbrChannels;
 
 	Texture(){};
-	Texture(const std::string& path, eImageFormat format);
+	Texture(const std::string& path);
 
 	void Bind();
 

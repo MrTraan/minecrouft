@@ -16,6 +16,9 @@ Chunk::Chunk(eBiome biome, glm::i32vec2 pos, HeightMap* heightMap)
 
 }
 
+#define TEXTURE_ROWS 4
+#define UV_Y_BASE (1.0f / TEXTURE_ROWS)
+
 Chunk::~Chunk() {
 	if (mesh.Vertices)
 		delete[] mesh.Vertices;
@@ -28,97 +31,107 @@ void Chunk::pushFace(s32 x,
                      s32 z,
                      eDirection direction,
                      eBlockType type) {
-	glm::vec2 uvModifier = glm::vec2(0.0f, type == eBlockType::SNOW ? 0.5f : 0);
+	glm::vec2 uvModifier(0.0f, 0.0f);
+	switch (type) {
+	case eBlockType::ROCK:
+		uvModifier.y = UV_Y_BASE;
+		break;
+	case eBlockType::SNOW:
+		uvModifier.y = 2 * UV_Y_BASE;
+	case eBlockType::GRASS:
+		uvModifier.y = 3 * UV_Y_BASE;
+	}
+
 	u32 currentSize = drawIndex;
 	Vertex v;
 
 	if (direction == eDirection::FRONT) {
 		v.Position = glm::i32vec3(x, y, z) + worldPosition;
-		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.25f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.5f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.5f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.25f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::BACK) {
 		v.Position = glm::i32vec3(x, y, z + 1.0f) + worldPosition;
-		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.25f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.5f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.5f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.25f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::TOP) {
 		v.Position = glm::i32vec3(x, y + 1, z) + worldPosition;
-		v.TexCoords = glm::vec2(0.0f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.0f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.25f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.25f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.0f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.0f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::BOTTOM) {
 		v.Position = glm::i32vec3(x, y, z) + worldPosition;
-		v.TexCoords = glm::vec2(0.75f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.75f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x += 1.0f;
-		v.TexCoords = glm::vec2(1.0f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(1.f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(1.0f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(1.f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.x -= 1.0f;
-		v.TexCoords = glm::vec2(0.75f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.75f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::LEFT) {
 		v.Position = glm::i32vec3(x, y, z) + worldPosition;
-		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.25f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.5f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.5f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.z -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.25f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 	}
 
 	if (direction == eDirection::RIGHT) {
 		v.Position = glm::i32vec3(x + 1, y, z) + worldPosition;
-		v.TexCoords = glm::vec2(0.25f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.25f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.z += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 0.5f) + uvModifier;
+		v.TexCoords = glm::vec2(.5f, 0.0f) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.y += 1.0f;
-		v.TexCoords = glm::vec2(0.5f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(.5f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 		v.Position.z -= 1.0f;
-		v.TexCoords = glm::vec2(0.25f, 1.0f) + uvModifier;
+		v.TexCoords = glm::vec2(0.25f, UV_Y_BASE) + uvModifier;
 		mesh.Vertices[drawIndex++] = v;
 	}
 

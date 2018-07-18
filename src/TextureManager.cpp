@@ -23,7 +23,7 @@ Texture TextureManager::LoadTexture(eTextureFile file) {
 			break;
 	}
 
-	TextureManager::textures[file] = Texture(path, eImageFormat::RGBA);
+	TextureManager::textures[file] = Texture(path);
 	return (TextureManager::textures[file]);
 }
 
