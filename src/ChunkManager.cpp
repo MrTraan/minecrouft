@@ -3,10 +3,12 @@
 #include <algorithm>
 
 static void builderThreadRoutine(ChunkManager* manager, glm::i32vec2 firstPosition, int index) {
-	std::unique_lock<std::mutex> ulock(manager->ucMutex);
+	std::unique_lock<std::mutex> ulock(manager->ucMutex, std::defer_lock);
 
 	while (true) {
+		ulock.lock();
 		manager->updateCondition.wait(ulock);
+		ulock.unlock();
 		if (!manager->ThreadShouldRun)
 			break;
 		while (true) {
@@ -23,13 +25,11 @@ static void builderThreadRoutine(ChunkManager* manager, glm::i32vec2 firstPositi
 			manager->queueInMutex.unlock();
 
 			Chunk* c = new Chunk(MOUNTAIN, task, &(manager->heightMap));
-			printf("Thread %d has built a new chunk\n", index);
 			manager->queueOutMutex.lock();
 			manager->buildingQueueOut.push_back(c);
 			manager->queueOutMutex.unlock();
 		}
 	}
-	printf("Thread %d will exit\n", index);
 }
 
 glm::i32vec2 ChunkManager::GetChunkPosition(glm::vec3 pos) {
@@ -69,7 +69,9 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum) : frustrum(f
 ChunkManager::~ChunkManager() {
 	ThreadShouldRun = false;
 	queueOutMutex.unlock();
+	ucMutex.lock();
 	updateCondition.notify_all();
+	ucMutex.unlock();
 	for (int i = 0; i < NUM_MANAGER_THREADS; i++)
 		builderRoutineThreads[i].join();
 	for (auto& c : chunks)
@@ -158,10 +160,26 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 	if (chunksToBuild.size() > 0) {
 		queueInMutex.lock();
+
+		// Flush obsolete orders
+		auto it = std::begin(buildingQueueIn);
+		while (it != std::end(buildingQueueIn)) {
+			auto cpos = *it;
+			if (abs(position.x - cpos.x) > chunkUnloadRadius || abs(position.y - cpos.y) > chunkUnloadRadius) {
+				it = buildingQueueIn.erase(it);
+			
+			} else {
+				++it;
+			}
+		}
+
 		for (auto& elem : chunksToBuild)
 			buildingQueueIn.push_back(elem);
 		queueInMutex.unlock();
+		
+		ucMutex.lock();
 		updateCondition.notify_all();
+		ucMutex.unlock();
 	}
 
 	lastPosition = position;
