@@ -15,8 +15,9 @@ static void builderThreadRoutine(ChunkManager* manager, glm::i32vec2 firstPositi
 				manager->queueInMutex.unlock();
 				break;
 			}
-			glm::i32vec2 task = manager->buildingQueueIn.back();
-			manager->buildingQueueIn.pop_back();
+			auto it = manager->buildingQueueIn.begin();
+			auto task = *it;
+			manager->buildingQueueIn.erase(it);
 			manager->queueInMutex.unlock();
 
 			Chunk* c = new Chunk(MOUNTAIN, task, &(manager->heightMap));
