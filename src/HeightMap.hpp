@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Chunk.hpp>
-
 #include <FastNoise/FastNoise.h>
 
 #include <stdio.h>
@@ -9,20 +7,32 @@
 #include <ctime>
 #include <constants.hpp>
 
+// Forward declaration
+class Chunk;
+
 class HeightMap {
    public:
-	HeightMap() {
-		std::srand((u32)std::time(0));
-		int seed = std::rand();
-		fn.SetSeed(seed);
-		fn.SetNoiseType(FastNoise::Perlin);
-	}
+	HeightMap();
 
-	u32 GetValue(int x, int y) {
-		return (u32)(((float)fn.GetValue(x, y) + 1) * CHUNK_HEIGHT / 2);
-	}
+	void SetupChunk(Chunk* chunk);
 
+	FastNoise heightMapNoise;
+	float surfaceFreq;
+	float GetHeightAt(s32 x, s32 y);
 
-   private:
-	FastNoise fn;
+	FastNoise elevationNoise;
+	float elevationFreq;
+	float elevationMultiplier;
+	float GetElevationAt(s32 x, s32 y);
+
+	FastNoise moistureNoise;
+	float moistureFreq;
+	float GetMoistureAt(s32 x, s32 y);
+
+	FastNoise offsetNoise;
+	float offsetFreq;
+	float GetOffsetAt(s32 x, s32 y);
+
+	FastNoise caveNoise;
+	float caveFreq;
 };

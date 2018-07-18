@@ -59,6 +59,7 @@ set(MY_SOURCE_FILES
 	"src/ChunkManager.cpp"
 	"src/glad.c"
 	"src/Frustrum.cpp"
+    "src/HeightMap.cpp"
 
 	# imgui
 	"./src/imgui/imgui.cpp"

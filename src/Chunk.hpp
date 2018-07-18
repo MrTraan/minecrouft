@@ -17,7 +17,7 @@ enum eBiome {
 	MOUNTAIN,
 };
 
-enum eBlockType : char { INACTIVE = 0, GRASS, SNOW };
+enum eBlockType : char { INACTIVE = 0, GRASS, SAND, DIRT, ROCK, SNOW };
 
 enum eDirection {
 	FRONT = 0,
