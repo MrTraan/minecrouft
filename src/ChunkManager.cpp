@@ -95,6 +95,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 	ImGui::SliderInt("Chunk load radius", &chunkLoadRadius, 1, 32);
 	ImGui::SliderInt("Chunk unload radius", &chunkUnloadRadius, 1, 32);
+	ImGui::Text("Render distance: %d cubes\n", chunkLoadRadius * CHUNK_SIZE);
 	
 	// Flush building queue
 	queueOutMutex.lock();
