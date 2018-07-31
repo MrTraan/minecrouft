@@ -6,25 +6,21 @@
 #include <Shader.hpp>
 
 struct Vertex {
-	glm::vec3 Position;
-	glm::vec2 TexCoords;
+	float Position[3];
+	float TexCoords[2];
 };
 
-class Mesh {
-   public:
+struct Mesh {
 	Vertex* Vertices = NULL;
 	u32 VerticesCount = 0;
 	u32* Indices = NULL;
 	u32 IndicesCount = 0;
-
-	void Draw(Shader shader);
-	void InitMesh();
-
-	// default constructor
-	Mesh() : isInit(false) {}
-	~Mesh();
-
-   private:
-	bool isInit;
 	unsigned int VAO, VBO, EBO;
+
+	bool isBound = false;
 };
+
+void meshCreateGLBuffers(Mesh* mesh);
+void meshDeleteBuffers(Mesh* mesh);
+
+void meshDraw(Mesh* mesh, Shader shader);

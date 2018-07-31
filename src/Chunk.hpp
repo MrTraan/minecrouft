@@ -2,15 +2,24 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-constexpr int CHUNK_SIZE = 16;
-constexpr int CHUNK_HEIGHT = 256;
-
 #include <HeightMap.hpp>
 #include <Mesh.hpp>
 #include <Shader.hpp>
 #include <Texture.hpp>
 #include <TextureManager.hpp>
 #include <constants.hpp>
+
+constexpr int CHUNK_SIZE = 16;
+constexpr int CHUNK_HEIGHT = 256;
+
+// To optimize memory allocation, memory for 8192 faces are created right away
+// Because profiling showed that no chunk had under 1024 faces
+// Faces are then allocated 1024 by 1024 when needed
+constexpr int FACES_INITIAL_ALLOC = 8192;
+constexpr int FACES_BATCH_ALLOC = 1024;
+
+constexpr int TEXTURE_ROWS = 4;
+constexpr float UV_Y_BASE = (1.0f / TEXTURE_ROWS);
 
 enum eBiome {
 	FOREST,
@@ -28,33 +37,21 @@ enum eDirection {
 	BOTTOM = 5,
 };
 
-class Chunk {
-   public:
-	Chunk(eBiome biome, glm::i32vec2 position, HeightMap* heightMap);
-	~Chunk();
-
-	void Draw(Shader shader);
-	void ConstructMesh();
-
-	void DrawCubeLine(s32 x, s32 y, s32 z, eDirection direction);
-
-	u32 CountCubeLineSize(int x, int y, int z, eDirection direction);
-	u32 CountMeshFaceSize();
-
-
-	Mesh mesh;
-	
-	glm::i32vec2 position;
-	glm::i32vec3 worldPosition;
+struct Chunk {
+	Mesh* mesh;
 
 	// 3 dimensionnal to note cube presence, because why not
 	eBlockType cubes[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
 
-
 	eBiome biome;
 
-	void pushFace(s32 x, s32 y, s32 z, eDirection direction, eBlockType type);
+	glm::i32vec2 position;
+	glm::i32vec3 worldPosition;
 
-	u32 drawIndex = 0;
-	u32 drawIndicesIndex = 0;
+	u32 facesAllocated;
+	u32 facesBuilt;
 };
+
+void chunkCreateGeometry(Chunk* chunk, glm::i32vec2 position, eBiome biome, HeightMap* heightMap);
+void chunkDraw(Chunk* chunk, Shader shader);
+void chunkDestroy(Chunk* chunk);

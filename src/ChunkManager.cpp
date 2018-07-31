@@ -24,7 +24,8 @@ static void builderThreadRoutine(ChunkManager* manager, glm::i32vec2 firstPositi
 			manager->buildingQueueIn.erase(it);
 			manager->queueInMutex.unlock();
 
-			Chunk* c = new Chunk(MOUNTAIN, task, &(manager->heightMap));
+			Chunk* c = new Chunk();
+			chunkCreateGeometry(c, task, MOUNTAIN, &(manager->heightMap));
 			manager->queueOutMutex.lock();
 			manager->buildingQueueOut.push_back(c);
 			manager->queueOutMutex.unlock();
@@ -58,7 +59,9 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum) : frustrum(f
 		for (cursor.y = chunkPosition.y - chunkLoadRadius;
 				cursor.y <= chunkPosition.y + chunkLoadRadius;
 				cursor.y++) {
-			chunks.push_back(new Chunk(MOUNTAIN, cursor, &heightMap));
+			Chunk* c = new Chunk();
+			chunkCreateGeometry(c, cursor, MOUNTAIN, &heightMap);
+			chunks.push_back(c);
 		}
 	}
 
@@ -68,14 +71,16 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum) : frustrum(f
 
 ChunkManager::~ChunkManager() {
 	ThreadShouldRun = false;
-	queueOutMutex.unlock();
 	ucMutex.lock();
 	updateCondition.notify_all();
 	ucMutex.unlock();
 	for (int i = 0; i < NUM_MANAGER_THREADS; i++)
 		builderRoutineThreads[i].join();
 	for (auto& c : chunks)
+	{
+		chunkDestroy(c);
 		delete c;
+	}
 }
 
 bool ChunkManager::ChunkIsLoaded(glm::i32vec2 pos) {
@@ -106,6 +111,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			chunks.push_back(elem);
 		else {
 			// Race condition: the element was built twice
+			chunkDestroy(elem);
 			delete elem;
 		}
 	}
@@ -123,6 +129,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 		while (it != std::end(chunks)) {
 			auto cpos = (*it)->position;
 			if (abs(position.x - cpos.x) > chunkUnloadRadius || abs(position.y - cpos.y) > chunkUnloadRadius) {
+				chunkDestroy(*it);
 				delete *it;
 				it = chunks.erase(it);
 			} else {
@@ -198,7 +205,7 @@ void ChunkManager::Draw(Shader s) {
 		bounds.max = glm::vec3(c->worldPosition) + sizeOffset;
 		// Check if any of eight corners of the chunk is in sight
 		if (frustrum->IsCubeIn(bounds)) {
-			c->Draw(s);
+			chunkDraw(c, s);
 			skipped++;
 		}
 

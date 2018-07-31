@@ -2,21 +2,20 @@
 
 #include "Mesh.hpp"
 
-void Mesh::InitMesh() {
-	glGenVertexArrays(1, &(this->VAO));
-	glGenBuffers(1, &(this->VBO));
-	glGenBuffers(1, &(this->EBO));
+void meshCreateGLBuffers(Mesh* mesh) {
+	glGenVertexArrays(1, &(mesh->VAO));
+	glGenBuffers(1, &(mesh->VBO));
+	glGenBuffers(1, &(mesh->EBO));
 
-	glBindVertexArray(this->VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+	glBindVertexArray(mesh->VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->VBO);
+	glBufferData(GL_ARRAY_BUFFER, mesh->VerticesCount * sizeof(Vertex),
+	             &(mesh->Vertices[0]), GL_STATIC_DRAW);
 
-	glBufferData(GL_ARRAY_BUFFER, VerticesCount * sizeof(Vertex),
-	             &(this->Vertices[0]), GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, IndicesCount * sizeof(unsigned int),
-	             &(this->Indices[0]), GL_STATIC_DRAW);
-
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->IndicesCount * sizeof(u32),
+	             &(mesh->Indices[0]), GL_STATIC_DRAW);
+	
 	// vertex positions
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
@@ -25,24 +24,21 @@ void Mesh::InitMesh() {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
 	                      (void*)offsetof(Vertex, TexCoords));
-
 	glBindVertexArray(0);
-	this->isInit = true;
+	mesh->isBound = true;
 }
 
-Mesh::~Mesh() {
-	if (isInit) {
-		glDeleteBuffers(1, &EBO);
-		glDeleteBuffers(1, &VBO);
-		glDeleteVertexArrays(1, &VAO);
-	}
+void meshDeleteBuffers(Mesh* mesh) {
+	glDeleteBuffers(1, &(mesh->EBO));
+	glDeleteBuffers(1, &(mesh->VBO));
+	glDeleteVertexArrays(1, &(mesh->VAO));
 }
 
-void Mesh::Draw(Shader shader) {
-	if (!this->isInit)
-		this->InitMesh();
+void meshDraw(Mesh* mesh, Shader shader) {
 	shader.Use();
-	glBindVertexArray(this->VAO);
-	glDrawElements(GL_TRIANGLES, IndicesCount, GL_UNSIGNED_INT, 0);
+	if (!mesh->isBound)
+		meshCreateGLBuffers(mesh);
+	glBindVertexArray(mesh->VAO);
+	glDrawElements(GL_TRIANGLES, mesh->IndicesCount, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }

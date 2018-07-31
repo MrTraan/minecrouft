@@ -8,7 +8,7 @@
 #include <constants.hpp>
 
 // Forward declaration
-class Chunk;
+struct Chunk;
 
 class HeightMap {
    public:

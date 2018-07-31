@@ -25,6 +25,22 @@
 #define GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX 0x9048
 #define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
 
+void GLAPIENTRY
+MessageCallback(GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length,
+	const GLchar* message,
+	const void* userParam)
+{
+	if (severity == GL_DEBUG_SEVERITY_NOTIFICATION)
+		return;
+	fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+		(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+		type, severity, message);
+}
+
 constexpr char windowName[] = "Minecrouft";
 
 int main(void) {
@@ -70,6 +86,9 @@ int main(void) {
 	printf("Glfw version: %d.%d.%d\n", major, minor, version);
 	printf("OpenGL version: %s\n", glGetString(GL_VERSION));
 	printf("GLM version: %d\n", GLM_VERSION);
+	glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(MessageCallback, 0);
+
 
 	while (!window.ShouldClose()) {
 		float currentFrame = (float)glfwGetTime();
@@ -126,8 +145,6 @@ int main(void) {
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
 		window.SwapBuffers();
-		auto err = glGetError();
-		assert(err == GL_NO_ERROR);
 	}
 
 	ImGui_ImplGlfwGL3_Shutdown();
