@@ -8,6 +8,7 @@
 struct Vertex {
 	float Position[3];
 	float TexCoords[2];
+	float TexIndex;
 };
 
 struct Mesh {

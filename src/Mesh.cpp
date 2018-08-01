@@ -24,6 +24,11 @@ void meshCreateGLBuffers(Mesh* mesh) {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
 	                      (void*)offsetof(Vertex, TexCoords));
+	
+	// texture index 
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+	                      (void*)offsetof(Vertex, TexIndex));
 	glBindVertexArray(0);
 	mesh->isBound = true;
 }

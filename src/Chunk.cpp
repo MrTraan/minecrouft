@@ -2,6 +2,7 @@
 #include <ChunkManager.hpp>
 #include <Debug.hpp>
 #include <HeightMap.hpp>
+#include <TextureAtlas.hpp>
 
 #include <imgui/imgui.h>
 #include <stdlib.h>
@@ -82,28 +83,38 @@ void chunkDestroy(Chunk* chunk) {
 	meshDeleteBuffers(chunk->mesh);
 	delete chunk->mesh;
 }
+
+
+#ifdef WIN32
+	#define CUBES_TEXTURE_PATH "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\textures.png"
+#else
+	#define CUBES_TEXTURE_PATH "../resources/textures.png"
+#endif
+
 void chunkDraw(Chunk* chunk, Shader shader) {
-	TextureManager::GetTexture(eTextureFile::BLOCKS).Bind();
+	static TextureAtlas ta = loadTextureAtlas(CUBES_TEXTURE_PATH, 4, 4);
+
+	bindTextureAtlas(ta);
 	meshDraw(chunk->mesh, shader);
 }
 
 void pushFace(Chunk* chunk, s32 x, s32 y, s32 z, eDirection direction) {
 	eBlockType type = chunk->cubes[x][y][z];
 
-	float uvModifier;
+	int uvModifier;
 
 	switch (type) {
 	case eBlockType::ROCK:
-		uvModifier = UV_Y_BASE;
+		uvModifier = 1;
 		break;
 	case eBlockType::SNOW:
-		uvModifier = 2 * UV_Y_BASE;
+		uvModifier = 2;
 		break;
 	case eBlockType::GRASS:
-		uvModifier = 3 * UV_Y_BASE;
+		uvModifier = 3;
 		break;
 	default:
-		uvModifier = 0.0f;
+		uvModifier = 0;
 		break;
 	}
 
@@ -133,161 +144,141 @@ void pushFace(Chunk* chunk, s32 x, s32 y, s32 z, eDirection direction) {
 	chunk->mesh->VerticesCount += 4;
 	Vertex* v = chunk->mesh->Vertices;
 
+	v[vi + 0].TexCoords[0] = 0.0f;
+	v[vi + 0].TexCoords[1] = 0.0f;
+	v[vi + 1].TexCoords[0] = 1.0f;
+	v[vi + 1].TexCoords[1] = 0.0f;
+	v[vi + 2].TexCoords[0] = 1.0f;
+	v[vi + 2].TexCoords[1] = 1.0f;
+	v[vi + 3].TexCoords[0] = 0.0f;
+	v[vi + 3].TexCoords[1] = 1.0f;
+
 	if (direction == eDirection::FRONT)
 	{
 		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 0].TexCoords[0] = 0.25f;
-		v[vi + 0].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 1].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 1].TexCoords[0] = 0.5f;
-		v[vi + 1].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 2].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 2].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 2].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 2].TexCoords[0] = 0.5f;
-		v[vi + 2].TexCoords[1] = UV_Y_BASE + uvModifier;
 		
 		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 3].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 3].TexCoords[0] = 0.25f;
-		v[vi + 3].TexCoords[1] = UV_Y_BASE + uvModifier;
+
+		for (int i = 0; i < 4; i++)
+			v[vi + i].TexIndex = uvModifier * 4 + 1;
 	}
-	else if (direction == eDirection::BACK)
+	
+	if (direction == eDirection::BACK)
 	{
 		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 0].TexCoords[0] = 0.25f;
-		v[vi + 0].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 1].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 1].TexCoords[0] = 0.5f;
-		v[vi + 1].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 2].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 2].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 2].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 2].TexCoords[0] = 0.5f;
-		v[vi + 2].TexCoords[1] = UV_Y_BASE + uvModifier;
 		
 		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 3].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 3].TexCoords[0] = 0.25f;
-		v[vi + 3].TexCoords[1] = UV_Y_BASE + uvModifier;
+
+		for (int i = 0; i < 4; i++)
+			v[vi + i].TexIndex = uvModifier * 4 + 1;
 	}
 
 	if (direction == eDirection::TOP) {
 		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 0].TexCoords[0] = 0.0f;
-		v[vi + 0].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 1].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 1].TexCoords[0] = 0.25f;
-		v[vi + 1].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 2].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 2].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 2].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 2].TexCoords[0] = 0.25f;
-		v[vi + 2].TexCoords[1] = UV_Y_BASE + uvModifier;
 		
 		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 3].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 3].TexCoords[0] = 0.0f;
-		v[vi + 3].TexCoords[1] = UV_Y_BASE + uvModifier;
+
+		for (int i = 0; i < 4; i++)
+			v[vi + i].TexIndex = uvModifier * 4 + 0;
 	}
 
 	if (direction == eDirection::BOTTOM) {
 		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 0].TexCoords[0] = 0.75f;
-		v[vi + 0].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 1].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 1].TexCoords[0] = 1.0f;
-		v[vi + 1].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 2].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 2].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 2].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 2].TexCoords[0] = 1.0f;
-		v[vi + 2].TexCoords[1] = UV_Y_BASE + uvModifier;
 		
 		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 3].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 3].TexCoords[0] = 0.75f;
-		v[vi + 3].TexCoords[1] = UV_Y_BASE + uvModifier;
+
+		for (int i = 0; i < 4; i++)
+			v[vi + i].TexIndex = uvModifier * 4 + 3;
 	}
 
 	if (direction == eDirection::LEFT) {
 		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 0].TexCoords[0] = 0.25f;
-		v[vi + 0].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 1].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 1].TexCoords[0] = 0.5f;
-		v[vi + 1].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 2].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 2].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 2].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 2].TexCoords[0] = 0.5f;
-		v[vi + 2].TexCoords[1] = UV_Y_BASE + uvModifier;
 		
 		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
 		v[vi + 3].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 3].TexCoords[0] = 0.25f;
-		v[vi + 3].TexCoords[1] = UV_Y_BASE + uvModifier;
+
+		for (int i = 0; i < 4; i++)
+			v[vi + i].TexIndex = uvModifier * 4 + 1;
 	}
 
 	if (direction == eDirection::RIGHT) {
 		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 0].TexCoords[0] = 0.25f;
-		v[vi + 0].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 1].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
 		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 1].TexCoords[0] = 0.5f;
-		v[vi + 1].TexCoords[1] = 0.0f + uvModifier;
 		
 		v[vi + 2].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 2].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 2].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		v[vi + 2].TexCoords[0] = 0.5f;
-		v[vi + 2].TexCoords[1] = UV_Y_BASE + uvModifier;
 		
 		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 1.0f;
 		v[vi + 3].Position[1] = chunk->worldPosition.y + y + 1.0f;
 		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		v[vi + 3].TexCoords[0] = 0.25f;
-		v[vi + 3].TexCoords[1] = UV_Y_BASE + uvModifier;
+
+		for (int i = 0; i < 4; i++)
+			v[vi + i].TexIndex = uvModifier * 4 + 1;
 	}
 }
 

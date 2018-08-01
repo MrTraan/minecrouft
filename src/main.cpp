@@ -17,7 +17,6 @@
 #include <Mesh.hpp>
 #include <Mouse.hpp>
 #include <Shader.hpp>
-#include <Texture.hpp>
 #include <Window.hpp>
 #include <cassert>
 #include <Skybox.hpp>
