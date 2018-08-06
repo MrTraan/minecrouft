@@ -5,8 +5,6 @@
 #include <HeightMap.hpp>
 #include <Mesh.hpp>
 #include <Shader.hpp>
-#include <Texture.hpp>
-#include <TextureManager.hpp>
 #include <constants.hpp>
 
 constexpr int CHUNK_SIZE = 16;
@@ -15,8 +13,8 @@ constexpr int CHUNK_HEIGHT = 256;
 // To optimize memory allocation, memory for 8192 faces are created right away
 // Because profiling showed that no chunk had under 1024 faces
 // Faces are then allocated 1024 by 1024 when needed
-constexpr int FACES_INITIAL_ALLOC = 8192;
-constexpr int FACES_BATCH_ALLOC = 1024;
+constexpr int FACES_INITIAL_ALLOC = 3000;
+constexpr int FACES_BATCH_ALLOC = 500;
 
 constexpr int TEXTURE_ROWS = 4;
 constexpr float UV_Y_BASE = (1.0f / TEXTURE_ROWS);

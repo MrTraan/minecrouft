@@ -16,8 +16,8 @@ class ChunkManager {
 	ChunkManager(glm::vec3 playerPos, Frustrum* frustrum);
 	~ChunkManager();
 
-	int chunkLoadRadius = 2;
-	int chunkUnloadRadius = 2;
+	int chunkLoadRadius = 6;
+	int chunkUnloadRadius = 12;
 	bool ThreadShouldRun = true;
 
 	void Update(glm::vec3 playerPos);
