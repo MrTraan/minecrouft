@@ -8,16 +8,16 @@
 #include <stdlib.h>
 #include <constants.hpp>
 
-static void pushFace(Chunk* chunk, s32 x, s32 y, s32 z, eDirection direction, float width = 1.0f, float height = 1.0f);
+static void pushFace(Chunk* chunk, glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, float width, float height, eDirection direction, int reverse, eBlockType type);
 
 #define FOREACH_CUBE_OF_CHUNK() for (u32 x = 0; x < CHUNK_SIZE; x++) \
 for (u32 y = 0; y < CHUNK_HEIGHT; y++) \
 for (u32 z = 0; z < CHUNK_SIZE; z++) \
 
-void chunkCreateGeometry(Chunk* chunk, glm::i32vec2 pos, eBiome biome, HeightMap* heightMap)
+void chunkCreateGeometry(Chunk* chunk, ChunkCoordinates pos, eBiome biome, HeightMap* heightMap, ChunkMask m)
 {
 	chunk->position = pos;
-	chunk->worldPosition = glm::i32vec3(pos.x * CHUNK_SIZE, 0, pos.y * CHUNK_SIZE);
+	chunk->worldPosition = glm::i32vec3((s32)getXCoord(pos) * CHUNK_SIZE, 0, (s32)getZCoord(pos) * CHUNK_SIZE);
 	chunk->biome = biome;
 
 	heightMap->SetupChunk(chunk);
@@ -33,137 +33,106 @@ void chunkCreateGeometry(Chunk* chunk, glm::i32vec2 pos, eBiome biome, HeightMap
 
 	chunk->facesAllocated = FACES_INITIAL_ALLOC;
 	chunk->facesBuilt = 0;
-	
-	bool mask[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
 
-	for (int i = 0; i < 2; i++)
+	eBlockType* mask = (eBlockType*)malloc(sizeof(eBlockType) * CHUNK_SIZE * CHUNK_HEIGHT);
+	int dims[3] = { CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE };
+
+	for (int reverse = 0; reverse < 2; reverse++)
 	{
-		// zero out mask
-		for (u32 x = 0; x < CHUNK_SIZE; x++)
-			for (u32 y = 0; y < CHUNK_HEIGHT; y++)
-				for (u32 z = 0; z < CHUNK_SIZE; z++)
-					memset(mask[x][y], 0, CHUNK_SIZE);
-
-		auto dir = (i == 0 ? eDirection::LEFT : eDirection::RIGHT);
-
-		FOREACH_CUBE_OF_CHUNK()
+		for (int d = 0; d < 3; d++)
 		{
-			if (mask[x][y][z] || chunk->cubes[x][y][z] == eBlockType::INACTIVE)
-				continue;
+			int u = (d + 1) % 3;
+			int v = (d + 2) % 3;
+			eDirection dir;
+			if (d == 0)
+				dir = (reverse ? SOUTH : BACK);
+			else if (d == 1)
+				dir = (reverse ? BOTTOM : EAST);
+			else if (d == 2)
+				dir = (reverse ? WEST : NORTH);
 
-			if ((dir == eDirection::LEFT && (x == 0 || (x > 0 && chunk->cubes[x - 1][y][z] == eBlockType::INACTIVE))) ||
-				(x == CHUNK_SIZE - 1 || (x < CHUNK_SIZE - 1 && chunk->cubes[x + 1][y][z] == eBlockType::INACTIVE)))
+			int indices[3] = { 0, 0, 0 };
+			int offset[3] = { 0, 0, 0 };
+			offset[d] = 1;
+
+			for (indices[d] = -1; indices[d] < dims[d]; )
 			{
-				mask[x][y][z] = true;
-				int width = 1;
-				while (z + width < CHUNK_SIZE && mask[x][y][z + width] == false && chunk->cubes[x][y][z + width] == chunk->cubes[x][y][z])
+				// compute mask
+				int n = 0;
+				for (indices[v] = 0; indices[v] < dims[v]; indices[v]++)
 				{
-					mask[x][y][z + width] = true;
-					width++;
-				}
-				int height = 1;
-				while (y + height < CHUNK_HEIGHT)
-				{
-					for (u32 zz = z; zz < z + width; zz++)
+					for (indices[u] = 0; indices[u] < dims[u]; indices[u]++)
 					{
-						if (chunk->cubes[x][y + height][zz] != chunk->cubes[x][y][zz] || mask[x][y + height][zz] == true)
-							goto PUSH_FACE_X;
+						eBlockType face1 = (indices[d] >= 0 ? chunk->cubes[indices[0]][indices[1]][indices[2]] : eBlockType::INACTIVE);
+						eBlockType face2 = (indices[d] < dims[d] - 1 ? chunk->cubes[indices[0] + offset[0]][indices[1] + offset[1]][indices[2] + offset[2]] : eBlockType::INACTIVE);
+
+						mask[n++] = (face1 && face2 && face1 == face2)
+							? eBlockType::INACTIVE
+							: (reverse ? face2 : face1);
 					}
-					for (u32 zz = z; zz < z + width; zz++)
-						mask[x][y + height][zz] = true;
-					height++;
 				}
-			PUSH_FACE_X:
-				pushFace(chunk, x, y, z, dir, (float)width, (float)height);
+
+				indices[d]++;
+				n = 0;
+				for (int j = 0; j < dims[v]; j++)
+				{
+					for (int i = 0; i < dims[u]; )
+					{
+						if (mask[n])
+						{
+							int w, h;
+							for (w = 1; i + w < dims[u] && mask[n + w] && mask[n + w] == mask[n]; ++w)
+								;
+
+							for (h = 1; j + h < dims[v]; ++h)
+							{
+								for (int k = 0; k < w; k++)
+								{
+									if (!mask[n + k + h * dims[u]] || mask[n + k + h * dims[u]] != mask[n])
+										goto BREAK_LOOP;
+								}
+							}
+						BREAK_LOOP:
+
+							indices[u] = i;
+							indices[v] = j;
+							int du[3] = { 0, 0, 0 };
+							int dv[3] = { 0, 0, 0 };
+							du[u] = w;
+							dv[v] = h;
+							glm::vec3 p1(indices[0], indices[1], indices[2]);
+							glm::vec3 p2(indices[0] + du[0], indices[1] + du[1], indices[2] + du[2]);
+							glm::vec3 p3(indices[0] + du[0] + dv[0], indices[1] + du[1] + dv[1], indices[2] + du[2] + dv[2]);
+							glm::vec3 p4(indices[0] + dv[0], indices[1] + dv[1], indices[2] + dv[2]);
+
+							if (d == 0)
+								pushFace(chunk, p4, p1, p2, p3, h, w, dir, reverse, mask[n]);
+							else
+								pushFace(chunk, p1, p2, p3, p4, w, h, dir, reverse, mask[n]);
+
+							for (int l = 0; l < h; l++)
+								for (int k = 0; k < w; k++)
+									mask[n + k + l * dims[u]] = eBlockType::INACTIVE;
+
+							i += w;
+							n += w;
+						}
+						else
+						{
+							i++;
+							n++;
+						}
+					}
+				}
 			}
 		}
 	}
-
-	for (int i = 0; i < 2; i++)
-	{
-		// zero out mask
-		for (u32 x = 0; x < CHUNK_SIZE; x++)
-			for (u32 y = 0; y < CHUNK_HEIGHT; y++)
-				for (u32 z = 0; z < CHUNK_SIZE; z++)
-					memset(mask[x][y], 0, CHUNK_SIZE);
-
-		auto dir = (i == 0 ? eDirection::BOTTOM : eDirection::TOP);
-
-		FOREACH_CUBE_OF_CHUNK()
-		{
-			if (mask[x][y][z] || chunk->cubes[x][y][z] == eBlockType::INACTIVE)
-				continue;
-
-			if ((dir == eDirection::BOTTOM && (y == 0 || (y > 0 && chunk->cubes[x][y - 1][z] == eBlockType::INACTIVE))) ||
-				(y == CHUNK_HEIGHT - 1 || (y < CHUNK_HEIGHT - 1) && chunk->cubes[x][y + 1][z] == eBlockType::INACTIVE))
-			{
-				mask[x][y][z] = true;
-				int width = 1;
-				while (x + width < CHUNK_SIZE && mask[x + width][y][z] == false && chunk->cubes[x + width][y][z] == chunk->cubes[x][y][z])
-				{
-					mask[x + width][y][z] = true;
-					width++;
-				}
-				int height = 1;
-				while (z + height < CHUNK_SIZE)
-				{
-					for (u32 xx = x; xx < x + width; xx++)
-					{
-						if (chunk->cubes[xx][y][z + height] != chunk->cubes[xx][y][z] || mask[xx][y][z + height] == true)
-							goto PUSH_FACE_Y;
-					}
-					for (u32 xx = x; xx < x + width; xx++)
-						mask[xx][y][z + height] = true;
-					height++;
-				}
-			PUSH_FACE_Y:
-				pushFace(chunk, x, y, z, dir, (float)width, (float)height);
-			}
-		}
-	}
-	
-	for (int i = 0; i < 2; i++)
-	{
-		// zero out mask
-		for (u32 x = 0; x < CHUNK_SIZE; x++)
-			for (u32 y = 0; y < CHUNK_HEIGHT; y++)
-				for (u32 z = 0; z < CHUNK_SIZE; z++)
-					memset(mask[x][y], 0, CHUNK_SIZE);
-
-		auto dir = (i == 0 ? eDirection::FRONT : eDirection::BACK);
-
-		FOREACH_CUBE_OF_CHUNK()
-		{
-			if (mask[x][y][z] || chunk->cubes[x][y][z] == eBlockType::INACTIVE)
-				continue;
-
-			if ((dir == eDirection::FRONT && (z == 0 || (z > 0 && chunk->cubes[x][y][z - 1] == eBlockType::INACTIVE))) ||
-				(z == CHUNK_SIZE - 1 || (z < CHUNK_SIZE - 1 && chunk->cubes[x][y][z + 1] == eBlockType::INACTIVE)))
-			{
-				mask[x][y][z] = true;
-				int width = 1;
-				while (x + width < CHUNK_SIZE && mask[x + width][y][z] == false && chunk->cubes[x + width][y][z] == chunk->cubes[x][y][z])
-				{
-					mask[x + width][y][z] = true;
-					width++;
-				}
-				int height = 1;
-				while (y + height < CHUNK_HEIGHT)
-				{
-					for (u32 xx = x; xx < x + width; xx++)
-					{
-						if (chunk->cubes[xx][y + height][z] != chunk->cubes[xx][y][z] || mask[xx][y + height][z] == true)
-							goto PUSH_FACE_Z;
-					}
-					for (u32 xx = x; xx < x + width; xx++)
-						mask[xx][y + height][z] = true;
-					height++;
-				}
-			PUSH_FACE_Z:
-				pushFace(chunk, x, y, z, dir, (float)width, (float)height);
-			}
-		}
-	}
+	free(mask);
+	chunk->mesh->Indices = (u32*)realloc(chunk->mesh->Indices, sizeof(u32) * 6 * chunk->facesBuilt);
+	assert(chunk->mesh->Indices != NULL);
+	chunk->mesh->Vertices = (Vertex*)realloc(chunk->mesh->Vertices, sizeof(Vertex) * 4 * chunk->facesBuilt);
+	assert(chunk->mesh->Vertices != NULL);
+	chunk->facesAllocated += FACES_BATCH_ALLOC;
 }
 
 void chunkDestroy(Chunk* chunk) {
@@ -189,9 +158,8 @@ void chunkDraw(Chunk* chunk, Shader shader) {
 	meshDraw(chunk->mesh, shader);
 }
 
-void pushFace(Chunk* chunk, s32 x, s32 y, s32 z, eDirection direction, float width, float height) {
-	eBlockType type = chunk->cubes[x][y][z];
-
+void pushFace(Chunk* chunk, glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, float width, float height, eDirection direction, int reverse, eBlockType type)
+{
 	int uvModifier;
 
 	switch (type) {
@@ -227,151 +195,74 @@ void pushFace(Chunk* chunk, s32 x, s32 y, s32 z, eDirection direction, float wid
 	chunk->facesBuilt++;
 	
 	chunk->mesh->IndicesCount += 6;
-	chunk->mesh->Indices[ii + 0] = vi + 0;
-	chunk->mesh->Indices[ii + 1] = vi + 1;
-	chunk->mesh->Indices[ii + 2] = vi + 2;
-	chunk->mesh->Indices[ii + 3] = vi + 0;
-	chunk->mesh->Indices[ii + 4] = vi + 2;
-	chunk->mesh->Indices[ii + 5] = vi + 3;
+	if (reverse)
+	{
+		chunk->mesh->Indices[ii + 0] = vi + 1;
+		chunk->mesh->Indices[ii + 1] = vi + 0;
+		chunk->mesh->Indices[ii + 2] = vi + 3;
+		chunk->mesh->Indices[ii + 3] = vi + 3;
+		chunk->mesh->Indices[ii + 4] = vi + 2;
+		chunk->mesh->Indices[ii + 5] = vi + 1;
+	}
+	else
+	{
+		chunk->mesh->Indices[ii + 0] = vi + 1;
+		chunk->mesh->Indices[ii + 1] = vi + 2;
+		chunk->mesh->Indices[ii + 2] = vi + 3;
+		chunk->mesh->Indices[ii + 3] = vi + 3;
+		chunk->mesh->Indices[ii + 4] = vi + 0;
+		chunk->mesh->Indices[ii + 5] = vi + 1;
+	}
 
 	chunk->mesh->VerticesCount += 4;
 	Vertex* v = chunk->mesh->Vertices;
 
 	v[vi + 0].TexCoords[0] = 0.0f;
 	v[vi + 0].TexCoords[1] = 0.0f;
-	v[vi + 1].TexCoords[0] = width;
+	v[vi + 1].TexCoords[0] = (float)width;
 	v[vi + 1].TexCoords[1] = 0.0f;
-	v[vi + 2].TexCoords[0] = width;
-	v[vi + 2].TexCoords[1] = height;
+	v[vi + 2].TexCoords[0] = (float)width;
+	v[vi + 2].TexCoords[1] = (float)height;
 	v[vi + 3].TexCoords[0] = 0.0f;
-	v[vi + 3].TexCoords[1] = height;
-
-	if (direction == eDirection::FRONT)
-	{
-		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
+	v[vi + 3].TexCoords[1] = (float)height;
 		
-		v[vi + 1].Position[0] = chunk->worldPosition.x + x + width;
-		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		
-		v[vi + 2].Position[0] = chunk->worldPosition.x + x + width;
-		v[vi + 2].Position[1] = chunk->worldPosition.y + y + height;
-		v[vi + 2].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		
-		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 3].Position[1] = chunk->worldPosition.y + y + height;
-		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 0.0f;
-
+	v[vi + 0].Position[0] = floorf(chunk->worldPosition.x + a.x);
+	v[vi + 0].Position[1] = floorf(chunk->worldPosition.y + a.y);
+	v[vi + 0].Position[2] = floorf(chunk->worldPosition.z + a.z);
+	
+	v[vi + 1].Position[0] = floorf(chunk->worldPosition.x + b.x);
+	v[vi + 1].Position[1] = floorf(chunk->worldPosition.y + b.y);
+	v[vi + 1].Position[2] = floorf(chunk->worldPosition.z + b.z);
+	
+	v[vi + 2].Position[0] = floorf(chunk->worldPosition.x + c.x);
+	v[vi + 2].Position[1] = floorf(chunk->worldPosition.y + c.y);
+	v[vi + 2].Position[2] = floorf(chunk->worldPosition.z + c.z);
+	
+	v[vi + 3].Position[0] = floorf(chunk->worldPosition.x + d.x);
+	v[vi + 3].Position[1] = floorf(chunk->worldPosition.y + d.y);
+	v[vi + 3].Position[2] = floorf(chunk->worldPosition.z + d.z);
+	
+	if (direction == eDirection::SOUTH)
 		for (int i = 0; i < 4; i++)
-			v[vi + i].TexIndex = uvModifier * 4 + 1;
-	}
+			v[vi + i].TexIndex = float(uvModifier * 4 + 1);
 	
 	if (direction == eDirection::BACK)
-	{
-		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		
-		v[vi + 1].Position[0] = chunk->worldPosition.x + x + width;
-		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		
-		v[vi + 2].Position[0] = chunk->worldPosition.x + x + width;
-		v[vi + 2].Position[1] = chunk->worldPosition.y + y + height;
-		v[vi + 2].Position[2] = chunk->worldPosition.z + z + 1.0f;
-		
-		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 3].Position[1] = chunk->worldPosition.y + y + height;
-		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 1.0f;
-
 		for (int i = 0; i < 4; i++)
-			v[vi + i].TexIndex = uvModifier * 4 + 1;
-	}
+			v[vi + i].TexIndex = float(uvModifier * 4 + 1);
 
-	if (direction == eDirection::TOP) {
-		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 1.0f;
-		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		
-		v[vi + 1].Position[0] = chunk->worldPosition.x + x + width;
-		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 1.0f;
-		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		
-		v[vi + 2].Position[0] = chunk->worldPosition.x + x + width;
-		v[vi + 2].Position[1] = chunk->worldPosition.y + y + 1.0f;
-		v[vi + 2].Position[2] = chunk->worldPosition.z + z + height;
-		
-		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 3].Position[1] = chunk->worldPosition.y + y + 1.0f;
-		v[vi + 3].Position[2] = chunk->worldPosition.z + z + height;
-
+	if (direction == eDirection::EAST)
 		for (int i = 0; i < 4; i++)
-			v[vi + i].TexIndex = uvModifier * 4 + 0;
-	}
+			v[vi + i].TexIndex = float(uvModifier * 4);
 
-	if (direction == eDirection::BOTTOM) {
-		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		
-		v[vi + 1].Position[0] = chunk->worldPosition.x + x + width;
-		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 1].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		
-		v[vi + 2].Position[0] = chunk->worldPosition.x + x + width;
-		v[vi + 2].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 2].Position[2] = chunk->worldPosition.z + z + height;
-		
-		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 3].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 3].Position[2] = chunk->worldPosition.z + z + height;
-
+	if (direction == eDirection::BOTTOM)
 		for (int i = 0; i < 4; i++)
-			v[vi + i].TexIndex = uvModifier * 4 + 3;
-	}
+			v[vi + i].TexIndex = float(uvModifier * 4 + 3);
 
-	if (direction == eDirection::LEFT) {
-		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		
-		v[vi + 1].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 1].Position[2] = chunk->worldPosition.z + z + width;
-		
-		v[vi + 2].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 2].Position[1] = chunk->worldPosition.y + y + height;
-		v[vi + 2].Position[2] = chunk->worldPosition.z + z + width;
-		
-		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 0.0f;
-		v[vi + 3].Position[1] = chunk->worldPosition.y + y + height;
-		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 0.0f;
-
+	if (direction == eDirection::WEST)
 		for (int i = 0; i < 4; i++)
-			v[vi + i].TexIndex = uvModifier * 4 + 1;
-	}
+			v[vi + i].TexIndex = float(uvModifier * 4 + 1);
 
-	if (direction == eDirection::RIGHT) {
-		v[vi + 0].Position[0] = chunk->worldPosition.x + x + 1.0f;
-		v[vi + 0].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 0].Position[2] = chunk->worldPosition.z + z + 0.0f;
-		
-		v[vi + 1].Position[0] = chunk->worldPosition.x + x + 1.0f;
-		v[vi + 1].Position[1] = chunk->worldPosition.y + y + 0.0f;
-		v[vi + 1].Position[2] = chunk->worldPosition.z + z + width;
-		
-		v[vi + 2].Position[0] = chunk->worldPosition.x + x + 1.0f;
-		v[vi + 2].Position[1] = chunk->worldPosition.y + y + height;
-		v[vi + 2].Position[2] = chunk->worldPosition.z + z + width;
-		
-		v[vi + 3].Position[0] = chunk->worldPosition.x + x + 1.0f;
-		v[vi + 3].Position[1] = chunk->worldPosition.y + y + height;
-		v[vi + 3].Position[2] = chunk->worldPosition.z + z + 0.0f;
-
+	if (direction == eDirection::NORTH)
 		for (int i = 0; i < 4; i++)
-			v[vi + i].TexIndex = uvModifier * 4 + 1;
-	}
+			v[vi + i].TexIndex = float(uvModifier * 4 + 1);
 }
-

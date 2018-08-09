@@ -33,6 +33,19 @@ void meshCreateGLBuffers(Mesh* mesh) {
 	mesh->isBound = true;
 }
 
+void meshUpdateBuffer(Mesh* mesh)
+{
+	glBindVertexArray(mesh->VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->VBO);
+	glBufferData(GL_ARRAY_BUFFER, mesh->VerticesCount * sizeof(Vertex),
+	             &(mesh->Vertices[0]), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->IndicesCount * sizeof(u32),
+	             &(mesh->Indices[0]), GL_STATIC_DRAW);
+	glBindVertexArray(0);
+}
+
 void meshDeleteBuffers(Mesh* mesh) {
 	glDeleteBuffers(1, &(mesh->EBO));
 	glDeleteBuffers(1, &(mesh->VBO));

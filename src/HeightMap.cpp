@@ -16,7 +16,7 @@ HeightMap::HeightMap() {
 	heightMapNoise.SetNoiseType(FastNoise::Perlin);
 	heightMapNoise.SetFrequency(surfaceFreq);
 
-	caveFreq = 0.08f;
+	caveFreq = 0.01f;
 	caveNoise.SetSeed(seed);
 	caveNoise.SetNoiseType(FastNoise::Perlin);
 	caveNoise.SetFrequency(caveFreq);
@@ -65,6 +65,8 @@ void HeightMap::SetupChunk(Chunk* chunk) {
 	for (s32 x = 0; x < CHUNK_SIZE; x++) {
 		for (s32 z = 0; z < CHUNK_SIZE; z++) {
 			for (s32 y = 0; y < caveLevel; y++) {
+						chunk->cubes[x][y][z] = eBlockType::ROCK;
+						continue;
 				auto height = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z, chunkPos.y + y));
 				auto type = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z) + 1.f) / 2.f;
 				if (height > 0.0f) {

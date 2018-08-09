@@ -35,8 +35,12 @@ class Window {
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-		this->glWindow = glfwCreateWindow(this->Width, this->Height,
-		                                  this->Title, NULL, NULL);
+		auto monitor = glfwGetPrimaryMonitor();
+		auto videoMode = glfwGetVideoMode(monitor);
+		//this->glWindow = glfwCreateWindow(this->Width, this->Height,
+		//                                  this->Title, glfwGetPrimaryMonitor(), NULL);
+		this->glWindow = glfwCreateWindow(videoMode->width, videoMode->height,
+		                                  this->Title, monitor, NULL);
 		if (!this->glWindow) {
 			throw std::runtime_error(
 			    "Fatal Error: Could not create GLFW Window");
@@ -44,6 +48,7 @@ class Window {
 
 		glfwMakeContextCurrent(this->glWindow);
 		glfwSetFramebufferSizeCallback(this->glWindow, framebufferSizeCallback);
+		glfwSwapInterval(0);
 
 		// glad: load all OpenGL function pointers
 		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))

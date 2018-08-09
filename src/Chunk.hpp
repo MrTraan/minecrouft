@@ -7,9 +7,6 @@
 #include <Shader.hpp>
 #include <constants.hpp>
 
-constexpr int CHUNK_SIZE = 16;
-constexpr int CHUNK_HEIGHT = 256;
-
 // To optimize memory allocation, memory for 8192 faces are created right away
 // Because profiling showed that no chunk had under 1024 faces
 // Faces are then allocated 1024 by 1024 when needed
@@ -19,6 +16,15 @@ constexpr int FACES_BATCH_ALLOC = 500;
 constexpr int TEXTURE_ROWS = 4;
 constexpr float UV_Y_BASE = (1.0f / TEXTURE_ROWS);
 
+typedef bool ChunkMask[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
+
+// First 16 bits: x coordinate, next 16 bits: z coordinates
+typedef u32 ChunkCoordinates;
+
+static inline ChunkCoordinates createChunkCoordinates(u16 x, u16 z) { return (z << 16) | x; }
+static inline u16 getXCoord(ChunkCoordinates coord) { return (coord) & 0xFFFF; }
+static inline u16 getZCoord(ChunkCoordinates coord) { return (coord >> 16) & 0xFFFF; }
+
 enum eBiome {
 	FOREST,
 	MOUNTAIN,
@@ -27,12 +33,12 @@ enum eBiome {
 enum eBlockType : char { INACTIVE = 0, GRASS, SAND, DIRT, ROCK, SNOW };
 
 enum eDirection {
-	FRONT = 0,
-	RIGHT = 1,
-	BACK = 2,
-	LEFT = 3,
-	TOP = 4,
-	BOTTOM = 5,
+	SOUTH,
+	NORTH,
+	BACK,
+	WEST,
+	EAST,
+	BOTTOM,
 };
 
 struct Chunk {
@@ -43,13 +49,13 @@ struct Chunk {
 
 	eBiome biome;
 
-	glm::i32vec2 position;
+	ChunkCoordinates position;
 	glm::i32vec3 worldPosition;
 
 	u32 facesAllocated;
 	u32 facesBuilt;
 };
 
-void chunkCreateGeometry(Chunk* chunk, glm::i32vec2 position, eBiome biome, HeightMap* heightMap);
+void chunkCreateGeometry(Chunk* chunk, ChunkCoordinates position, eBiome biome, HeightMap* heightMap, ChunkMask mask);
 void chunkDraw(Chunk* chunk, Shader shader);
 void chunkDestroy(Chunk* chunk);

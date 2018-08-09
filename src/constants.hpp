@@ -22,3 +22,6 @@ typedef char s8;
 #define IS_U16_MUL_SAFE(a, b) (!(((a) != 0) && ((U16_MAX / (a)) < (b))))
 #define IS_U32_MUL_SAFE(a, b) (!(((a) != 0) && ((U32_MAX / (a)) < (b))))
 #define IS_U64_MUL_SAFE(a, b) (!(((a) != 0) && ((U64_MAX / (a)) < (b))))
+
+constexpr int CHUNK_SIZE = 16;
+constexpr int CHUNK_HEIGHT = 256;

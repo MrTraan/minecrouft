@@ -24,9 +24,10 @@ class ChunkManager {
 	void Draw(Shader s);
 	glm::i32vec2 GetChunkPosition(glm::vec3 playerPos);
 
-	bool ChunkIsLoaded(glm::i32vec2 pos);
+	inline bool ChunkIsLoaded(ChunkCoordinates pos);
+	inline bool ChunkIsLoaded(u16 x, u16 y);
 
-	std::vector<Chunk*> chunks;
+	std::map<ChunkCoordinates, Chunk*> chunks;
 	Frustrum* frustrum;
 	HeightMap heightMap;
 
@@ -37,7 +38,7 @@ class ChunkManager {
 	std::mutex ucMutex;
 
 	std::mutex queueInMutex;
-	std::vector<glm::i32vec2> buildingQueueIn;
+	std::vector<ChunkCoordinates> buildingQueueIn;
 
 	std::mutex queueOutMutex;
 	std::vector<Chunk*> buildingQueueOut;

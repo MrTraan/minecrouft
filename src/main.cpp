@@ -44,7 +44,7 @@ constexpr char windowName[] = "Minecrouft";
 
 int main(void) {
 	Window window;
-	Camera camera(glm::vec3(0.0f, CHUNK_SIZE, 0.0f));
+	Camera camera(glm::vec3(SHRT_MAX / 2, 180, SHRT_MAX / 2));
 #ifdef WIN32
 	Shader shader("C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\vertex.glsl",
 	              "C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\fragment.glsl");
@@ -87,6 +87,8 @@ int main(void) {
 	printf("GLM version: %d\n", GLM_VERSION);
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(MessageCallback, 0);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 
 
 	while (!window.ShouldClose()) {

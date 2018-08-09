@@ -2,20 +2,25 @@
 #include <ChunkManager.hpp>
 #include <algorithm>
 
-static void builderThreadRoutine(ChunkManager* manager, glm::i32vec2 firstPosition, int index) {
+static void builderThreadRoutine(ChunkManager* manager, int index)
+{
 	std::unique_lock<std::mutex> ulock(manager->ucMutex, std::defer_lock);
+	ChunkMask mask;
 
-	while (true) {
+	while (true)
+	{
 		ulock.lock();
 		manager->updateCondition.wait(ulock);
 		ulock.unlock();
 		if (!manager->ThreadShouldRun)
 			break;
-		while (true) {
+		while (true)
+		{
 			if (!manager->ThreadShouldRun)
 				break;
 			manager->queueInMutex.lock();
-			if (manager->buildingQueueIn.empty()) {
+			if (manager->buildingQueueIn.empty())
+			{
 				manager->queueInMutex.unlock();
 				break;
 			}
@@ -25,7 +30,7 @@ static void builderThreadRoutine(ChunkManager* manager, glm::i32vec2 firstPositi
 			manager->queueInMutex.unlock();
 
 			Chunk* c = new Chunk();
-			chunkCreateGeometry(c, task, MOUNTAIN, &(manager->heightMap));
+			chunkCreateGeometry(c, task, MOUNTAIN, &(manager->heightMap), mask);
 			manager->queueOutMutex.lock();
 			manager->buildingQueueOut.push_back(c);
 			manager->queueOutMutex.unlock();
@@ -33,7 +38,8 @@ static void builderThreadRoutine(ChunkManager* manager, glm::i32vec2 firstPositi
 	}
 }
 
-glm::i32vec2 ChunkManager::GetChunkPosition(glm::vec3 pos) {
+glm::i32vec2 ChunkManager::GetChunkPosition(glm::vec3 pos)
+{
 	glm::i32vec2 chunkPosition((s32)pos.x / CHUNK_SIZE,
                        (s32)pos.z / CHUNK_SIZE);
 
@@ -45,28 +51,32 @@ glm::i32vec2 ChunkManager::GetChunkPosition(glm::vec3 pos) {
 	return chunkPosition;
 }
 
-ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum) : frustrum(frustrum) {
+ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum) : frustrum(frustrum)
+{
 	ThreadShouldRun = true;
 	playerPos.y = 0.0f;
 	auto chunkPosition = GetChunkPosition(playerPos);
 	lastPosition = chunkPosition;
+	ChunkMask mask;
 
-	glm::i32vec2 cursor(0, 0);
+	glm::u16vec2 cursor(0, 0);
 
 	for (cursor.x = chunkPosition.x - chunkLoadRadius;
 			cursor.x <= chunkPosition.x + chunkLoadRadius;
 			cursor.x++) {
 		for (cursor.y = chunkPosition.y - chunkLoadRadius;
 				cursor.y <= chunkPosition.y + chunkLoadRadius;
-				cursor.y++) {
+				cursor.y++)
+		{
 			Chunk* c = new Chunk();
-			chunkCreateGeometry(c, cursor, MOUNTAIN, &heightMap);
-			chunks.push_back(c);
+			ChunkCoordinates coord = createChunkCoordinates(cursor.x, cursor.y);
+			chunkCreateGeometry(c, coord, MOUNTAIN, &heightMap, mask);
+			chunks[coord] =  c;
 		}
 	}
 
 	for (int i = 0; i < NUM_MANAGER_THREADS; i++)
-		builderRoutineThreads[i] = std::thread(builderThreadRoutine, this, chunkPosition, i);
+		builderRoutineThreads[i] = std::thread(builderThreadRoutine, this, i);
 }
 
 ChunkManager::~ChunkManager() {
@@ -76,24 +86,25 @@ ChunkManager::~ChunkManager() {
 	ucMutex.unlock();
 	for (int i = 0; i < NUM_MANAGER_THREADS; i++)
 		builderRoutineThreads[i].join();
-	for (auto& c : chunks)
+	for (auto& e : chunks)
 	{
-		chunkDestroy(c);
-		delete c;
+		chunkDestroy(e.second);
+		delete e.second;
 	}
 }
 
-bool ChunkManager::ChunkIsLoaded(glm::i32vec2 pos) {
-	for (auto& it : chunks) {
-		if (it->position.x == pos.x && it->position.y == pos.y)
-			return true;
-	}
-	return false;
+inline bool ChunkManager::ChunkIsLoaded(ChunkCoordinates pos)
+{
+	return chunks.find(pos) != chunks.end();
+}
+
+inline bool ChunkManager::ChunkIsLoaded(u16 x, u16 y)
+{
+	return chunks.find(createChunkCoordinates(x, y)) != chunks.end();
 }
 
 void ChunkManager::Update(glm::vec3 playerPos) {
 	position = GetChunkPosition(playerPos);
-
 
 	ImGui::Text("Chunk Position: %d %d\n", position.x, position.y);
 	ImGui::Text("Chunks loaded: %lu\n", chunks.size());
@@ -108,7 +119,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 		auto elem = buildingQueueOut.back();
 		buildingQueueOut.pop_back();
 		if (!ChunkIsLoaded(elem->position))
-			chunks.push_back(elem);
+			chunks[elem->position] = elem;
 		else {
 			// Race condition: the element was built twice
 			chunkDestroy(elem);
@@ -120,69 +131,75 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	if (position == lastPosition)
 		return ;
 
-	std::vector<glm::i32vec2> chunksToBuild;
+	std::vector<ChunkCoordinates> chunksToBuild;
 	s32 deltaX = position.x - lastPosition.x;
 	s32 deltaY = position.y - lastPosition.y;
 
 	if (deltaX != 0 || deltaY != 0) {
-		auto it = std::begin(chunks);
-		while (it != std::end(chunks)) {
-			auto cpos = (*it)->position;
-			if (abs(position.x - cpos.x) > chunkUnloadRadius || abs(position.y - cpos.y) > chunkUnloadRadius) {
-				chunkDestroy(*it);
-				delete *it;
+		
+		for (auto it = std::begin(chunks); it != std::end(chunks);)
+		{
+			auto cpos = it->second->position;
+			if (abs(position.x - getXCoord(cpos)) > chunkUnloadRadius || abs(position.y - getZCoord(cpos)) > chunkUnloadRadius)
+			{
+				chunkDestroy(it->second);
+				delete it->second;
 				it = chunks.erase(it);
-			} else {
+			}
+			else
 				++it;
-			}
-		}
-	}
-	if (deltaX < 0) {
-		for (s32 x = position.x - chunkLoadRadius; x < lastPosition.x - chunkLoadRadius; x++) {
-			for (s32 y = position.y - chunkLoadRadius; y <= position.y + chunkLoadRadius; y++) {
-				chunksToBuild.push_back(glm::i32vec2(x, y));
-			}
-		}
-	}
-	if (deltaX > 0) {
-		for (s32 x = position.x + chunkLoadRadius; x > lastPosition.x + chunkLoadRadius; x--) {
-			for (s32 y = position.y - chunkLoadRadius; y <= position.y + chunkLoadRadius; y++) {
-				chunksToBuild.push_back(glm::i32vec2(x, y));
-			}
-		}
-	}
-	if (deltaY < 0) {
-		for (s32 y = position.y - chunkLoadRadius; y < lastPosition.y - chunkLoadRadius; y++) {
-			for (s32 x = position.x - chunkLoadRadius; x <= position.x + chunkLoadRadius; x++) {
-				chunksToBuild.push_back(glm::i32vec2(x, y));
-			}
-		}
-	}
-	if (deltaY > 0) {
-		for (s32 y = position.y + chunkLoadRadius; y > lastPosition.y + chunkLoadRadius; y--) {
-			for (s32 x = position.x - chunkLoadRadius; x <= position.x + chunkLoadRadius; x++) {
-				chunksToBuild.push_back(glm::i32vec2(x, y));
-			}
 		}
 	}
 
-	if (chunksToBuild.size() > 0) {
+	if (deltaX < 0)
+	{
+		for (u16 x = position.x - chunkLoadRadius; x < lastPosition.x - chunkLoadRadius; x++)
+			for (u16 y = position.y - chunkLoadRadius; y <= position.y + chunkLoadRadius; y++)
+				if (!ChunkIsLoaded(x, y))
+					chunksToBuild.push_back(createChunkCoordinates(x, y));
+	}
+	
+	if (deltaX > 0)
+	{
+		for (u16 x = position.x + chunkLoadRadius; x > lastPosition.x + chunkLoadRadius; x--)
+			for (u16 y = position.y - chunkLoadRadius; y <= position.y + chunkLoadRadius; y++)
+				if (!ChunkIsLoaded(x, y))
+					chunksToBuild.push_back(createChunkCoordinates(x, y));
+	}
+
+	if (deltaY < 0)
+	{
+		for (u16 y = position.y - chunkLoadRadius; y < lastPosition.y - chunkLoadRadius; y++)
+			for (u16 x = position.x - chunkLoadRadius; x <= position.x + chunkLoadRadius; x++)
+				if (!ChunkIsLoaded(x, y))
+					chunksToBuild.push_back(createChunkCoordinates(x, y));
+	}
+
+	if (deltaY > 0)
+	{
+		for (u16 y = position.y + chunkLoadRadius; y > lastPosition.y + chunkLoadRadius; y--)
+			for (u16 x = position.x - chunkLoadRadius; x <= position.x + chunkLoadRadius; x++)
+				if (!ChunkIsLoaded(x, y))
+					chunksToBuild.push_back(createChunkCoordinates(x, y));
+	}
+
+	if (chunksToBuild.size() > 0)
+	{
 		queueInMutex.lock();
 
 		// Flush obsolete orders
-		auto it = std::begin(buildingQueueIn);
-		while (it != std::end(buildingQueueIn)) {
+		for (auto it = std::begin(buildingQueueIn); it != std::end(buildingQueueIn);)
+		{
 			auto cpos = *it;
-			if (abs(position.x - cpos.x) > chunkUnloadRadius || abs(position.y - cpos.y) > chunkUnloadRadius) {
+			if (abs(position.x - getXCoord(cpos)) > chunkUnloadRadius || abs(position.y - getZCoord(cpos)) > chunkUnloadRadius)
 				it = buildingQueueIn.erase(it);
-			
-			} else {
+			else
 				++it;
-			}
 		}
 
 		for (auto& elem : chunksToBuild)
 			buildingQueueIn.push_back(elem);
+
 		queueInMutex.unlock();
 		
 		ucMutex.lock();
@@ -200,12 +217,14 @@ void ChunkManager::Draw(Shader s) {
 
 	u32 skipped = 0;
 
-	for (auto& c : chunks) {
-		bounds.min = c->worldPosition;
-		bounds.max = glm::vec3(c->worldPosition) + sizeOffset;
+	for (auto& it : chunks)
+	{
+		bounds.min = it.second->worldPosition;
+		bounds.max = glm::vec3(it.second->worldPosition) + sizeOffset;
 		// Check if any of eight corners of the chunk is in sight
-		if (frustrum->IsCubeIn(bounds)) {
-			chunkDraw(c, s);
+		if (frustrum->IsCubeIn(bounds))
+		{
+			chunkDraw(it.second, s);
 			skipped++;
 		}
 

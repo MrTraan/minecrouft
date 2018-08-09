@@ -23,5 +23,6 @@ struct Mesh {
 
 void meshCreateGLBuffers(Mesh* mesh);
 void meshDeleteBuffers(Mesh* mesh);
+void meshUpdateBuffer(Mesh* mesh);
 
 void meshDraw(Mesh* mesh, Shader shader);
