@@ -16,8 +16,6 @@ constexpr int FACES_BATCH_ALLOC = 500;
 constexpr int TEXTURE_ROWS = 4;
 constexpr float UV_Y_BASE = (1.0f / TEXTURE_ROWS);
 
-typedef bool ChunkMask[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
-
 // First 16 bits: x coordinate, next 16 bits: z coordinates
 typedef u32 ChunkCoordinates;
 
@@ -42,7 +40,9 @@ enum eDirection {
 };
 
 struct Chunk {
-	Mesh* mesh;
+	Mesh* mesh = nullptr;
+	u32 facesAllocated = 0;
+	u32 facesBuilt = 0;
 
 	// 3 dimensionnal to note cube presence, because why not
 	eBlockType cubes[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
@@ -52,10 +52,10 @@ struct Chunk {
 	ChunkCoordinates position;
 	glm::i32vec3 worldPosition;
 
-	u32 facesAllocated;
-	u32 facesBuilt;
+	Chunk* poolNextItem;
 };
 
-void chunkCreateGeometry(Chunk* chunk, ChunkCoordinates position, eBiome biome, HeightMap* heightMap, ChunkMask mask);
+Chunk* preallocateChunk();
+void chunkCreateGeometry(Chunk* chunk, HeightMap* heightMap, eBlockType* mask);
 void chunkDraw(Chunk* chunk, Shader shader);
 void chunkDestroy(Chunk* chunk);

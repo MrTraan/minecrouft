@@ -14,27 +14,10 @@ static void pushFace(Chunk* chunk, glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::v
 for (u32 y = 0; y < CHUNK_HEIGHT; y++) \
 for (u32 z = 0; z < CHUNK_SIZE; z++) \
 
-void chunkCreateGeometry(Chunk* chunk, ChunkCoordinates pos, eBiome biome, HeightMap* heightMap, ChunkMask m)
+void chunkCreateGeometry(Chunk* chunk, HeightMap* heightMap, eBlockType* mask)
 {
-	chunk->position = pos;
-	chunk->worldPosition = glm::i32vec3((s32)getXCoord(pos) * CHUNK_SIZE, 0, (s32)getZCoord(pos) * CHUNK_SIZE);
-	chunk->biome = biome;
-
 	heightMap->SetupChunk(chunk);
 
-	chunk->mesh = new Mesh();
-	chunk->mesh->isBound = false;
-	chunk->mesh->Indices = (u32*)malloc(sizeof(u32) * 6 * FACES_INITIAL_ALLOC);
-	assert(chunk->mesh->Indices != NULL);
-	chunk->mesh->Vertices = (Vertex*)malloc(sizeof(Vertex) * 4 * FACES_INITIAL_ALLOC);
-	assert(chunk->mesh->Vertices != NULL);
-	chunk->mesh->IndicesCount = 0;
-	chunk->mesh->VerticesCount = 0;
-
-	chunk->facesAllocated = FACES_INITIAL_ALLOC;
-	chunk->facesBuilt = 0;
-
-	eBlockType* mask = (eBlockType*)malloc(sizeof(eBlockType) * CHUNK_SIZE * CHUNK_HEIGHT);
 	int dims[3] = { CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE };
 	glm::ivec3 p1, p2, p3, p4;
 
@@ -128,12 +111,11 @@ void chunkCreateGeometry(Chunk* chunk, ChunkCoordinates pos, eBiome biome, Heigh
 			}
 		}
 	}
-	free(mask);
-	chunk->mesh->Indices = (u32*)realloc(chunk->mesh->Indices, sizeof(u32) * 6 * chunk->facesBuilt);
-	assert(chunk->mesh->Indices != NULL);
-	chunk->mesh->Vertices = (Vertex*)realloc(chunk->mesh->Vertices, sizeof(Vertex) * 4 * chunk->facesBuilt);
-	assert(chunk->mesh->Vertices != NULL);
-	chunk->facesAllocated += FACES_BATCH_ALLOC;
+	/* chunk->mesh->Indices = (u32*)realloc(chunk->mesh->Indices, sizeof(u32) * 6 * chunk->facesBuilt); */
+	/* assert(chunk->mesh->Indices != NULL); */
+	/* chunk->mesh->Vertices = (Vertex*)realloc(chunk->mesh->Vertices, sizeof(Vertex) * 4 * chunk->facesBuilt); */
+	/* assert(chunk->mesh->Vertices != NULL); */
+	/* chunk->facesAllocated += FACES_BATCH_ALLOC; */
 }
 
 void chunkDestroy(Chunk* chunk) {
@@ -266,4 +248,20 @@ void pushFace(Chunk* chunk, glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, 
 	if (direction == eDirection::NORTH)
 		for (int i = 0; i < 4; i++)
 			v[vi + i].TexIndex = float(uvModifier * 4 + 1);
+}
+
+Chunk* preallocateChunk()
+{
+	Chunk* chunk = new Chunk();
+	chunk->mesh = new Mesh();
+	chunk->mesh->isBound = false;
+	chunk->mesh->Indices = (u32*)malloc(sizeof(u32) * 6 * FACES_INITIAL_ALLOC);
+	assert(chunk->mesh->Indices != NULL);
+	chunk->mesh->Vertices = (Vertex*)malloc(sizeof(Vertex) * 4 * FACES_INITIAL_ALLOC);
+	assert(chunk->mesh->Vertices != NULL);
+	chunk->mesh->IndicesCount = 0;
+	chunk->mesh->VerticesCount = 0;
+	chunk->facesAllocated = FACES_INITIAL_ALLOC;
+	chunk->facesBuilt = 0;
+	return chunk;
 }

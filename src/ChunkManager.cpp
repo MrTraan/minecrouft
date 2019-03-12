@@ -5,7 +5,7 @@
 static void builderThreadRoutine(ChunkManager* manager, int index)
 {
 	std::unique_lock<std::mutex> ulock(manager->ucMutex, std::defer_lock);
-	ChunkMask mask;
+	eBlockType mask[CHUNK_SIZE * CHUNK_HEIGHT];
 
 	while (true)
 	{
@@ -29,10 +29,9 @@ static void builderThreadRoutine(ChunkManager* manager, int index)
 			manager->buildingQueueIn.erase(it);
 			manager->queueInMutex.unlock();
 
-			Chunk* c = new Chunk();
-			chunkCreateGeometry(c, task, eBiome::MOUNTAIN, &(manager->heightMap), mask);
+			chunkCreateGeometry(task, &(manager->heightMap), mask);
 			manager->queueOutMutex.lock();
-			manager->buildingQueueOut.push_back(c);
+			manager->buildingQueueOut.push_back(task);
 			manager->queueOutMutex.unlock();
 		}
 	}
@@ -59,7 +58,7 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum) : frustrum(f
 	playerPos.y = 0.0f;
 	auto chunkPosition = GetChunkPosition(playerPos);
 	lastPosition = chunkPosition;
-	ChunkMask mask;
+	eBlockType mask[CHUNK_SIZE * CHUNK_HEIGHT];
 
 	glm::u16vec2 cursor(0, 0);
 
@@ -70,10 +69,13 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum) : frustrum(f
 				cursor.y <= chunkPosition.y + chunkLoadRadius;
 				cursor.y++)
 		{
-			Chunk* c = new Chunk();
-			ChunkCoordinates coord = createChunkCoordinates(cursor.x, cursor.y);
-			chunkCreateGeometry(c, coord, MOUNTAIN, &heightMap, mask);
-			chunks[coord] =  c;
+			ChunkCoordinates pos = createChunkCoordinates(cursor.x, cursor.y);
+			auto chunk = popChunkFromPool();
+			chunk->position = pos;
+			chunk->worldPosition = glm::i32vec3((s32)getXCoord(pos) * CHUNK_SIZE, 0, (s32)getZCoord(pos) * CHUNK_SIZE);
+			chunk->biome = eBiome::MOUNTAIN;
+			chunkCreateGeometry(chunk, &heightMap, mask);
+			chunks[pos] = chunk;
 		}
 	}
 
@@ -149,8 +151,8 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			chunks[elem->position] = elem;
 		else {
 			// Race condition: the element was built twice
-			chunkDestroy(elem);
-			delete elem;
+			meshDeleteBuffers(elem->mesh);
+			pushChunkToPool(elem);
 		}
 	}
 	queueOutMutex.unlock();
@@ -165,8 +167,8 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			auto cpos = it->second->position;
 			if (abs(position.x - getXCoord(cpos)) > chunkUnloadRadius || abs(position.y - getZCoord(cpos)) > chunkUnloadRadius)
 			{
-				chunkDestroy(it->second);
-				delete it->second;
+				meshDeleteBuffers(it->second->mesh);
+				pushChunkToPool(it->second);
 				it = chunks.erase(it);
 			}
 			else
@@ -213,15 +215,24 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 		// Flush obsolete orders
 		for (auto it = std::begin(buildingQueueIn); it != std::end(buildingQueueIn);)
 		{
-			auto cpos = *it;
+			auto cpos = (*it)->position;
 			if (abs(position.x - getXCoord(cpos)) > chunkUnloadRadius || abs(position.y - getZCoord(cpos)) > chunkUnloadRadius)
+			{
 				it = buildingQueueIn.erase(it);
+				pushChunkToPool(*it);
+			}
 			else
 				++it;
 		}
 
-		for (auto& elem : chunksToBuild)
-			buildingQueueIn.push_back(elem);
+		for (auto& pos : chunksToBuild)
+		{
+			auto chunk = popChunkFromPool();
+			chunk->position = pos;
+			chunk->worldPosition = glm::i32vec3((s32)getXCoord(pos) * CHUNK_SIZE, 0, (s32)getZCoord(pos) * CHUNK_SIZE);
+			chunk->biome = eBiome::MOUNTAIN;
+			buildingQueueIn.push_back(chunk);
+		}
 
 		queueInMutex.unlock();
 		
@@ -253,4 +264,29 @@ void ChunkManager::Draw(Shader s) {
 
 	}
 	ImGui::Text("Chunks drawn: %u / %lu\n", skipped, chunks.size());
+}
+
+Chunk* ChunkManager::popChunkFromPool()
+{
+	if (poolHead == nullptr)
+	{
+		return preallocateChunk();
+	}
+	auto item = poolHead;
+	poolHead = poolHead->poolNextItem;
+	item->poolNextItem = nullptr;
+	return item;
+}
+
+void ChunkManager::pushChunkToPool(Chunk* item)
+{
+	if (poolHead == nullptr)
+	{
+		poolHead = item;
+	}
+	else
+	{
+		item->poolNextItem = poolHead;
+		poolHead = item;
+	}
 }

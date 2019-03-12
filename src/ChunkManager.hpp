@@ -38,10 +38,14 @@ class ChunkManager {
 	std::mutex ucMutex;
 
 	std::mutex queueInMutex;
-	std::vector<ChunkCoordinates> buildingQueueIn;
+	std::vector<Chunk*> buildingQueueIn;
 
 	std::mutex queueOutMutex;
 	std::vector<Chunk*> buildingQueueOut;
 
 	std::thread builderRoutineThreads[NUM_MANAGER_THREADS];
+
+	Chunk* poolHead = nullptr;
+	Chunk* popChunkFromPool();
+	void pushChunkToPool(Chunk* item);
 };

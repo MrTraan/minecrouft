@@ -50,6 +50,7 @@ void meshDeleteBuffers(Mesh* mesh) {
 	glDeleteBuffers(1, &(mesh->EBO));
 	glDeleteBuffers(1, &(mesh->VBO));
 	glDeleteVertexArrays(1, &(mesh->VAO));
+	mesh->isBound = false;
 }
 
 void meshDraw(Mesh* mesh, Shader shader) {
