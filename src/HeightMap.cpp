@@ -34,18 +34,6 @@ HeightMap::HeightMap() {
 	elevationMultiplier = 1.55f;
 }
 
-float HeightMap::GetElevationAt(s32 x, s32 y) {
-	return (elevationNoise.GetNoise(x, y) + 1.0f) / 2.0f * elevationMultiplier;
-}
-
-float HeightMap::GetOffsetAt(s32 x, s32 y) {
-	return (offsetNoise.GetNoise(x, y) + 1.0f) / 2.0f * CHUNK_SIZE;
-}
-
-float HeightMap::GetMoistureAt(s32 x, s32 y) {
-	return (moistureNoise.GetNoise(x, y) + 1.0f) / 2.0f;
-}
-
 float HeightMap::GetHeightAt(s32 x, s32 y) {
 	float exponant = GetElevationAt(x, y);
 	float offset = GetOffsetAt(x, y);
@@ -65,17 +53,17 @@ void HeightMap::SetupChunk(Chunk* chunk) {
 	for (s32 x = 0; x < CHUNK_SIZE; x++) {
 		for (s32 z = 0; z < CHUNK_SIZE; z++) {
 			for (s32 y = 0; y < caveLevel; y++) {
-				auto height = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z, chunkPos.y + y));
-				auto type = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z) + 1.f) / 2.f;
-				if (height > 0.0f) {
-					if (type < 0.33f) 
-						chunk->cubes[x][y][z] = eBlockType::SAND;
-					else if (type < 0.5f) 
-						chunk->cubes[x][y][z] = eBlockType::DIRT;
-					else
-						chunk->cubes[x][y][z] = eBlockType::ROCK;
-				}
-				else
+				//auto height = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z, chunkPos.y + y));
+				//auto type = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z) + 1.f) / 2.f;
+				//if (height > 0.0f) {
+				//	if (type < 0.33f) 
+				//		chunk->cubes[x][y][z] = eBlockType::SAND;
+				//	else if (type < 0.5f) 
+				//		chunk->cubes[x][y][z] = eBlockType::DIRT;
+				//	else
+				//		chunk->cubes[x][y][z] = eBlockType::ROCK;
+				//}
+				//else
 					chunk->cubes[x][y][z] = eBlockType::INACTIVE;
 			}
 

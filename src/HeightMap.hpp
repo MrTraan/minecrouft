@@ -11,11 +11,12 @@
 struct Chunk;
 
 class HeightMap {
-   public:
+public:
 	HeightMap();
 
 	void SetupChunk(Chunk* chunk);
 
+private:
 	FastNoise heightMapNoise;
 	float surfaceFreq;
 	float GetHeightAt(s32 x, s32 y);
@@ -23,16 +24,26 @@ class HeightMap {
 	FastNoise elevationNoise;
 	float elevationFreq;
 	float elevationMultiplier;
-	float GetElevationAt(s32 x, s32 y);
 
 	FastNoise moistureNoise;
 	float moistureFreq;
-	float GetMoistureAt(s32 x, s32 y);
 
 	FastNoise offsetNoise;
 	float offsetFreq;
-	float GetOffsetAt(s32 x, s32 y);
 
 	FastNoise caveNoise;
 	float caveFreq;
+
+	inline float GetElevationAt(s32 x, s32 y) {
+		return (elevationNoise.GetNoise(x, y) + 1.0f) / 2.0f * elevationMultiplier;
+	}
+
+	inline float GetOffsetAt(s32 x, s32 y) {
+		return (offsetNoise.GetNoise(x, y) + 1.0f) / 2.0f * CHUNK_SIZE;
+	}
+
+	inline float GetMoistureAt(s32 x, s32 y) {
+		return (moistureNoise.GetNoise(x, y) + 1.0f) / 2.0f;
+	}
+
 };

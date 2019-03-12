@@ -123,7 +123,6 @@ void chunkDestroy(Chunk* chunk) {
 		free(chunk->mesh->Vertices);
 	if (chunk->mesh->Indices)
 		free(chunk->mesh->Indices);
-	meshDeleteBuffers(chunk->mesh);
 	delete chunk->mesh;
 }
 

@@ -92,9 +92,16 @@ ChunkManager::~ChunkManager() {
 		builderRoutineThreads[i].join();
 	for (auto& e : chunks)
 	{
+		meshDeleteBuffers(e.second->mesh);
 		chunkDestroy(e.second);
 		delete e.second;
 	}
+	while (poolHead != nullptr)
+	{
+		chunkDestroy(poolHead);
+		poolHead = poolHead->poolNextItem;
+	}
+
 }
 
 inline bool ChunkManager::ChunkIsLoaded(ChunkCoordinates pos)
@@ -151,7 +158,9 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			chunks[elem->position] = elem;
 		else {
 			// Race condition: the element was built twice
-			meshDeleteBuffers(elem->mesh);
+			printf("Race condition?\n");
+			if (elem->mesh->isBound)
+				meshDeleteBuffers(elem->mesh);
 			pushChunkToPool(elem);
 		}
 	}
@@ -167,7 +176,8 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			auto cpos = it->second->position;
 			if (abs(position.x - getXCoord(cpos)) > chunkUnloadRadius || abs(position.y - getZCoord(cpos)) > chunkUnloadRadius)
 			{
-				meshDeleteBuffers(it->second->mesh);
+				if (it->second->mesh->isBound)
+					meshDeleteBuffers(it->second->mesh);
 				pushChunkToPool(it->second);
 				it = chunks.erase(it);
 			}
@@ -218,8 +228,8 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 			auto cpos = (*it)->position;
 			if (abs(position.x - getXCoord(cpos)) > chunkUnloadRadius || abs(position.y - getZCoord(cpos)) > chunkUnloadRadius)
 			{
-				it = buildingQueueIn.erase(it);
 				pushChunkToPool(*it);
+				it = buildingQueueIn.erase(it);
 			}
 			else
 				++it;
@@ -240,9 +250,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 		updateCondition.notify_all();
 		ucMutex.unlock();
 	}
-
 	lastPosition = position;
-
 }
 
 void ChunkManager::Draw(Shader s) {
