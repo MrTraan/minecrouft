@@ -36,6 +36,7 @@ void chunkCreateGeometry(Chunk* chunk, ChunkCoordinates pos, eBiome biome, Heigh
 
 	eBlockType* mask = (eBlockType*)malloc(sizeof(eBlockType) * CHUNK_SIZE * CHUNK_HEIGHT);
 	int dims[3] = { CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE };
+	glm::ivec3 p1, p2, p3, p4;
 
 	for (int reverse = 0; reverse < 2; reverse++)
 	{
@@ -100,10 +101,10 @@ void chunkCreateGeometry(Chunk* chunk, ChunkCoordinates pos, eBiome biome, Heigh
 							int dv[3] = { 0, 0, 0 };
 							du[u] = w;
 							dv[v] = h;
-							glm::vec3 p1(indices[0], indices[1], indices[2]);
-							glm::vec3 p2(indices[0] + du[0], indices[1] + du[1], indices[2] + du[2]);
-							glm::vec3 p3(indices[0] + du[0] + dv[0], indices[1] + du[1] + dv[1], indices[2] + du[2] + dv[2]);
-							glm::vec3 p4(indices[0] + dv[0], indices[1] + dv[1], indices[2] + dv[2]);
+							p1.x = indices[0]; p1.y = indices[1]; p1.z = indices[2];
+							p2.x = indices[0] + du[0]; p2.y = indices[1] + du[1]; p2.z = indices[2] + du[2];
+							p3.x = indices[0] + du[0] + dv[0]; p3.y = indices[1] + du[1] + dv[1]; p3.z = indices[2] + du[2] + dv[2];
+							p4.x = indices[0] + dv[0]; p4.y = indices[1] + dv[1]; p4.z = indices[2] + dv[2];
 
 							if (d == 0)
 								pushFace(chunk, p4, p1, p2, p3, h, w, dir, reverse, mask[n]);

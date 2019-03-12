@@ -17,7 +17,7 @@ static void builderThreadRoutine(ChunkManager* manager, int index)
 		while (true)
 		{
 			if (!manager->ThreadShouldRun)
-				break;
+				goto EXIT_THREAD_ROUTINE;
 			manager->queueInMutex.lock();
 			if (manager->buildingQueueIn.empty())
 			{
@@ -30,12 +30,14 @@ static void builderThreadRoutine(ChunkManager* manager, int index)
 			manager->queueInMutex.unlock();
 
 			Chunk* c = new Chunk();
-			chunkCreateGeometry(c, task, MOUNTAIN, &(manager->heightMap), mask);
+			chunkCreateGeometry(c, task, eBiome::MOUNTAIN, &(manager->heightMap), mask);
 			manager->queueOutMutex.lock();
 			manager->buildingQueueOut.push_back(c);
 			manager->queueOutMutex.unlock();
 		}
 	}
+EXIT_THREAD_ROUTINE:
+	(void)0;
 }
 
 glm::i32vec2 ChunkManager::GetChunkPosition(glm::vec3 pos)
@@ -105,12 +107,37 @@ inline bool ChunkManager::ChunkIsLoaded(u16 x, u16 y)
 
 void ChunkManager::Update(glm::vec3 playerPos) {
 	position = GetChunkPosition(playerPos);
+	std::vector<ChunkCoordinates> chunksToBuild;
+	s32 deltaX = position.x - lastPosition.x;
+	s32 deltaY = position.y - lastPosition.y;
 
 	ImGui::Text("Chunk Position: %d %d\n", position.x, position.y);
 	ImGui::Text("Chunks loaded: %lu\n", chunks.size());
 
-	ImGui::SliderInt("Chunk load radius", &chunkLoadRadius, 1, 32);
-	ImGui::SliderInt("Chunk unload radius", &chunkUnloadRadius, 1, 32);
+	static int newChunkLoadRadius = chunkLoadRadius;
+	static int newChunkUnloadRadius = chunkUnloadRadius;
+	ImGui::SliderInt("Chunk load radius", &newChunkLoadRadius, 1, 32);
+	ImGui::SliderInt("Chunk unload radius", &newChunkUnloadRadius, 1, 32);
+
+	bool forceUpdate = false;
+	if (ImGui::Button("Apply"))
+	{
+		for (u16 x = position.x - newChunkLoadRadius;
+			x <= position.x + newChunkLoadRadius;
+			x++)
+		{
+			for (u16 y = position.y - newChunkLoadRadius;
+				y <= position.y + newChunkLoadRadius;
+				y++)
+			{
+				if (!ChunkIsLoaded(x, y))
+					chunksToBuild.push_back(createChunkCoordinates(x, y));
+			}
+		}
+		chunkLoadRadius = newChunkLoadRadius;
+		chunkUnloadRadius = newChunkUnloadRadius;
+		forceUpdate = true;
+	}
 	ImGui::Text("Render distance: %d cubes\n", chunkLoadRadius * CHUNK_SIZE);
 	
 	// Flush building queue
@@ -128,14 +155,10 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	}
 	queueOutMutex.unlock();
 
-	if (position == lastPosition)
+	if (position == lastPosition && !forceUpdate)
 		return ;
 
-	std::vector<ChunkCoordinates> chunksToBuild;
-	s32 deltaX = position.x - lastPosition.x;
-	s32 deltaY = position.y - lastPosition.y;
-
-	if (deltaX != 0 || deltaY != 0) {
+	if (deltaX != 0 || deltaY != 0 || forceUpdate) {
 		
 		for (auto it = std::begin(chunks); it != std::end(chunks);)
 		{
