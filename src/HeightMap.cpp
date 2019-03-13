@@ -52,23 +52,23 @@ void HeightMap::SetupChunk(Chunk* chunk) {
 
 	for (s32 x = 0; x < CHUNK_SIZE; x++) {
 		for (s32 z = 0; z < CHUNK_SIZE; z++) {
+			auto type = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z) + 1.f) / 2.f;
 			for (s32 y = 0; y < caveLevel; y++) {
-				//auto height = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z, chunkPos.y + y));
-				//auto type = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z) + 1.f) / 2.f;
-				//if (height > 0.0f) {
-				//	if (type < 0.33f) 
-				//		chunk->cubes[x][y][z] = eBlockType::SAND;
-				//	else if (type < 0.5f) 
-				//		chunk->cubes[x][y][z] = eBlockType::DIRT;
-				//	else
-				//		chunk->cubes[x][y][z] = eBlockType::ROCK;
-				//}
-				//else
+				auto height = (caveNoise.GetNoise(chunkPos.x + x, chunkPos.z + z, chunkPos.y + y));
+				if (height > 0.0f) {
+					if (type < 0.33f) 
+						chunk->cubes[x][y][z] = eBlockType::SAND;
+					else if (type < 0.5f) 
+						chunk->cubes[x][y][z] = eBlockType::DIRT;
+					else
+						chunk->cubes[x][y][z] = eBlockType::ROCK;
+				}
+				else
 					chunk->cubes[x][y][z] = eBlockType::INACTIVE;
 			}
 
+			auto height = GetHeightAt(chunkPos.x + x, chunkPos.z + z) + CHUNK_HEIGHT / 2;
 			for (s32 y = caveLevel; y < CHUNK_HEIGHT; y++) {
-				auto height = GetHeightAt(chunkPos.x + x, chunkPos.z + z) + CHUNK_HEIGHT / 2;
 				if (y < height) {
 					chunk->cubes[x][y][z] = eBlockType::GRASS;
 				} else {

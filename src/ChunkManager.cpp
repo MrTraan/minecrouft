@@ -24,9 +24,8 @@ static void builderThreadRoutine(ChunkManager* manager, int index)
 				manager->queueInMutex.unlock();
 				break;
 			}
-			auto it = manager->buildingQueueIn.begin();
-			auto task = *it;
-			manager->buildingQueueIn.erase(it);
+			Chunk* task = manager->buildingQueueIn.back();
+			manager->buildingQueueIn.pop_back();
 			manager->queueInMutex.unlock();
 
 			chunkCreateGeometry(task, &(manager->heightMap), mask);
@@ -79,6 +78,9 @@ ChunkManager::ChunkManager(glm::vec3 playerPos, Frustrum* frustrum) : frustrum(f
 		}
 	}
 
+	for (int i = 0; i < 50; i++)
+		pushChunkToPool(preallocateChunk());
+
 	for (int i = 0; i < NUM_MANAGER_THREADS; i++)
 		builderRoutineThreads[i] = std::thread(builderThreadRoutine, this, i);
 }
@@ -122,6 +124,10 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 
 	ImGui::Text("Chunk Position: %d %d\n", position.x, position.y);
 	ImGui::Text("Chunks loaded: %lu\n", chunks.size());
+	u32 poolSize = 0;
+	for (auto it = poolHead; it != nullptr; it = it->poolNextItem)
+		poolSize++;
+	ImGui::Text("Chunks pooled: %lu\n", poolSize);
 
 	static int newChunkLoadRadius = chunkLoadRadius;
 	static int newChunkUnloadRadius = chunkUnloadRadius;
@@ -235,13 +241,20 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 				++it;
 		}
 
+		static glm::vec3 sizeOffset = glm::vec3((float)CHUNK_SIZE, (float)CHUNK_HEIGHT, (float)CHUNK_SIZE);
+		Aabb bounds;
 		for (auto& pos : chunksToBuild)
 		{
 			auto chunk = popChunkFromPool();
 			chunk->position = pos;
 			chunk->worldPosition = glm::i32vec3((s32)getXCoord(pos) * CHUNK_SIZE, 0, (s32)getZCoord(pos) * CHUNK_SIZE);
 			chunk->biome = eBiome::MOUNTAIN;
-			buildingQueueIn.push_back(chunk);
+			bounds.min = chunk->worldPosition;
+			bounds.max = glm::vec3(chunk->worldPosition) + sizeOffset;
+			if (frustrum->IsCubeIn(bounds))
+				buildingQueueIn.push_back(chunk);
+			else
+				buildingQueueIn.push_front(chunk);
 		}
 
 		queueInMutex.unlock();
@@ -278,6 +291,7 @@ Chunk* ChunkManager::popChunkFromPool()
 {
 	if (poolHead == nullptr)
 	{
+		printf("Cache miss\n");
 		return preallocateChunk();
 	}
 	auto item = poolHead;

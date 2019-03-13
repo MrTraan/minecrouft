@@ -111,11 +111,11 @@ void chunkCreateGeometry(Chunk* chunk, HeightMap* heightMap, eBlockType* mask)
 			}
 		}
 	}
-	/* chunk->mesh->Indices = (u32*)realloc(chunk->mesh->Indices, sizeof(u32) * 6 * chunk->facesBuilt); */
-	/* assert(chunk->mesh->Indices != NULL); */
-	/* chunk->mesh->Vertices = (Vertex*)realloc(chunk->mesh->Vertices, sizeof(Vertex) * 4 * chunk->facesBuilt); */
-	/* assert(chunk->mesh->Vertices != NULL); */
-	/* chunk->facesAllocated += FACES_BATCH_ALLOC; */
+	 //chunk->mesh->Indices = (u32*)realloc(chunk->mesh->Indices, sizeof(u32) * 6 * chunk->facesBuilt);
+	 //assert(chunk->mesh->Indices != NULL);
+	 //chunk->mesh->Vertices = (Vertex*)realloc(chunk->mesh->Vertices, sizeof(Vertex) * 4 * chunk->facesBuilt);
+	 //assert(chunk->mesh->Vertices != NULL);
+	 //chunk->facesAllocated += FACES_BATCH_ALLOC;
 }
 
 void chunkDestroy(Chunk* chunk) {

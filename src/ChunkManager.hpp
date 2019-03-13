@@ -1,6 +1,7 @@
 #pragma once
 
 #include <thread>
+#include <list>
 #include <condition_variable>
 #include <mutex>
 #include <Chunk.hpp>
@@ -38,10 +39,10 @@ class ChunkManager {
 	std::mutex ucMutex;
 
 	std::mutex queueInMutex;
-	std::vector<Chunk*> buildingQueueIn;
+	std::list<Chunk*> buildingQueueIn;
 
 	std::mutex queueOutMutex;
-	std::vector<Chunk*> buildingQueueOut;
+	std::list<Chunk*> buildingQueueOut;
 
 	std::thread builderRoutineThreads[NUM_MANAGER_THREADS];
 
