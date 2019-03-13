@@ -2,6 +2,10 @@
 #include <math.h>
 #include <Chunk.hpp>
 
+static constexpr s32 rockLevel = (CHUNK_HEIGHT / 2) + CHUNK_SIZE * 3;
+static constexpr s32 snowLevel = rockLevel + CHUNK_SIZE * 2;
+static constexpr s32 caveLevel = (CHUNK_HEIGHT / 2) - CHUNK_SIZE;
+
 
 HeightMap::HeightMap() {
 	int seed = std::rand();
@@ -16,12 +20,12 @@ HeightMap::HeightMap() {
 	heightMapNoise.SetNoiseType(FastNoise::Perlin);
 	heightMapNoise.SetFrequency(surfaceFreq);
 
-	caveFreq = 0.01f;
+	caveFreq = 0.08f;
 	caveNoise.SetSeed(seed);
 	caveNoise.SetNoiseType(FastNoise::Perlin);
 	caveNoise.SetFrequency(caveFreq);
 
-	moistureFreq = 0.01f;
+	moistureFreq = 0.08f;
 	moistureNoise.SetSeed(seed);
 	moistureNoise.SetNoiseType(FastNoise::Perlin);
 	moistureNoise.SetFrequency(moistureFreq);
@@ -46,7 +50,6 @@ float HeightMap::GetHeightAt(s32 x, s32 y) {
 }
 
 void HeightMap::SetupChunk(Chunk* chunk) {
-	static constexpr s32 caveLevel = (CHUNK_HEIGHT / 2) - CHUNK_SIZE;
 
 	auto chunkPos = chunk->worldPosition;
 
@@ -68,9 +71,22 @@ void HeightMap::SetupChunk(Chunk* chunk) {
 			}
 
 			auto height = GetHeightAt(chunkPos.x + x, chunkPos.z + z) + CHUNK_HEIGHT / 2;
+			type = GetMoistureAt(chunkPos.x + x, chunkPos.z + z);
 			for (s32 y = caveLevel; y < CHUNK_HEIGHT; y++) {
 				if (y < height) {
-					chunk->cubes[x][y][z] = eBlockType::GRASS;
+					if (height < rockLevel)
+					{
+						chunk->cubes[x][y][z] = eBlockType::GRASS;
+					}
+					else if (height < snowLevel)
+					{
+						if (type < 0.5f)
+							chunk->cubes[x][y][z] = eBlockType::GRASS;
+						else
+							chunk->cubes[x][y][z] = eBlockType::SNOW;
+					}
+					else
+						chunk->cubes[x][y][z] = eBlockType::SNOW;
 				} else {
 					chunk->cubes[x][y][z] = eBlockType::INACTIVE;
 				}

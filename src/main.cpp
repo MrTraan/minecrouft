@@ -64,7 +64,7 @@ int main(void) {
 
 	glm::mat4 proj =
 	    glm::perspective(glm::radians(80.0f),
-	                     (float)window.Width / window.Height, 0.1f, 160.0f);
+	                     (float)window.Width / window.Height, 0.1f, 320.0f);
 	glm::mat4 model = glm::mat4(1.0);
 	glm::mat4 view = glm::mat4(1.0);
 
@@ -85,6 +85,7 @@ int main(void) {
 	printf("Glfw version: %d.%d.%d\n", major, minor, version);
 	printf("OpenGL version: %s\n", glGetString(GL_VERSION));
 	printf("GLM version: %d\n", GLM_VERSION);
+	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(MessageCallback, 0);
 	glEnable(GL_CULL_FACE);

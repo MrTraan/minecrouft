@@ -16,6 +16,9 @@ for (u32 z = 0; z < CHUNK_SIZE; z++) \
 
 void chunkCreateGeometry(Chunk* chunk, HeightMap* heightMap, eBlockType* mask)
 {
+	chunk->facesBuilt = 0;
+	chunk->mesh->IndicesCount = 0;
+	chunk->mesh->VerticesCount = 0;
 	heightMap->SetupChunk(chunk);
 
 	int dims[3] = { CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE };
@@ -111,11 +114,14 @@ void chunkCreateGeometry(Chunk* chunk, HeightMap* heightMap, eBlockType* mask)
 			}
 		}
 	}
-	 //chunk->mesh->Indices = (u32*)realloc(chunk->mesh->Indices, sizeof(u32) * 6 * chunk->facesBuilt);
-	 //assert(chunk->mesh->Indices != NULL);
-	 //chunk->mesh->Vertices = (Vertex*)realloc(chunk->mesh->Vertices, sizeof(Vertex) * 4 * chunk->facesBuilt);
-	 //assert(chunk->mesh->Vertices != NULL);
-	 //chunk->facesAllocated += FACES_BATCH_ALLOC;
+	if (chunk->facesAllocated > chunk->facesBuilt * 2)
+	{
+		chunk->mesh->Indices = (u32*)realloc(chunk->mesh->Indices, sizeof(u32) * 6 * chunk->facesBuilt);
+		assert(chunk->mesh->Indices != NULL);
+		chunk->mesh->Vertices = (Vertex*)realloc(chunk->mesh->Vertices, sizeof(Vertex) * 4 * chunk->facesBuilt);
+		assert(chunk->mesh->Vertices != NULL);
+		chunk->facesAllocated = chunk->facesBuilt;
+	}
 }
 
 void chunkDestroy(Chunk* chunk) {
@@ -128,9 +134,9 @@ void chunkDestroy(Chunk* chunk) {
 
 
 #ifdef WIN32
-	#define CUBES_TEXTURE_PATH "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\textures.png"
+#define CUBES_TEXTURE_PATH "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\textures.png"
 #else
-	#define CUBES_TEXTURE_PATH "../resources/textures.png"
+#define CUBES_TEXTURE_PATH "../resources/textures.png"
 #endif
 
 void chunkDraw(Chunk* chunk, Shader shader) {
@@ -160,7 +166,7 @@ void pushFace(Chunk* chunk, glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, 
 	}
 
 
-	if (chunk->facesAllocated == chunk->facesBuilt)
+	while (chunk->facesAllocated <= chunk->facesBuilt)
 	{
 		chunk->mesh->Indices = (u32*)realloc(chunk->mesh->Indices, sizeof(u32) * 6 * (FACES_BATCH_ALLOC + chunk->facesAllocated));
 		assert(chunk->mesh->Indices != NULL);
@@ -175,7 +181,7 @@ void pushFace(Chunk* chunk, glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, 
 	u32 ii = 6 * chunk->facesBuilt;
 
 	chunk->facesBuilt++;
-	
+
 	chunk->mesh->IndicesCount += 6;
 	if (reverse)
 	{
@@ -207,27 +213,27 @@ void pushFace(Chunk* chunk, glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, 
 	v[vi + 2].TexCoords[1] = (float)height;
 	v[vi + 3].TexCoords[0] = 0.0f;
 	v[vi + 3].TexCoords[1] = (float)height;
-		
+
 	v[vi + 0].Position[0] = floorf(chunk->worldPosition.x + a.x);
 	v[vi + 0].Position[1] = floorf(chunk->worldPosition.y + a.y);
 	v[vi + 0].Position[2] = floorf(chunk->worldPosition.z + a.z);
-	
+
 	v[vi + 1].Position[0] = floorf(chunk->worldPosition.x + b.x);
 	v[vi + 1].Position[1] = floorf(chunk->worldPosition.y + b.y);
 	v[vi + 1].Position[2] = floorf(chunk->worldPosition.z + b.z);
-	
+
 	v[vi + 2].Position[0] = floorf(chunk->worldPosition.x + c.x);
 	v[vi + 2].Position[1] = floorf(chunk->worldPosition.y + c.y);
 	v[vi + 2].Position[2] = floorf(chunk->worldPosition.z + c.z);
-	
+
 	v[vi + 3].Position[0] = floorf(chunk->worldPosition.x + d.x);
 	v[vi + 3].Position[1] = floorf(chunk->worldPosition.y + d.y);
 	v[vi + 3].Position[2] = floorf(chunk->worldPosition.z + d.z);
-	
+
 	if (direction == eDirection::SOUTH)
 		for (int i = 0; i < 4; i++)
 			v[vi + i].TexIndex = float(uvModifier * 4 + 1);
-	
+
 	if (direction == eDirection::BACK)
 		for (int i = 0; i < 4; i++)
 			v[vi + i].TexIndex = float(uvModifier * 4 + 1);

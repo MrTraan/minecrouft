@@ -24,13 +24,13 @@ static void builderThreadRoutine(ChunkManager* manager, int index)
 				manager->queueInMutex.unlock();
 				break;
 			}
-			Chunk* task = manager->buildingQueueIn.back();
+			Chunk* chunk = manager->buildingQueueIn.back();
 			manager->buildingQueueIn.pop_back();
 			manager->queueInMutex.unlock();
 
-			chunkCreateGeometry(task, &(manager->heightMap), mask);
+			chunkCreateGeometry(chunk, &(manager->heightMap), mask);
 			manager->queueOutMutex.lock();
-			manager->buildingQueueOut.push_back(task);
+			manager->buildingQueueOut.push_back(chunk);
 			manager->queueOutMutex.unlock();
 		}
 	}
