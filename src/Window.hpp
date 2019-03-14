@@ -34,14 +34,15 @@ class Window {
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		glfwWindowHint(GLFW_SAMPLES, 4);
+//		glfwWindowHint(GLFW_SAMPLES, 4);
 
 		auto monitor = glfwGetPrimaryMonitor();
 		auto videoMode = glfwGetVideoMode(monitor);
-		this->glWindow = glfwCreateWindow(this->Width, this->Height,
-		                                  this->Title, NULL, NULL);
-		//this->glWindow = glfwCreateWindow(videoMode->width, videoMode->height,
-		//                                  this->Title, monitor, NULL);
+//		this->glWindow = glfwCreateWindow(this->Width, this->Height,
+//		                                  this->Title, NULL, NULL);
+        /* this->glWindow = glfwCreateWindow(2048, 1152, */
+        this->glWindow = glfwCreateWindow(videoMode->width, videoMode->height,
+		                                  this->Title, monitor, NULL);
 		if (!this->glWindow) {
 			throw std::runtime_error(
 			    "Fatal Error: Could not create GLFW Window");

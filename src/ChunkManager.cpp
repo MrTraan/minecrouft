@@ -126,7 +126,7 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	u32 poolSize = 0;
 	for (auto it = poolHead; it != nullptr; it = it->poolNextItem)
 		poolSize++;
-	ImGui::Text("Chunks pooled: %lu\n", poolSize);
+	ImGui::Text("Chunks pooled: %d\n", poolSize);
 
 	static int newChunkLoadRadius = chunkLoadRadius;
 	static int newChunkUnloadRadius = chunkUnloadRadius;

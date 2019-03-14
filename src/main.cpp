@@ -87,7 +87,7 @@ int main(void) {
 	printf("GLM version: %d\n", GLM_VERSION);
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback(MessageCallback, 0);
+	// glDebugMessageCallback(MessageCallback, 0);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
