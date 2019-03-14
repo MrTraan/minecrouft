@@ -103,7 +103,6 @@ ChunkManager::~ChunkManager() {
 		chunkDestroy(poolHead);
 		poolHead = poolHead->poolNextItem;
 	}
-
 }
 
 inline bool ChunkManager::ChunkIsLoaded(ChunkCoordinates pos)
@@ -157,14 +156,15 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	
 	// Flush building queue
 	queueOutMutex.lock();
-	while (!buildingQueueOut.empty()) {
+	while (!buildingQueueOut.empty())
+	{
 		auto elem = buildingQueueOut.back();
 		buildingQueueOut.pop_back();
 		if (!ChunkIsLoaded(elem->position))
 			chunks[elem->position] = elem;
-		else {
+		else
+		{
 			// Race condition: the element was built twice
-			printf("Race condition?\n");
 			if (elem->mesh->isBound)
 				meshDeleteBuffers(elem->mesh);
 			pushChunkToPool(elem);
@@ -175,8 +175,8 @@ void ChunkManager::Update(glm::vec3 playerPos) {
 	if (position == lastPosition && !forceUpdate)
 		return ;
 
-	if (deltaX != 0 || deltaY != 0 || forceUpdate) {
-		
+	if (deltaX != 0 || deltaY != 0 || forceUpdate)
+	{
 		for (auto it = std::begin(chunks); it != std::end(chunks);)
 		{
 			auto cpos = it->second->position;
@@ -291,7 +291,6 @@ Chunk* ChunkManager::popChunkFromPool()
 {
 	if (poolHead == nullptr)
 	{
-		printf("Cache miss\n");
 		return preallocateChunk();
 	}
 	auto item = poolHead;

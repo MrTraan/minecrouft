@@ -62,9 +62,9 @@ int main(void) {
 	Keyboard::Init(window);
 	Mouse::Init(window);
 
-	glm::mat4 proj =
-	    glm::perspective(glm::radians(80.0f),
-	                     (float)window.Width / window.Height, 0.1f, 320.0f);
+	float viewDistance = 160.0f;
+	float fov = glm::radians(80.0f);
+	glm::mat4 proj = glm::perspective(fov, (float)window.Width / window.Height, 0.1f, viewDistance);
 	glm::mat4 model = glm::mat4(1.0);
 	glm::mat4 view = glm::mat4(1.0);
 
@@ -108,6 +108,12 @@ int main(void) {
 		            1000.0f / ImGui::GetIO().Framerate,
 		            ImGui::GetIO().Framerate);
 
+		float previousViewDistance = viewDistance;
+		ImGui::SliderFloat("View distance", &viewDistance, 16, 500);
+		if (previousViewDistance != viewDistance)
+		{
+			proj = glm::perspective(fov, (float)window.Width / window.Height, 0.1f, viewDistance);
+		}
 
 		camera.Update(dt);
 		view = camera.GetViewMatrix();
