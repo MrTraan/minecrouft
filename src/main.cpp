@@ -20,6 +20,7 @@
 #include <Window.hpp>
 #include <cassert>
 #include <Skybox.hpp>
+#include <LuaConsole.hpp>
 
 #define GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX 0x9048
 #define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
@@ -87,11 +88,11 @@ int main(void) {
 	printf("GLM version: %d\n", GLM_VERSION);
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_DEBUG_OUTPUT);
-	// glDebugMessageCallback(MessageCallback, 0);
+	glDebugMessageCallback(MessageCallback, 0);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-
+	bool isConsoleOpen = true;
 	while (!window.ShouldClose()) {
 		float currentFrame = (float)glfwGetTime();
 		dt = currentFrame - lastFrame;
@@ -101,6 +102,9 @@ int main(void) {
 		window.PollEvents();
 		window.ProcessInput();
 		ImGui_ImplGlfwGL3_NewFrame();
+
+		if (isConsoleOpen)
+			ShowLuaConsole(&isConsoleOpen);
 
 		Mouse::Update();
 

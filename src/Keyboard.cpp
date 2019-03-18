@@ -3,6 +3,8 @@
 #include <GLFW/glfw3.h>
 #include "Keyboard.hpp"
 #include "Window.hpp"
+#include <imgui\imgui.h>
+#include <imgui\imgui_impl_glfw_gl3.h>
 
 void key_callback(GLFWwindow* window,
                   int key,
@@ -13,12 +15,15 @@ void key_callback(GLFWwindow* window,
 		Keyboard::RegisterKeyPress(key);
 	else if (action == GLFW_RELEASE)
 		Keyboard::RegisterKeyRelease(key);
+	
+	ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 }
 
 void Keyboard::Init(Window& window) {
 	GLFWwindow* glWindow = window.GetGlfwWindow();
 
 	glfwSetKeyCallback(glWindow, key_callback);
+	glfwSetCharCallback(glWindow, ImGui_ImplGlfw_CharCallback);
 
 	for (int i = 0; i < MAX_CONCURRENT_KEY_DOWN; i++) {
 		Keyboard::keyDowns[i] = KEY_NONE;

@@ -15,6 +15,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(./lib/glfw)
+add_subdirectory(./lib/lua)
 
 set(GLM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/")
 
@@ -33,8 +34,9 @@ set(MY_HEADER_FILES
     "src/HeightMap.hpp"
     "src/constants.hpp"
 	"src/Skybox.hpp"
+	"src/LuaConsole.hpp"
 
-        "./inc/stb_image.h"
+	"./inc/stb_image.h"
 
 	#imgui
 	"./src/imgui/imconfig.h"
@@ -55,10 +57,11 @@ set(MY_SOURCE_FILES
 	"src/Chunk.cpp"
 	"src/TextureAtlas.cpp"
 	"src/ChunkManager.cpp"
-	"src/glad.c"
 	"src/Frustrum.cpp"
     "src/HeightMap.cpp"
+	"src/LuaConsole.cpp"
 
+	"src/glad.c"
 	# imgui
 	"./src/imgui/imgui.cpp"
 	"./src/imgui/imgui_demo.cpp"

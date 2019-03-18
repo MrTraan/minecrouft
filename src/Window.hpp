@@ -38,11 +38,11 @@ class Window {
 
 		auto monitor = glfwGetPrimaryMonitor();
 		auto videoMode = glfwGetVideoMode(monitor);
-//		this->glWindow = glfwCreateWindow(this->Width, this->Height,
-//		                                  this->Title, NULL, NULL);
-        /* this->glWindow = glfwCreateWindow(2048, 1152, */
-        this->glWindow = glfwCreateWindow(videoMode->width, videoMode->height,
-		                                  this->Title, monitor, NULL);
+		this->glWindow = glfwCreateWindow(this->Width, this->Height,
+		                                  this->Title, NULL, NULL);
+        ///* this->glWindow = glfwCreateWindow(2048, 1152, */
+        //this->glWindow = glfwCreateWindow(videoMode->width, videoMode->height,
+		      //                            this->Title, monitor, NULL);
 		if (!this->glWindow) {
 			throw std::runtime_error(
 			    "Fatal Error: Could not create GLFW Window");
