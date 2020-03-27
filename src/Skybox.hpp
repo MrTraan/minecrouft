@@ -57,14 +57,8 @@ static float skyboxVertices[] = {
 class Skybox {
 public:
 	Skybox() {
-#ifdef WIN32
-		std::string basePath = "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\skybox\\";
-		shader = new Shader("C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\skybox_vertex.glsl",
-				"C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\skybox_fragment.glsl");
-#else
-		std::string basePath = "../resources/skybox/";
-		shader = new Shader("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
-#endif
+		std::string basePath = "./resources/skybox/";
+		shader = new Shader("./resources/shaders/skybox_vertex.glsl", "./resources/shaders/skybox_fragment.glsl");
 		std::vector<std::string> faces = {
 			"right.png",
 			"left.png",

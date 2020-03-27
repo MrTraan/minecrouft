@@ -8,14 +8,15 @@ constexpr float CAM_SPEED = 2.5f;
 constexpr float CAM_SENSITIVITY = 0.1f;
 constexpr float CAM_ZOOM = 45.0f;
 
-class Camera {
-   public:
+struct Camera {
 	// Camera Attributes
 	glm::vec3 Position;
 	glm::vec3 Front;
 	glm::vec3 Up;
 	glm::vec3 Right;
 	glm::vec3 WorldUp;
+
+	glm::mat4 projMatrix;
 
 	// Euler angles
 	float Yaw;
@@ -27,14 +28,14 @@ class Camera {
 	float Zoom;
 
 	// Constructors
-	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
+	Camera(float aspectRatio, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
 	       glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
 	       float yaw = CAM_YAW,
 	       float pitch = CAM_PITCH);
 
 	// Returns the view matrix calculated using Euler Angles and the LookAt
 	// Matrix
-	glm::mat4 GetViewMatrix();
+	glm::mat4 GetViewMatrix() const;
 
 	// Reads input and update view
 	void Update(float dt);

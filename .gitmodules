@@ -7,7 +7,6 @@
 [submodule "lib/glm"]
 	path = lib/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "lib/lua"]
-	path = lib/lua
-	url = https://github.com/LuaDist/lua
-	branch = lua-5.3
+[submodule "lib/tracy"]
+	path = lib/tracy
+	url = https://bitbucket.org/wolfpld/tracy.git

@@ -8,16 +8,17 @@ set (CMAKE_CXX_STANDARD 14)
 set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(OpenGL REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(./lib/glfw)
-add_subdirectory(./lib/lua)
 
 set(GLM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/")
+
+add_compile_definitions( TRACY_ENABLE=1 )
 
 set(MY_HEADER_FILES
 	"src/Camera.hpp"
@@ -69,6 +70,8 @@ set(MY_SOURCE_FILES
 	"./src/imgui/imgui_impl_glfw_gl3.cpp"
 
 	"./lib/FastNoise/FastNoise.cpp"
+
+	"./lib/tracy/TracyClient.cpp"
 )
 
 ## Used for ycm
@@ -90,3 +93,7 @@ target_link_libraries(minecrouft
 	${OPENGL_gl_LIBRARY} # filled by "find_package(OpenGL REQUIRED)"
 	glfw
 )
+
+add_custom_command(TARGET minecrouft POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/resources" $<TARGET_FILE_DIR:minecrouft>/resources)
+

@@ -9,20 +9,25 @@
 #include <Shader.hpp>
 #include <glm/glm.hpp>
 #include <map>
+#include <tracy/Tracy.hpp>
 
 #define NUM_MANAGER_THREADS 3
+
+struct Camera;
 
 class ChunkManager {
    public:
 	ChunkManager(glm::vec3 playerPos, Frustrum* frustrum);
 	~ChunkManager();
 
+	Shader shader;
+
 	int chunkLoadRadius = 6;
 	int chunkUnloadRadius = 12;
 	bool ThreadShouldRun = true;
 
 	void Update(glm::vec3 playerPos);
-	void Draw(Shader s);
+	void Draw(const Camera & camera);
 	glm::i32vec2 GetChunkPosition(glm::vec3 playerPos);
 
 	inline bool ChunkIsLoaded(ChunkCoordinates pos);
@@ -38,10 +43,10 @@ class ChunkManager {
 	std::condition_variable updateCondition;
 	std::mutex ucMutex;
 
-	std::mutex queueInMutex;
+	TracyLockable(std::mutex, queueInMutex);
 	std::list<Chunk*> buildingQueueIn;
 
-	std::mutex queueOutMutex;
+	TracyLockable(std::mutex, queueOutMutex);
 	std::list<Chunk*> buildingQueueOut;
 
 	std::thread builderRoutineThreads[NUM_MANAGER_THREADS];

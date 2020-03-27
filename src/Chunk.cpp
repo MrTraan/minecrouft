@@ -5,6 +5,7 @@
 #include <TextureAtlas.hpp>
 
 #include <imgui/imgui.h>
+#include <tracy/Tracy.hpp>
 #include <stdlib.h>
 #include <constants.hpp>
 
@@ -16,6 +17,7 @@ for (u32 z = 0; z < CHUNK_SIZE; z++) \
 
 void chunkCreateGeometry(Chunk* chunk, HeightMap* heightMap, eBlockType* mask)
 {
+	ZoneScoped;
 	chunk->facesBuilt = 0;
 	chunk->mesh->IndicesCount = 0;
 	chunk->mesh->VerticesCount = 0;
@@ -133,11 +135,7 @@ void chunkDestroy(Chunk* chunk) {
 }
 
 
-#ifdef WIN32
-#define CUBES_TEXTURE_PATH "C:\\Users\\nathan\\cpp\\minecrouft\\resources\\textures.png"
-#else
-#define CUBES_TEXTURE_PATH "../resources/textures.png"
-#endif
+#define CUBES_TEXTURE_PATH "./resources/textures.png"
 
 void chunkDraw(Chunk* chunk, Shader shader) {
 	static TextureAtlas ta = loadTextureAtlas(CUBES_TEXTURE_PATH, 4, 4);

@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <tracy/Tracy.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw_gl3.h>
@@ -45,14 +46,7 @@ constexpr char windowName[] = "Minecrouft";
 
 int main(void) {
 	Window window;
-	Camera camera(glm::vec3(SHRT_MAX / 2, 180, SHRT_MAX / 2));
-#ifdef WIN32
-	Shader shader("C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\vertex.glsl",
-	              "C:\\Users\\nathan\\cpp\\minecrouft\\shaders\\fragment.glsl");
-#else
-	Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
-#endif
-
+	Camera camera( (float)window.Width / window.Height, glm::vec3(SHRT_MAX / 2, 180, SHRT_MAX / 2));
 
 	// Setup imgui
 	ImGui::CreateContext();
@@ -63,13 +57,10 @@ int main(void) {
 	Keyboard::Init(window);
 	Mouse::Init(window);
 
-	float viewDistance = 160.0f;
-	float fov = glm::radians(80.0f);
-	glm::mat4 proj = glm::perspective(fov, (float)window.Width / window.Height, 0.1f, viewDistance);
 	glm::mat4 model = glm::mat4(1.0);
 	glm::mat4 view = glm::mat4(1.0);
 
-	Frustrum frustrum(proj);
+	Frustrum frustrum(camera.projMatrix	);
 	ChunkManager chunkManager(camera.Position, &frustrum);
 	Skybox skybox;
 
@@ -94,6 +85,7 @@ int main(void) {
 
 	bool isConsoleOpen = true;
 	while (!window.ShouldClose()) {
+		ZoneScopedN( "MainLoop" );
 		float currentFrame = (float)glfwGetTime();
 		dt = currentFrame - lastFrame;
 		lastFrame = currentFrame;
@@ -112,32 +104,14 @@ int main(void) {
 		            1000.0f / ImGui::GetIO().Framerate,
 		            ImGui::GetIO().Framerate);
 
-		float previousViewDistance = viewDistance;
-		ImGui::SliderFloat("View distance", &viewDistance, 16, 500);
-		if (previousViewDistance != viewDistance)
-		{
-			proj = glm::perspective(fov, (float)window.Width / window.Height, 0.1f, viewDistance);
-		}
-
 		camera.Update(dt);
 		view = camera.GetViewMatrix();
-		skybox.Draw(view, proj);
+		skybox.Draw(view, camera.projMatrix	);
 		frustrum.Update(view);
 
 		chunkManager.Update(camera.Position);
 
-		shader.Use();
-
-		int viewLoc = glGetUniformLocation(shader.ID, "view");
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-
-		int projLoc = glGetUniformLocation(shader.ID, "projection");
-		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
-
-		int modelLoc = glGetUniformLocation(shader.ID, "model");
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-		chunkManager.Draw(shader);
+		chunkManager.Draw( camera );
 
 		if (isGraphicCardNvidia) {
 			GLint total_mem_kb = 0;
@@ -157,6 +131,8 @@ int main(void) {
 		ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
 
 		window.SwapBuffers();
+
+		FrameMark;
 	}
 
 	ImGui_ImplGlfwGL3_Shutdown();

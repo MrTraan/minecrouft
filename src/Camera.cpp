@@ -8,16 +8,21 @@
 #include <Keyboard.hpp>
 #include <Mouse.hpp>
 #include <constants.hpp>
+#include "glm/ext/matrix_clip_space.hpp"
 
-Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch) {
+Camera::Camera( float aspectRatio, glm::vec3 position, glm::vec3 up, float yaw, float pitch) {
 	this->Position = position;
 	this->WorldUp = up;
 	this->Yaw = yaw;
 	this->Pitch = pitch;
 	this->updateCameraVectors();
+
+	float viewDistance = 160.0f;
+	float fov = glm::radians(80.0f);
+	projMatrix = glm::perspective(fov, aspectRatio, 0.1f, viewDistance);
 }
 
-glm::mat4 Camera::GetViewMatrix() {
+glm::mat4 Camera::GetViewMatrix() const {
 	return glm::lookAt(this->Position, this->Position + this->Front, this->Up);
 }
 
