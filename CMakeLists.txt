@@ -3,12 +3,14 @@
 cmake_minimum_required (VERSION 2.6)
 message("CMake version: ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
 project (minecrouft)
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
+find_package(lz4 CONFIG REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -19,34 +21,6 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/")
 
 add_compile_definitions( TRACY_ENABLE=1 )
-
-set(MY_HEADER_FILES
-	"src/Camera.hpp"
-	"src/Window.hpp"
-	"src/Shader.hpp"
-	"src/Mesh.hpp"
-	"src/Keyboard.hpp"
-	"src/Mouse.hpp"
-	"src/Chunk.hpp"
-	"src/Debug.hpp"
-	"src/TextureAtlas.hpp"
-	"src/ChunkManager.hpp"
-	"src/Frustrum.hpp"
-    "src/HeightMap.hpp"
-    "src/constants.hpp"
-	"src/Skybox.hpp"
-	"src/LuaConsole.hpp"
-
-	"./inc/stb_image.h"
-
-	#imgui
-	"./src/imgui/imconfig.h"
-	"./src/imgui/imgui.h"
-	"./src/imgui/imgui_internal.h"
-	"./src/imgui/imgui_impl_glfw_gl3.h"
-
-	"./lib/FastNoise/FastNoise.h"
-)
 
 set(MY_SOURCE_FILES
 	"src/main.cpp"
@@ -60,7 +34,11 @@ set(MY_SOURCE_FILES
 	"src/ChunkManager.cpp"
 	"src/Frustrum.cpp"
     "src/HeightMap.cpp"
-	"src/LuaConsole.cpp"
+	
+	"src/ngLib/console.cpp"
+	"src/ngLib/logs.cpp"
+	"src/ngLib/nglib.cpp"
+	"src/ngLib/sys.cpp"
 
 	"src/glad.c"
 	# imgui
@@ -80,18 +58,19 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories(
 	${OPENGL_INCLUDE_DIR}
 	${GLM_INCLUDE_DIRS}
+	${LIBZIP_INCLUDE_DIR_ZIP}
 	"./src"
 	"./inc"
 	"./lib"
 )
 
 add_executable(minecrouft
-	${MY_HEADER_FILES}
 	${MY_SOURCE_FILES}
 )
-target_link_libraries(minecrouft
+target_link_libraries(minecrouft PRIVATE
 	${OPENGL_gl_LIBRARY} # filled by "find_package(OpenGL REQUIRED)"
 	glfw
+	lz4::lz4
 )
 
 add_custom_command(TARGET minecrouft POST_BUILD

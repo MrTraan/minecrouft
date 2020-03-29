@@ -15,10 +15,8 @@ public:
 	HeightMap();
 
 	void SetupChunk(Chunk* chunk);
-	void GenerateWorld();
 
 private:
-	u8* world;
 	FastNoise heightMapNoise;
 	float surfaceFreq;
 	float GetHeightAt(s32 x, s32 y);

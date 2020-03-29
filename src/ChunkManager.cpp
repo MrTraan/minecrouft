@@ -1,43 +1,34 @@
 #include "Camera.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "ngLib/nglib.h"
 #include <ChunkManager.hpp>
 #include <algorithm>
+#include <chrono>
+#include <concurrentqueue.h>
 #include <imgui/imgui.h>
 #include <tracy/Tracy.hpp>
 
+using MPMCChunkQueue = moodycamel::ConcurrentQueue< Chunk * >;
+MPMCChunkQueue buildingQueueIn;
+MPMCChunkQueue buildingQueueOut;
+
 static void builderThreadRoutine( ChunkManager * manager, int index ) {
+	using namespace std::chrono_literals;
 	std::unique_lock< std::mutex > ulock( manager->ucMutex, std::defer_lock );
-	eBlockType                     mask[ CHUNK_SIZE * CHUNK_HEIGHT ];
 
-	while ( true ) {
-		ulock.lock();
-		manager->updateCondition.wait( ulock );
-		ulock.unlock();
-		if ( !manager->ThreadShouldRun )
-			break;
-		while ( true ) {
-			if ( !manager->ThreadShouldRun )
-				goto EXIT_THREAD_ROUTINE;
-			manager->queueInMutex.lock();
-			if ( manager->buildingQueueIn.empty() ) {
-				manager->queueInMutex.unlock();
-				break;
-			}
-			Chunk * chunk = manager->buildingQueueIn.back();
-			manager->buildingQueueIn.pop_back();
-			manager->queueInMutex.unlock();
-
-			chunkCreateGeometry( chunk, &( manager->heightMap ), mask );
-			manager->queueOutMutex.lock();
-			manager->buildingQueueOut.push_back( chunk );
-			manager->queueOutMutex.unlock();
+	while ( manager->ThreadShouldRun ) {
+		Chunk * chunk;
+		bool    found = buildingQueueIn.try_dequeue( chunk );
+		if ( !found ) {
+			std::this_thread::sleep_for( 16ms );
+		} else {
+			chunkCreateGeometry( chunk, &( manager->heightMap ) );
+			buildingQueueOut.enqueue( chunk );
 		}
 	}
-EXIT_THREAD_ROUTINE:
-	( void )0;
 }
 
-glm::i32vec2 ChunkManager::GetChunkPosition( glm::vec3 pos ) {
+glm::i32vec2 WorldToChunkPosition( const glm::vec3 & pos ) {
 	glm::i32vec2 chunkPosition( ( s32 )pos.x / CHUNK_SIZE, ( s32 )pos.z / CHUNK_SIZE );
 
 	if ( pos.x < 0 )
@@ -48,26 +39,32 @@ glm::i32vec2 ChunkManager::GetChunkPosition( glm::vec3 pos ) {
 	return chunkPosition;
 }
 
+glm::vec3 ChunkToWorldPosition( const glm::i32vec2 & pos ) {
+	return glm::vec3( pos.x * CHUNK_SIZE, 0, pos.x * CHUNK_SIZE );
+}
+
+glm::vec3 ChunkToWorldPosition( ChunkCoordinates pos ) {
+	return glm::vec3( ( s32 )getXCoord( pos ) * CHUNK_SIZE, 0, ( s32 )getZCoord( pos ) * CHUNK_SIZE );
+}
+
 ChunkManager::ChunkManager( glm::vec3 playerPos, Frustrum * frustrum )
     : frustrum( frustrum ), shader( "./resources/shaders/vertex.glsl", "./resources/shaders/fragment.glsl" ) {
 	ThreadShouldRun = true;
 	playerPos.y = 0.0f;
-	auto chunkPosition = GetChunkPosition( playerPos );
+	auto chunkPosition = WorldToChunkPosition( playerPos );
 	lastPosition = chunkPosition;
-	eBlockType mask[ CHUNK_SIZE * CHUNK_HEIGHT ];
 
 	glm::u16vec2 cursor( 0, 0 );
 
-	for ( cursor.x = chunkPosition.x - chunkLoadRadius; cursor.x <= chunkPosition.x + chunkLoadRadius; cursor.x++ ) {
-		for ( cursor.y = chunkPosition.y - chunkLoadRadius; cursor.y <= chunkPosition.y + chunkLoadRadius;
+	for ( cursor.x = MAX( 0, chunkPosition.x - chunkLoadRadius ); cursor.x <= chunkPosition.x + chunkLoadRadius;
+	      cursor.x++ ) {
+		for ( cursor.y = MAX( 0, chunkPosition.y - chunkLoadRadius ); cursor.y <= chunkPosition.y + chunkLoadRadius;
 		      cursor.y++ ) {
 			ChunkCoordinates pos = createChunkCoordinates( cursor.x, cursor.y );
 			auto             chunk = popChunkFromPool();
 			chunk->position = pos;
-			chunk->worldPosition =
-			    glm::i32vec3( ( s32 )getXCoord( pos ) * CHUNK_SIZE, 0, ( s32 )getZCoord( pos ) * CHUNK_SIZE );
 			chunk->biome = eBiome::MOUNTAIN;
-			chunkCreateGeometry( chunk, &heightMap, mask );
+			chunkCreateGeometry( chunk, &heightMap );
 			chunks[ pos ] = chunk;
 		}
 	}
@@ -103,12 +100,18 @@ inline bool ChunkManager::ChunkIsLoaded( u16 x, u16 y ) {
 	return chunks.find( createChunkCoordinates( x, y ) ) != chunks.end();
 }
 
+bool ChunkManager::PushChunkToProducer( ChunkCoordinates coord ) {
+	auto chunk = popChunkFromPool();
+	chunk->position = coord;
+	chunk->biome = eBiome::MOUNTAIN;
+	return buildingQueueIn.enqueue( chunk );
+}
+
 void ChunkManager::Update( glm::vec3 playerPos ) {
 	ZoneScoped;
-	position = GetChunkPosition( playerPos );
-	std::vector< ChunkCoordinates > chunksToBuild;
-	s32                             deltaX = position.x - lastPosition.x;
-	s32                             deltaY = position.y - lastPosition.y;
+	glm::i32vec2 position = WorldToChunkPosition( playerPos );
+	s32          deltaX = position.x - lastPosition.x;
+	s32          deltaY = position.y - lastPosition.y;
 
 	ImGui::Text( "Chunk Position: %d %d\n", position.x, position.y );
 	ImGui::Text( "Chunks loaded: %lu\n", chunks.size() );
@@ -124,10 +127,11 @@ void ChunkManager::Update( glm::vec3 playerPos ) {
 
 	bool forceUpdate = false;
 	if ( ImGui::Button( "Apply" ) ) {
+		ZoneScopedN( "ChunkLoadRadiusUpdate" );
 		for ( u16 x = position.x - newChunkLoadRadius; x <= position.x + newChunkLoadRadius; x++ ) {
 			for ( u16 y = position.y - newChunkLoadRadius; y <= position.y + newChunkLoadRadius; y++ ) {
 				if ( !ChunkIsLoaded( x, y ) )
-					chunksToBuild.push_back( createChunkCoordinates( x, y ) );
+					PushChunkToProducer( createChunkCoordinates( x, y ) );
 			}
 		}
 		chunkLoadRadius = newChunkLoadRadius;
@@ -137,20 +141,18 @@ void ChunkManager::Update( glm::vec3 playerPos ) {
 	ImGui::Text( "Render distance: %d cubes\n", chunkLoadRadius * CHUNK_SIZE );
 
 	// Flush building queue
-	queueOutMutex.lock();
-	while ( !buildingQueueOut.empty() ) {
-		auto elem = buildingQueueOut.back();
-		buildingQueueOut.pop_back();
-		if ( !ChunkIsLoaded( elem->position ) )
-			chunks[ elem->position ] = elem;
-		else {
+	Chunk * builtChunk = nullptr;
+	while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
+		if ( !ChunkIsLoaded( builtChunk->position ) ) {
+			chunks[ builtChunk->position ] = builtChunk;
+		} else {
 			// Race condition: the element was built twice
-			if ( elem->mesh->isBound )
-				meshDeleteBuffers( elem->mesh );
-			pushChunkToPool( elem );
+			if ( builtChunk->mesh->isBound ) {
+				meshDeleteBuffers( builtChunk->mesh );
+			}
+			pushChunkToPool( builtChunk );
 		}
 	}
-	queueOutMutex.unlock();
 
 	if ( position == lastPosition && !forceUpdate )
 		return;
@@ -173,66 +175,30 @@ void ChunkManager::Update( glm::vec3 playerPos ) {
 		for ( u16 x = position.x - chunkLoadRadius; x < lastPosition.x - chunkLoadRadius; x++ )
 			for ( u16 y = position.y - chunkLoadRadius; y <= position.y + chunkLoadRadius; y++ )
 				if ( !ChunkIsLoaded( x, y ) )
-					chunksToBuild.push_back( createChunkCoordinates( x, y ) );
+					PushChunkToProducer( createChunkCoordinates( x, y ) );
 	}
 
 	if ( deltaX > 0 ) {
 		for ( u16 x = position.x + chunkLoadRadius; x > lastPosition.x + chunkLoadRadius; x-- )
 			for ( u16 y = position.y - chunkLoadRadius; y <= position.y + chunkLoadRadius; y++ )
 				if ( !ChunkIsLoaded( x, y ) )
-					chunksToBuild.push_back( createChunkCoordinates( x, y ) );
+					PushChunkToProducer( createChunkCoordinates( x, y ) );
 	}
 
 	if ( deltaY < 0 ) {
 		for ( u16 y = position.y - chunkLoadRadius; y < lastPosition.y - chunkLoadRadius; y++ )
 			for ( u16 x = position.x - chunkLoadRadius; x <= position.x + chunkLoadRadius; x++ )
 				if ( !ChunkIsLoaded( x, y ) )
-					chunksToBuild.push_back( createChunkCoordinates( x, y ) );
+					PushChunkToProducer( createChunkCoordinates( x, y ) );
 	}
 
 	if ( deltaY > 0 ) {
 		for ( u16 y = position.y + chunkLoadRadius; y > lastPosition.y + chunkLoadRadius; y-- )
 			for ( u16 x = position.x - chunkLoadRadius; x <= position.x + chunkLoadRadius; x++ )
 				if ( !ChunkIsLoaded( x, y ) )
-					chunksToBuild.push_back( createChunkCoordinates( x, y ) );
+					PushChunkToProducer( createChunkCoordinates( x, y ) );
 	}
 
-	if ( chunksToBuild.size() > 0 ) {
-		queueInMutex.lock();
-
-		// Flush obsolete orders
-		for ( auto it = std::begin( buildingQueueIn ); it != std::end( buildingQueueIn ); ) {
-			auto cpos = ( *it )->position;
-			if ( abs( position.x - getXCoord( cpos ) ) > chunkUnloadRadius ||
-			     abs( position.y - getZCoord( cpos ) ) > chunkUnloadRadius ) {
-				pushChunkToPool( *it );
-				it = buildingQueueIn.erase( it );
-			} else
-				++it;
-		}
-
-		static glm::vec3 sizeOffset = glm::vec3( ( float )CHUNK_SIZE, ( float )CHUNK_HEIGHT, ( float )CHUNK_SIZE );
-		Aabb             bounds;
-		for ( auto & pos : chunksToBuild ) {
-			auto chunk = popChunkFromPool();
-			chunk->position = pos;
-			chunk->worldPosition =
-			    glm::i32vec3( ( s32 )getXCoord( pos ) * CHUNK_SIZE, 0, ( s32 )getZCoord( pos ) * CHUNK_SIZE );
-			chunk->biome = eBiome::MOUNTAIN;
-			bounds.min = chunk->worldPosition;
-			bounds.max = glm::vec3( chunk->worldPosition ) + sizeOffset;
-			if ( frustrum->IsCubeIn( bounds ) )
-				buildingQueueIn.push_back( chunk );
-			else
-				buildingQueueIn.push_front( chunk );
-		}
-
-		queueInMutex.unlock();
-
-		ucMutex.lock();
-		updateCondition.notify_all();
-		ucMutex.unlock();
-	}
 	lastPosition = position;
 }
 
@@ -244,7 +210,6 @@ void ChunkManager::Draw( const Camera & camera ) {
 	int projLoc = glGetUniformLocation( shader.ID, "projection" );
 	glUniformMatrix4fv( projLoc, 1, GL_FALSE, glm::value_ptr( camera.projMatrix ) );
 	int modelLoc = glGetUniformLocation( shader.ID, "model" );
-	glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( glm::mat4( 1.0f ) ) );
 
 	static glm::vec3 sizeOffset = glm::vec3( ( float )CHUNK_SIZE, ( float )CHUNK_HEIGHT, ( float )CHUNK_SIZE );
 	Aabb             bounds;
@@ -254,10 +219,14 @@ void ChunkManager::Draw( const Camera & camera ) {
 	for ( auto & it : chunks ) {
 		Chunk * chunk = it.second;
 
-		bounds.min = chunk->worldPosition;
-		bounds.max = glm::vec3( chunk->worldPosition ) + sizeOffset;
+		ng_assert( chunk != nullptr );
+		auto worldPosition = ChunkToWorldPosition( chunk->position );
+		bounds.min = worldPosition;
+		bounds.max = worldPosition + sizeOffset;
 		// Check if any of eight corners of the chunk is in sight
 		if ( frustrum->IsCubeIn( bounds ) ) {
+			auto translationMatrix = glm::translate( glm::mat4( 1.0f ), worldPosition );
+			glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( translationMatrix ) );
 			chunkDraw( chunk, shader );
 			drawCalls++;
 		}

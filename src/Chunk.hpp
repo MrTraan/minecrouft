@@ -13,24 +13,24 @@
 constexpr int FACES_INITIAL_ALLOC = 3000;
 constexpr int FACES_BATCH_ALLOC = 500;
 
-constexpr int TEXTURE_ROWS = 4;
-constexpr float UV_Y_BASE = (1.0f / TEXTURE_ROWS);
+constexpr int   TEXTURE_ROWS = 4;
+constexpr float UV_Y_BASE = ( 1.0f / TEXTURE_ROWS );
 
 // First 16 bits: x coordinate, next 16 bits: z coordinates
 typedef u32 ChunkCoordinates;
 
-static inline ChunkCoordinates createChunkCoordinates(u16 x, u16 z) { return (z << 16) | x; }
-static inline u16 getXCoord(ChunkCoordinates coord) { return (coord) & 0xFFFF; }
-static inline u16 getZCoord(ChunkCoordinates coord) { return (coord >> 16) & 0xFFFF; }
+static inline ChunkCoordinates createChunkCoordinates( u16 x, u16 z ) { return ( z << 16 ) | x; }
+static inline u16              getXCoord( ChunkCoordinates coord ) { return ( coord )&0xFFFF; }
+static inline u16              getZCoord( ChunkCoordinates coord ) { return ( coord >> 16 ) & 0xFFFF; }
 
-enum eBiome {
+enum class eBiome {
 	FOREST,
 	MOUNTAIN,
 };
 
 enum eBlockType : char { INACTIVE = 0, GRASS, SAND, DIRT, ROCK, SNOW };
 
-enum eDirection {
+enum class eDirection {
 	SOUTH,
 	NORTH,
 	BACK,
@@ -40,22 +40,21 @@ enum eDirection {
 };
 
 struct Chunk {
-	Mesh* mesh = nullptr;
-	u32 facesAllocated = 0;
-	u32 facesBuilt = 0;
+	Mesh * mesh = nullptr;
+	u32    facesAllocated = 0;
+	u32    facesBuilt = 0;
 
 	// 3 dimensionnal to note cube presence, because why not
-	eBlockType cubes[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
+	eBlockType cubes[ CHUNK_SIZE ][ CHUNK_HEIGHT ][ CHUNK_SIZE ];
 
 	eBiome biome;
 
 	ChunkCoordinates position;
-	glm::i32vec3 worldPosition;
 
-	Chunk* poolNextItem;
+	Chunk * poolNextItem;
 };
 
-Chunk* preallocateChunk();
-void chunkCreateGeometry(Chunk* chunk, HeightMap* heightMap, eBlockType* mask);
-void chunkDraw(Chunk* chunk, Shader shader);
-void chunkDestroy(Chunk* chunk);
+Chunk * preallocateChunk();
+void    chunkCreateGeometry( Chunk * chunk, HeightMap * heightMap );
+void    chunkDraw( Chunk * chunk, Shader shader );
+void    chunkDestroy( Chunk * chunk );
