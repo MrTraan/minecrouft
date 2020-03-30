@@ -27,20 +27,20 @@ set(MY_SOURCE_FILES
 	"src/Camera.cpp"
 	"src/Shader.cpp"
 	"src/Mesh.cpp"
-	"src/Keyboard.cpp"
-	"src/Mouse.cpp"
 	"src/Chunk.cpp"
 	"src/TextureAtlas.cpp"
 	"src/ChunkManager.cpp"
 	"src/Frustrum.cpp"
     "src/HeightMap.cpp"
+	"src/Player.cpp"
+	"src/IO.cpp"
 	
 	"src/ngLib/console.cpp"
 	"src/ngLib/logs.cpp"
 	"src/ngLib/nglib.cpp"
 	"src/ngLib/sys.cpp"
 
-	"src/glad.c"
+	"lib/glad.c"
 	# imgui
 	"./src/imgui/imgui.cpp"
 	"./src/imgui/imgui_demo.cpp"
@@ -65,8 +65,8 @@ include_directories(
 )
 
 add_executable(minecrouft
-	${MY_SOURCE_FILES}
-)
+	${MY_SOURCE_FILES})
+
 target_link_libraries(minecrouft PRIVATE
 	${OPENGL_gl_LIBRARY} # filled by "find_package(OpenGL REQUIRED)"
 	glfw

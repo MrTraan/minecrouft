@@ -12,14 +12,14 @@ namespace ng {
 void Printf( const char * fmt, ... ) {
 	va_list args;
 	va_start( args, fmt );
-	LogV( fmt, args, LOG_INFO );
+	LogV( fmt, args, LogSeverity::LOG_INFO );
 	va_end( args );
 }
 
 void Errorf( const char * fmt, ... ) {
 	va_list args;
 	va_start( args, fmt );
-	LogV( fmt, args, LOG_ERROR );
+	LogV( fmt, args, LogSeverity::LOG_ERROR );
 	va_end( args );
 }
 
@@ -37,12 +37,12 @@ void LogV( const char * fmt, va_list args, LogSeverity severity ) {
 	}
 
 	const char * prefix = prefixBySeverity[ severity ];
-	int          prefixSize = strlen( prefix );
+	size_t       prefixSize = strlen( prefix );
 
 	char * buf = new char[ logSize + prefixSize + 1 ];
 	strcpy( buf, prefix );
 
-	if ( vsnprintf( buf + prefixSize, logSize + 1, fmt, args ) < 0 ) {
+	if ( vsnprintf( buf + prefixSize, ( size_t )logSize + 1, fmt, args ) < 0 ) {
 		return;
 	}
 
@@ -50,7 +50,7 @@ void LogV( const char * fmt, va_list args, LogSeverity severity ) {
 	// OutputDebugString( buf );
 #endif
 
-	//FILE * fd = severity == LOG_ERROR ? stderr : stdout;
+	// FILE * fd = severity == LOG_ERROR ? stderr : stdout;
 	FILE * fd = stdout;
 	fprintf( fd, "%s", buf );
 

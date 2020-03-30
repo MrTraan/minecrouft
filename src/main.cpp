@@ -8,14 +8,16 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw_gl3.h>
 #include <tracy/Tracy.hpp>
+#include <tracy/TracyOpenGL.hpp>
 
+#include <Game.h>
 #include <Camera.hpp>
 #include <Chunk.hpp>
 #include <ChunkManager.hpp>
 #include <Frustrum.hpp>
-#include <Keyboard.hpp>
+#include <IO.hpp>
 #include <Mesh.hpp>
-#include <Mouse.hpp>
+#include <Player.hpp>
 #include <Shader.hpp>
 #include <Skybox.hpp>
 #include <Window.hpp>
@@ -39,57 +41,64 @@ void GLAPIENTRY MessageCallback( GLenum         source,
 
 constexpr char windowName[] = "Minecrouft";
 
+Game * theGame;
+
+void DrawDebugWindow();
+
 int main( void ) {
 	ng::Init();
-	Window window;
-	Camera camera( ( float )window.Width / window.Height, glm::vec3( SHRT_MAX / 2, 180, SHRT_MAX / 2 ) );
-	//Camera camera( ( float )window.Width / window.Height, glm::vec3( 10, 180, 10 ) );
+
+	theGame = new Game();
+
+	Window         window;
+	Camera &       camera = theGame->camera;
+	Player &       player = theGame->player;
+	IO &           io = theGame->io;
+	ChunkManager & chunkManager = theGame->chunkManager;
+	Skybox &       skybox = theGame->skybox;
+
+	window.Init();
 
 	// Setup imgui
 	ImGui::CreateContext();
-	ImGuiIO & io = ImGui::GetIO();
-	( void )io;
+	ImGuiIO & imio = ImGui::GetIO();
+	( void )imio;
 	ImGui_ImplGlfwGL3_Init( window.GetGlfwWindow(), false );
+	TracyGpuContext;
 
-	Keyboard::Init( window );
-	Mouse::Init( window );
-
-	glm::mat4 model = glm::mat4( 1.0 );
-	glm::mat4 view = glm::mat4( 1.0 );
-
-	Frustrum     frustrum( camera.projMatrix );
-	ChunkManager chunkManager( camera.Position, &frustrum );
-	Skybox       skybox;
+	player.position = glm::vec3( SHRT_MAX / 4, 180, SHRT_MAX / 4 );
+	camera.Init( ( float )window.width / window.height, player.position, glm::vec3( 0.0f, 1.0f, 0.0f ) );
+	io.Init( window );
+	chunkManager.Init( player.position );
+	skybox.Init();
 
 	float dt = 0.0f;
 	float lastFrame = 0.0f;
 
-	int major, minor, version;
-	glfwGetVersion( &major, &minor, &version );
-	const GLubyte * vendor = glGetString( GL_VENDOR );
-	printf( "Vendor name: %s\n", vendor );
-	printf( "Glfw version: %d.%d.%d\n", major, minor, version );
-	printf( "OpenGL version: %s\n", glGetString( GL_VERSION ) );
-	printf( "GLM version: %d\n", GLM_VERSION );
 	glEnable( GL_MULTISAMPLE );
 	glEnable( GL_DEBUG_OUTPUT );
 	glDebugMessageCallback( MessageCallback, 0 );
 	glEnable( GL_CULL_FACE );
 	glCullFace( GL_BACK );
 
-	auto playerPosition = camera.Position;
-	auto playerChunkPositionVec = WorldToChunkPosition( playerPosition );
-	auto playerChunkPosition = createChunkCoordinates( playerChunkPositionVec.x, playerChunkPositionVec.y );
+	auto playerPosition = camera.position;
+	auto playerChunkPosition = WorldToChunkPosition( playerPosition );
 
 	auto playerChunk = chunkManager.chunks.at( playerChunkPosition );
 	ng_assert( playerChunk != nullptr );
 
 	auto inputSize = sizeof( playerChunk->cubes );
 	ng::Printf( "Size before compression: %llu\n", inputSize );
-	auto   minSize = LZ4_compressBound( inputSize );
-	char * compressedData = new char[ minSize ];
-	auto   res = LZ4_compress_default( ( char * )( &( playerChunk->cubes ) ), compressedData, inputSize, minSize );
-	ng::Printf( "Size after compression: %llu\n", res );
+	int sizeCompressed;
+	{
+		ZoneScopedN( "One Chunk compression" );
+		auto   minSize = LZ4_compressBound( inputSize );
+		char * compressedData = new char[ minSize ];
+		sizeCompressed =
+		    LZ4_compress_default( ( char * )( &( playerChunk->cubes ) ), compressedData, inputSize, minSize );
+		delete[] compressedData;
+	}
+	ng::Printf( "Size after compression: %llu\n", sizeCompressed );
 
 	while ( !window.ShouldClose() ) {
 		ZoneScopedN( "MainLoop" );
@@ -100,24 +109,47 @@ int main( void ) {
 
 		window.Clear();
 		window.PollEvents();
-		window.ProcessInput();
 		ImGui_ImplGlfwGL3_NewFrame();
 
-		Mouse::Update();
+		io.Update( window );
 
-		ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-		             ImGui::GetIO().Framerate );
+		static bool debugMouse = false;
+		static bool wireframeMode = false;
+		// Custom event handlers
+		{
 
-		camera.Update( dt );
-		view = camera.GetViewMatrix();
-		skybox.Draw( view, camera.projMatrix );
-		frustrum.Update( view );
+			if ( io.keyboard.IsKeyDown( KEY_ESCAPE ) ) {
+				glfwSetWindowShouldClose( window.GetGlfwWindow(), GL_TRUE );
+			}
+			if ( io.keyboard.IsKeyPressed( KEY_V ) ) {
+				if ( !wireframeMode ) {
+					glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+					wireframeMode = true;
+				} else {
+					glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+					wireframeMode = false;
+				}
+			}
+			if ( io.keyboard.IsKeyPressed( eKey::KEY_LEFT_SHIFT ) ) {
+				debugMouse = !debugMouse;
+				glfwSetInputMode( window.GetGlfwWindow(), GLFW_CURSOR,
+				                  debugMouse ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED );
+			}
+		}
 
-		chunkManager.Update( camera.Position );
+		if ( !debugMouse ) {
+			camera.Update( io, player, dt );
+			player.Update( io, dt );
+		}
+
+		skybox.Draw( camera.viewMatrix, camera.projMatrix );
+
+		chunkManager.Update( camera.position );
 
 		chunkManager.Draw( camera );
 
 		ng::GetConsole().Draw();
+		DrawDebugWindow();
 
 		{
 			ZoneScopedN( "Render_IMGUI" );
@@ -130,12 +162,40 @@ int main( void ) {
 			window.SwapBuffers();
 		}
 
+		TracyGpuCollect;
 		FrameMark;
 	}
+
+	chunkManager.Shutdown();
 
 	ImGui_ImplGlfwGL3_Shutdown();
 	ImGui::DestroyContext();
 
+	window.Shutdown();
 	ng::Shutdown();
+
+	delete theGame;
 	return 0;
+}
+
+void DrawDebugWindow() {
+	ImGui::Begin( "Debug" );
+
+		ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
+		             ImGui::GetIO().Framerate );
+
+	if ( ImGui::TreeNode( "Chunk manager" ) ) {
+		theGame->chunkManager.DebugDraw();
+		ImGui::TreePop();
+	}
+	if ( ImGui::TreeNode( "Camera" ) ) {
+		theGame->camera.DebugDraw();
+		ImGui::TreePop();
+	}
+	if ( ImGui::TreeNode( "Player" ) ) {
+		theGame->player.DebugDraw();
+		ImGui::TreePop();
+	}
+
+	ImGui::End();
 }

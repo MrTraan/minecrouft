@@ -1,85 +1,62 @@
-#include <imgui/imgui.h>
 #include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <imgui/imgui.h>
 #include <limits.h>
 
-#include <Camera.hpp>
-#include <Keyboard.hpp>
-#include <Mouse.hpp>
-#include <constants.hpp>
 #include "glm/ext/matrix_clip_space.hpp"
+#include <Camera.hpp>
+#include <IO.hpp>
+#include <Player.hpp>
+#include <constants.hpp>
 
-Camera::Camera( float aspectRatio, glm::vec3 position, glm::vec3 up, float yaw, float pitch) {
-	this->Position = position;
-	this->WorldUp = up;
-	this->Yaw = yaw;
-	this->Pitch = pitch;
-	this->updateCameraVectors();
-
-	float viewDistance = 160.0f;
-	float fov = glm::radians(80.0f);
-	projMatrix = glm::perspective(fov, aspectRatio, 0.1f, viewDistance);
-}
-
-glm::mat4 Camera::GetViewMatrix() const {
-	return glm::lookAt(this->Position, this->Position + this->Front, this->Up);
+void Camera::Init( float aspectRatio, const glm::vec3 & position, const glm::vec3 up ) {
+	this->position = position;
+	this->worldUp = up;
+	projMatrix = glm::perspective( fov, aspectRatio, 0.1f, viewDistance );
+	updateCameraVectors();
 }
 
 void Camera::updateCameraVectors() {
 	glm::vec3 front;
 
-	front.x = cosf(glm::radians(this->Yaw)) * cosf(glm::radians(this->Pitch));
-	front.y = sinf(glm::radians(this->Pitch));
-	front.z = sinf(glm::radians(this->Yaw)) * cosf(glm::radians(this->Pitch));
-	this->Front = glm::normalize(front);
+	front.x = cosf( glm::radians( this->yaw ) ) * cosf( glm::radians( this->pitch ) );
+	front.y = sinf( glm::radians( this->pitch ) );
+	front.z = sinf( glm::radians( this->yaw ) ) * cosf( glm::radians( this->pitch ) );
+	this->front = glm::normalize( front );
 
-	this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));
-	this->Up = glm::normalize(glm::cross(this->Right, this->Front));
+	auto right = glm::normalize( glm::cross( this->front, this->worldUp ) );
+	this->up = glm::normalize( glm::cross( right, this->front ) );
+
+	viewMatrix = glm::lookAt( this->position, this->position + this->front, this->up );
 }
 
-void Camera::Update(float dt) {
-	float speed = 6 * dt;
+void Camera::Update( const IO & io, Player & player, float dt ) {
+	constexpr int yDirection = -1;
+	yaw += io.mouse.offset.x * sensitivity;
+	pitch += io.mouse.offset.y * sensitivity * yDirection;
 
-	if (Keyboard::IsKeyDown(eKey::KEY_SPACE))
-		speed *= 20.0f;
+	if ( pitch > 89.0f ) {
+		pitch = 89.0f;
+	}
+	if ( pitch < -89.0f ) {
+		pitch = -89.0f;
+	}
+	updateCameraVectors();
+	frustrum.Update( viewMatrix, projMatrix );
 
-	if (Keyboard::IsKeyDown(eKey::KEY_W))
-		this->Position += speed * this->Front;
-	if (Keyboard::IsKeyDown(eKey::KEY_S))
-		this->Position -= speed * this->Front;
-	if (Keyboard::IsKeyDown(eKey::KEY_A))
-		this->Position -=
-		    glm::normalize(glm::cross(this->Front, this->Up)) * speed;
-	if (Keyboard::IsKeyDown(eKey::KEY_D))
-		this->Position +=
-		    glm::normalize(glm::cross(this->Front, this->Up)) * speed;
+	// Rotate player
+	player.front = front;
+	player.up = up;
 
-	if (this->Position.x < 0)
-		this->Position.x = 0;
-	if (this->Position.x > SHRT_MAX * CHUNK_SIZE)
-		this->Position.x = SHRT_MAX * CHUNK_SIZE;
-	if (this->Position.y < 0)
-		this->Position.y = 0;
-	if (this->Position.y > CHUNK_HEIGHT + CHUNK_SIZE)
-		this->Position.y = CHUNK_HEIGHT + CHUNK_SIZE;
-	if (this->Position.z < 0)
-		this->Position.z = 0;
-	if (this->Position.z > SHRT_MAX * CHUNK_SIZE)
-		this->Position.z = SHRT_MAX * CHUNK_SIZE;
+	// Track player position
+	position = player.position;
+}
 
-	float sensitivity = 0.1f;
-	int yDirection = -1;
-	this->Yaw += Mouse::Offset.x * sensitivity;
-	this->Pitch += Mouse::Offset.y * sensitivity * yDirection;
-
-	if (this->Pitch > 89.0f)
-		this->Pitch = 89.0f;
-	if (this->Pitch < -89.0f)
-		this->Pitch = -89.0f;
-	this->updateCameraVectors();
-
-	ImGui::Text("Camera position: %f, %f, %f", Position.x, Position.y,
-	            Position.z);
-	ImGui::Text("Yaw: %f Pitch: %f", Yaw, Pitch);
+void Camera::DebugDraw() {
+	ImGui::PushID( "Camera" );
+	ImGui::Text( "Camera position: %f, %f, %f", position.x, position.y, position.z );
+	ImGui::Text( "Yaw: %f Pitch: %f", yaw, pitch );
+	ImGui::DragFloat( "Sensitivity", &sensitivity, 0.1f, 0.0f, 5.0f );
+	ImGui::PopID();
 }

@@ -21,18 +21,12 @@ static void pushFace( Chunk *    chunk,
                       int        reverse,
                       eBlockType type );
 
-#define FOREACH_CUBE_OF_CHUNK()                                                                                        \
-	for ( u32 x = 0; x < CHUNK_SIZE; x++ )                                                                             \
-		for ( u32 y = 0; y < CHUNK_HEIGHT; y++ )                                                                       \
-			for ( u32 z = 0; z < CHUNK_SIZE; z++ )
-
-void chunkCreateGeometry( Chunk * chunk, HeightMap * heightMap ) {
+void chunkCreateGeometry( Chunk * chunk ) {
 	ZoneScoped;
 	static thread_local eBlockType mask[ CHUNK_SIZE * CHUNK_HEIGHT ];
 	chunk->facesBuilt = 0;
 	chunk->mesh->IndicesCount = 0;
 	chunk->mesh->VerticesCount = 0;
-	heightMap->SetupChunk( chunk );
 
 	int        dims[ 3 ] = {CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE};
 	glm::ivec3 p1, p2, p3, p4;
@@ -43,11 +37,11 @@ void chunkCreateGeometry( Chunk * chunk, HeightMap * heightMap ) {
 			int        v = ( d + 2 ) % 3;
 			eDirection dir;
 			if ( d == 0 )
-				dir = ( reverse ? eDirection::SOUTH : eDirection::BACK );
+				dir = ( reverse ? eDirection::WEST : eDirection::EAST );
 			else if ( d == 1 )
-				dir = ( reverse ? eDirection::BOTTOM : eDirection::EAST );
+				dir = ( reverse ? eDirection::BOTTOM : eDirection::TOP );
 			else if ( d == 2 )
-				dir = ( reverse ? eDirection::WEST : eDirection::NORTH );
+				dir = ( reverse ? eDirection::SOUTH : eDirection::NORTH );
 
 			int indices[ 3 ] = {0, 0, 0};
 			int offset[ 3 ] = {0, 0, 0};
@@ -68,7 +62,9 @@ void chunkCreateGeometry( Chunk * chunk, HeightMap * heightMap ) {
 						          : eBlockType::INACTIVE );
 
 						mask[ n++ ] =
-						    ( face1 && face2 && face1 == face2 ) ? eBlockType::INACTIVE : ( reverse ? face2 : face1 );
+						    ( face1 != eBlockType::INACTIVE && face2 != eBlockType::INACTIVE && face1 == face2 )
+						        ? eBlockType::INACTIVE
+						        : ( reverse ? face2 : face1 );
 					}
 				}
 
@@ -76,14 +72,17 @@ void chunkCreateGeometry( Chunk * chunk, HeightMap * heightMap ) {
 				n = 0;
 				for ( int j = 0; j < dims[ v ]; j++ ) {
 					for ( int i = 0; i < dims[ u ]; ) {
-						if ( mask[ n ] ) {
+						if ( mask[ n ] != eBlockType::INACTIVE ) {
 							int w, h;
-							for ( w = 1; i + w < dims[ u ] && mask[ n + w ] && mask[ n + w ] == mask[ n ]; ++w )
+							for ( w = 1; i + w < dims[ u ] && mask[ n + w ] != eBlockType::INACTIVE &&
+							             mask[ n + w ] == mask[ n ];
+							      ++w )
 								;
 
 							for ( h = 1; j + h < dims[ v ]; ++h ) {
 								for ( int k = 0; k < w; k++ ) {
-									if ( !mask[ n + k + h * dims[ u ] ] || mask[ n + k + h * dims[ u ] ] != mask[ n ] )
+									if ( mask[ n + k + h * dims[ u ] ] == eBlockType::INACTIVE ||
+									     mask[ n + k + h * dims[ u ] ] != mask[ n ] )
 										goto BREAK_LOOP;
 								}
 							}
@@ -128,33 +127,14 @@ void chunkCreateGeometry( Chunk * chunk, HeightMap * heightMap ) {
 			}
 		}
 	}
-	if ( chunk->facesAllocated > chunk->facesBuilt * 2 ) {
-		ZoneScopedN( "ShrunkingFacesAllocated" );
-		chunk->mesh->Indices = ( u32 * )realloc( chunk->mesh->Indices, sizeof( u32 ) * 6 * chunk->facesBuilt );
-		ng_assert( chunk->mesh->Indices != NULL );
-		chunk->mesh->Vertices = ( Vertex * )realloc( chunk->mesh->Vertices, sizeof( Vertex ) * 4 * chunk->facesBuilt );
-		ng_assert( chunk->mesh->Vertices != NULL );
-		chunk->facesAllocated = chunk->facesBuilt;
-	}
-}
-
-void chunkDestroy( Chunk * chunk ) {
-	if ( chunk->mesh != nullptr ) {
-		if ( chunk->mesh->Vertices )
-			free( chunk->mesh->Vertices );
-		if ( chunk->mesh->Indices )
-			free( chunk->mesh->Indices );
-	}
-	delete chunk->mesh;
-}
-
-#define CUBES_TEXTURE_PATH "./resources/textures.png"
-
-void chunkDraw( Chunk * chunk, Shader shader ) {
-	static TextureAtlas ta = loadTextureAtlas( CUBES_TEXTURE_PATH, 4, 4 );
-
-	bindTextureAtlas( ta );
-	meshDraw( chunk->mesh, shader );
+	// if ( chunk->facesAllocated > chunk->facesBuilt * 2 ) j
+	//	ZoneScopedN( "ShrunkingFacesAllocated" );
+	//	chunk->mesh->Indices = ( u32 * )realloc( chunk->mesh->Indices, sizeof( u32 ) * 6 * chunk->facesBuilt );
+	//	ng_assert( chunk->mesh->Indices != NULL );
+	//	chunk->mesh->Vertices = ( Vertex * )realloc( chunk->mesh->Vertices, sizeof( Vertex ) * 4 * chunk->facesBuilt );
+	//	ng_assert( chunk->mesh->Vertices != NULL );
+	//	chunk->facesAllocated = chunk->facesBuilt;
+	//}
 }
 
 void pushFace( Chunk *    chunk,
@@ -186,12 +166,17 @@ void pushFace( Chunk *    chunk,
 
 	while ( chunk->facesAllocated <= chunk->facesBuilt ) {
 		ZoneScopedN( "GrowingFacesAllocated" );
-		chunk->mesh->Indices =
-		    ( u32 * )realloc( chunk->mesh->Indices, sizeof( u32 ) * 6 * ( FACES_BATCH_ALLOC + chunk->facesAllocated ) );
-		ng_assert( chunk->mesh->Indices != NULL );
-		chunk->mesh->Vertices = ( Vertex * )realloc(
-		    chunk->mesh->Vertices, sizeof( Vertex ) * 4 * ( FACES_BATCH_ALLOC + chunk->facesAllocated ) );
-		ng_assert( chunk->mesh->Vertices != NULL );
+		auto grownIndices = ( u32 * )ng_alloc( sizeof( u32 ) * 6 * ( FACES_BATCH_ALLOC + chunk->facesAllocated ) );
+		ng_assert( grownIndices != nullptr );
+		auto grownVertices =
+		    ( Vertex * )ng_alloc( sizeof( Vertex ) * 4 * ( FACES_BATCH_ALLOC + chunk->facesAllocated ) );
+		ng_assert( grownVertices != nullptr );
+		memcpy( grownIndices, chunk->mesh->Indices, sizeof( u32 ) * 6 * chunk->facesAllocated );
+		memcpy( grownVertices, chunk->mesh->Vertices, sizeof( Vertex ) * 4 * chunk->facesAllocated );
+		ng_free( chunk->mesh->Indices );
+		ng_free( chunk->mesh->Vertices );
+		chunk->mesh->Indices = grownIndices;
+		chunk->mesh->Vertices = grownVertices;
 		chunk->facesAllocated += FACES_BATCH_ALLOC;
 	}
 
@@ -224,12 +209,12 @@ void pushFace( Chunk *    chunk,
 
 	v[ vi + 0 ].TexCoords[ 0 ] = 0.0f;
 	v[ vi + 0 ].TexCoords[ 1 ] = 0.0f;
-	v[ vi + 1 ].TexCoords[ 0 ] = ( float )width;
+	v[ vi + 1 ].TexCoords[ 0 ] = width;
 	v[ vi + 1 ].TexCoords[ 1 ] = 0.0f;
-	v[ vi + 2 ].TexCoords[ 0 ] = ( float )width;
-	v[ vi + 2 ].TexCoords[ 1 ] = ( float )height;
+	v[ vi + 2 ].TexCoords[ 0 ] = width;
+	v[ vi + 2 ].TexCoords[ 1 ] = height;
 	v[ vi + 3 ].TexCoords[ 0 ] = 0.0f;
-	v[ vi + 3 ].TexCoords[ 1 ] = ( float )height;
+	v[ vi + 3 ].TexCoords[ 1 ] = height;
 
 	v[ vi + 0 ].Position[ 0 ] = a.x;
 	v[ vi + 0 ].Position[ 1 ] = a.y;
@@ -247,42 +232,58 @@ void pushFace( Chunk *    chunk,
 	v[ vi + 3 ].Position[ 1 ] = d.y;
 	v[ vi + 3 ].Position[ 2 ] = d.z;
 
-	if ( direction == eDirection::SOUTH )
-		for ( int i = 0; i < 4; i++ )
-			v[ vi + i ].TexIndex = float( uvModifier * 4 + 1 );
-
-	if ( direction == eDirection::BACK )
-		for ( int i = 0; i < 4; i++ )
-			v[ vi + i ].TexIndex = float( uvModifier * 4 + 1 );
-
-	if ( direction == eDirection::EAST )
-		for ( int i = 0; i < 4; i++ )
+	switch ( direction ) {
+	case eDirection::TOP:
+		for ( int i = 0; i < 4; i++ ) {
 			v[ vi + i ].TexIndex = float( uvModifier * 4 );
-
-	if ( direction == eDirection::BOTTOM )
-		for ( int i = 0; i < 4; i++ )
+		}
+		break;
+	case eDirection::BOTTOM:
+		for ( int i = 0; i < 4; i++ ) {
 			v[ vi + i ].TexIndex = float( uvModifier * 4 + 3 );
-
-	if ( direction == eDirection::WEST )
-		for ( int i = 0; i < 4; i++ )
+		}
+		break;
+	case eDirection::SOUTH:
+	case eDirection::EAST:
+	case eDirection::WEST:
+	case eDirection::NORTH:
+		for ( int i = 0; i < 4; i++ ) {
 			v[ vi + i ].TexIndex = float( uvModifier * 4 + 1 );
-
-	if ( direction == eDirection::NORTH )
-		for ( int i = 0; i < 4; i++ )
-			v[ vi + i ].TexIndex = float( uvModifier * 4 + 1 );
+		}
+		break;
+	}
 }
 
 Chunk * preallocateChunk() {
+	ZoneScoped;
 	Chunk * chunk = new Chunk();
 	chunk->mesh = new Mesh();
-	chunk->mesh->isBound = false;
-	chunk->mesh->Indices = ( u32 * )malloc( sizeof( u32 ) * 6 * FACES_INITIAL_ALLOC );
+	chunk->mesh->Indices = ( u32 * )ng_alloc( sizeof( u32 ) * 6 * FACES_INITIAL_ALLOC );
 	ng_assert( chunk->mesh->Indices != NULL );
-	chunk->mesh->Vertices = ( Vertex * )malloc( sizeof( Vertex ) * 4 * FACES_INITIAL_ALLOC );
+	chunk->mesh->Vertices = ( Vertex * )ng_alloc( sizeof( Vertex ) * 4 * FACES_INITIAL_ALLOC );
 	ng_assert( chunk->mesh->Vertices != NULL );
 	chunk->mesh->IndicesCount = 0;
 	chunk->mesh->VerticesCount = 0;
 	chunk->facesAllocated = FACES_INITIAL_ALLOC;
 	chunk->facesBuilt = 0;
 	return chunk;
+}
+
+void chunkDestroy( Chunk * chunk ) {
+	if ( chunk->mesh != nullptr ) {
+		if ( chunk->mesh->Vertices )
+			ng_free( chunk->mesh->Vertices );
+		if ( chunk->mesh->Indices )
+			ng_free( chunk->mesh->Indices );
+	}
+	delete chunk->mesh;
+}
+
+#define CUBES_TEXTURE_PATH "./resources/blocks_pixel_perfect.png"
+
+void chunkDraw( Chunk * chunk ) {
+	static TextureAtlas ta = loadTextureAtlas( CUBES_TEXTURE_PATH, 4, 4 );
+
+	bindTextureAtlas( ta );
+	meshDraw( chunk->mesh );
 }

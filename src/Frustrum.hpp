@@ -8,15 +8,8 @@ struct Aabb {
 	glm::vec3 max;
 };
 
-class Frustrum {
-   public:
-	Frustrum(glm::mat4 projection) : Projection(projection) {}
-
-	glm::mat4 Projection;
-
-	void Update(glm::mat4 view);
-	bool IsCubeIn(const Aabb& aabb);
-
-   private:
+struct Frustrum {
+	void Update(const glm::mat4 & view, const glm::mat4 & projection);
+	bool IsCubeIn(const Aabb& aabb) const;
 	glm::vec4 planes[6];
 };

@@ -17,12 +17,10 @@ struct Mesh {
 	u32* Indices = NULL;
 	u32 IndicesCount = 0;
 	unsigned int VAO, VBO, EBO;
-
-	bool isBound = false;
 };
 
 void meshCreateGLBuffers(Mesh* mesh);
 void meshDeleteBuffers(Mesh* mesh);
 void meshUpdateBuffer(Mesh* mesh);
 
-void meshDraw(Mesh* mesh, Shader shader);
+void meshDraw(Mesh* mesh);

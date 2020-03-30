@@ -8,35 +8,31 @@
 #include <imgui/imgui.h>
 #include <tracy/Tracy.hpp>
 
+#include <Game.h>
+
 using MPMCChunkQueue = moodycamel::ConcurrentQueue< Chunk * >;
 MPMCChunkQueue buildingQueueIn;
 MPMCChunkQueue buildingQueueOut;
 
-static void builderThreadRoutine( ChunkManager * manager, int index ) {
-	using namespace std::chrono_literals;
-	std::unique_lock< std::mutex > ulock( manager->ucMutex, std::defer_lock );
+std::atomic_bool buildersShouldRun( true );
 
-	while ( manager->ThreadShouldRun ) {
+static void builderThreadRoutine( ChunkManager * manager ) {
+	using namespace std::chrono_literals;
+	while ( buildersShouldRun.load() == true ) {
 		Chunk * chunk;
 		bool    found = buildingQueueIn.try_dequeue( chunk );
 		if ( !found ) {
 			std::this_thread::sleep_for( 16ms );
 		} else {
-			chunkCreateGeometry( chunk, &( manager->heightMap ) );
+			manager->heightMap.SetupChunk( chunk );
+			chunkCreateGeometry( chunk );
 			buildingQueueOut.enqueue( chunk );
 		}
 	}
 }
 
-glm::i32vec2 WorldToChunkPosition( const glm::vec3 & pos ) {
-	glm::i32vec2 chunkPosition( ( s32 )pos.x / CHUNK_SIZE, ( s32 )pos.z / CHUNK_SIZE );
-
-	if ( pos.x < 0 )
-		chunkPosition.x--;
-	if ( pos.z < 0 )
-		chunkPosition.y--;
-
-	return chunkPosition;
+ChunkCoordinates WorldToChunkPosition( const glm::vec3 & pos ) {
+	return createChunkCoordinates( ( s32 )pos.x / CHUNK_SIZE, ( s32 )pos.z / CHUNK_SIZE );
 }
 
 glm::vec3 ChunkToWorldPosition( const glm::i32vec2 & pos ) {
@@ -47,40 +43,36 @@ glm::vec3 ChunkToWorldPosition( ChunkCoordinates pos ) {
 	return glm::vec3( ( s32 )getXCoord( pos ) * CHUNK_SIZE, 0, ( s32 )getZCoord( pos ) * CHUNK_SIZE );
 }
 
-ChunkManager::ChunkManager( glm::vec3 playerPos, Frustrum * frustrum )
-    : frustrum( frustrum ), shader( "./resources/shaders/vertex.glsl", "./resources/shaders/fragment.glsl" ) {
-	ThreadShouldRun = true;
-	playerPos.y = 0.0f;
-	auto chunkPosition = WorldToChunkPosition( playerPos );
-	lastPosition = chunkPosition;
-
-	glm::u16vec2 cursor( 0, 0 );
-
-	for ( cursor.x = MAX( 0, chunkPosition.x - chunkLoadRadius ); cursor.x <= chunkPosition.x + chunkLoadRadius;
-	      cursor.x++ ) {
-		for ( cursor.y = MAX( 0, chunkPosition.y - chunkLoadRadius ); cursor.y <= chunkPosition.y + chunkLoadRadius;
-		      cursor.y++ ) {
-			ChunkCoordinates pos = createChunkCoordinates( cursor.x, cursor.y );
-			auto             chunk = popChunkFromPool();
-			chunk->position = pos;
-			chunk->biome = eBiome::MOUNTAIN;
-			chunkCreateGeometry( chunk, &heightMap );
-			chunks[ pos ] = chunk;
-		}
-	}
-
-	for ( int i = 0; i < 50; i++ )
-		pushChunkToPool( preallocateChunk() );
+void ChunkManager::Init( const glm::vec3 & playerPos ) {
+	ZoneScoped;
+	shader.CompileFromPath( "./resources/shaders/vertex.glsl", "./resources/shaders/fragment.glsl" );
 
 	for ( int i = 0; i < NUM_MANAGER_THREADS; i++ )
-		builderRoutineThreads[ i ] = std::thread( builderThreadRoutine, this, i );
+		builderRoutineThreads[ i ] = std::thread( builderThreadRoutine, this );
+
+	ChunkCoordinates position = WorldToChunkPosition( playerPos );
+	CreateChunksAroundPlayer( position );
+
+	// Flush building queue while player chunk is not ready
+	Chunk * builtChunk = nullptr;
+	bool    playerChunkCreated = false;
+	while ( playerChunkCreated == false ) {
+		while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
+			chunks[ builtChunk->position ] = builtChunk;
+			meshCreateGLBuffers( builtChunk->mesh );
+			if ( builtChunk->position == position ) {
+				playerChunkCreated = true;
+				break;
+			}
+		}
+		using namespace std::chrono_literals;
+		std::this_thread::sleep_for( 10ms );
+	}
 }
 
-ChunkManager::~ChunkManager() {
-	ThreadShouldRun = false;
-	ucMutex.lock();
-	updateCondition.notify_all();
-	ucMutex.unlock();
+void ChunkManager::Shutdown() {
+	ZoneScoped;
+	buildersShouldRun.store( false );
 	for ( int i = 0; i < NUM_MANAGER_THREADS; i++ )
 		builderRoutineThreads[ i ].join();
 	for ( auto & e : chunks ) {
@@ -90,7 +82,9 @@ ChunkManager::~ChunkManager() {
 	}
 	while ( poolHead != nullptr ) {
 		chunkDestroy( poolHead );
-		poolHead = poolHead->poolNextItem;
+		auto newHead = poolHead->poolNextItem;
+		delete poolHead;
+		poolHead = newHead;
 	}
 }
 
@@ -107,106 +101,63 @@ bool ChunkManager::PushChunkToProducer( ChunkCoordinates coord ) {
 	return buildingQueueIn.enqueue( chunk );
 }
 
-void ChunkManager::Update( glm::vec3 playerPos ) {
+void ChunkManager::Update( const glm::vec3 & playerPos ) {
 	ZoneScoped;
-	glm::i32vec2 position = WorldToChunkPosition( playerPos );
-	s32          deltaX = position.x - lastPosition.x;
-	s32          deltaY = position.y - lastPosition.y;
-
-	ImGui::Text( "Chunk Position: %d %d\n", position.x, position.y );
-	ImGui::Text( "Chunks loaded: %lu\n", chunks.size() );
-	u32 poolSize = 0;
-	for ( auto it = poolHead; it != nullptr; it = it->poolNextItem )
-		poolSize++;
-	ImGui::Text( "Chunks pooled: %d\n", poolSize );
-
-	static int newChunkLoadRadius = chunkLoadRadius;
-	static int newChunkUnloadRadius = chunkUnloadRadius;
-	ImGui::SliderInt( "Chunk load radius", &newChunkLoadRadius, 1, 32 );
-	ImGui::SliderInt( "Chunk unload radius", &newChunkUnloadRadius, 1, 32 );
-
-	bool forceUpdate = false;
-	if ( ImGui::Button( "Apply" ) ) {
-		ZoneScopedN( "ChunkLoadRadiusUpdate" );
-		for ( u16 x = position.x - newChunkLoadRadius; x <= position.x + newChunkLoadRadius; x++ ) {
-			for ( u16 y = position.y - newChunkLoadRadius; y <= position.y + newChunkLoadRadius; y++ ) {
-				if ( !ChunkIsLoaded( x, y ) )
-					PushChunkToProducer( createChunkCoordinates( x, y ) );
-			}
-		}
-		chunkLoadRadius = newChunkLoadRadius;
-		chunkUnloadRadius = newChunkUnloadRadius;
-		forceUpdate = true;
-	}
-	ImGui::Text( "Render distance: %d cubes\n", chunkLoadRadius * CHUNK_SIZE );
+	ChunkCoordinates position = WorldToChunkPosition( playerPos );
 
 	// Flush building queue
 	Chunk * builtChunk = nullptr;
 	while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
 		if ( !ChunkIsLoaded( builtChunk->position ) ) {
 			chunks[ builtChunk->position ] = builtChunk;
+			meshCreateGLBuffers( builtChunk->mesh );
 		} else {
 			// Race condition: the element was built twice
-			if ( builtChunk->mesh->isBound ) {
-				meshDeleteBuffers( builtChunk->mesh );
-			}
 			pushChunkToPool( builtChunk );
 		}
 	}
 
-	if ( position == lastPosition && !forceUpdate )
+	if ( position == lastPosition )
 		return;
+	lastPosition = position;
 
-	if ( deltaX != 0 || deltaY != 0 || forceUpdate ) {
-		for ( auto it = std::begin( chunks ); it != std::end( chunks ); ) {
-			auto cpos = it->second->position;
-			if ( abs( position.x - getXCoord( cpos ) ) > chunkUnloadRadius ||
-			     abs( position.y - getZCoord( cpos ) ) > chunkUnloadRadius ) {
-				if ( it->second->mesh->isBound )
-					meshDeleteBuffers( it->second->mesh );
-				pushChunkToPool( it->second );
-				it = chunks.erase( it );
-			} else
-				++it;
+	// Remove chunks outside of unload radius
+	for ( auto it = std::begin( chunks ); it != std::end( chunks ); ) {
+		auto cpos = it->second->position;
+		if ( abs( getXCoord( position ) - getXCoord( cpos ) ) > chunkUnloadRadius ||
+		     abs( getZCoord( position ) - getZCoord( cpos ) ) > chunkUnloadRadius ) {
+			meshDeleteBuffers( it->second->mesh );
+			pushChunkToPool( it->second );
+			it = chunks.erase( it );
+		} else {
+			++it;
 		}
 	}
 
-	if ( deltaX < 0 ) {
-		for ( u16 x = position.x - chunkLoadRadius; x < lastPosition.x - chunkLoadRadius; x++ )
-			for ( u16 y = position.y - chunkLoadRadius; y <= position.y + chunkLoadRadius; y++ )
-				if ( !ChunkIsLoaded( x, y ) )
-					PushChunkToProducer( createChunkCoordinates( x, y ) );
-	}
+	CreateChunksAroundPlayer( position );
+}
 
-	if ( deltaX > 0 ) {
-		for ( u16 x = position.x + chunkLoadRadius; x > lastPosition.x + chunkLoadRadius; x-- )
-			for ( u16 y = position.y - chunkLoadRadius; y <= position.y + chunkLoadRadius; y++ )
-				if ( !ChunkIsLoaded( x, y ) )
-					PushChunkToProducer( createChunkCoordinates( x, y ) );
-	}
+void ChunkManager::CreateChunksAroundPlayer( ChunkCoordinates chunkPosition ) {
+	ZoneScoped;
+	glm::u16vec2 cursor( 0, 0 );
 
-	if ( deltaY < 0 ) {
-		for ( u16 y = position.y - chunkLoadRadius; y < lastPosition.y - chunkLoadRadius; y++ )
-			for ( u16 x = position.x - chunkLoadRadius; x <= position.x + chunkLoadRadius; x++ )
-				if ( !ChunkIsLoaded( x, y ) )
-					PushChunkToProducer( createChunkCoordinates( x, y ) );
+	for ( cursor.x = MAX( 0, getXCoord( chunkPosition ) - chunkLoadRadius );
+	      cursor.x <= MIN( CHUNK_MAX_X, getXCoord( chunkPosition ) + chunkLoadRadius ); cursor.x++ ) {
+		for ( cursor.y = MAX( 0, getZCoord( chunkPosition ) - chunkLoadRadius );
+		      cursor.y <= MIN( CHUNK_MAX_Z, getZCoord( chunkPosition ) + chunkLoadRadius ); cursor.y++ ) {
+			ChunkCoordinates pos = createChunkCoordinates( cursor.x, cursor.y );
+			if ( !ChunkIsLoaded( pos ) ) {
+				PushChunkToProducer( pos );
+			}
+		}
 	}
-
-	if ( deltaY > 0 ) {
-		for ( u16 y = position.y + chunkLoadRadius; y > lastPosition.y + chunkLoadRadius; y-- )
-			for ( u16 x = position.x - chunkLoadRadius; x <= position.x + chunkLoadRadius; x++ )
-				if ( !ChunkIsLoaded( x, y ) )
-					PushChunkToProducer( createChunkCoordinates( x, y ) );
-	}
-
-	lastPosition = position;
 }
 
 void ChunkManager::Draw( const Camera & camera ) {
 	ZoneScoped;
 	shader.Use();
 	int viewLoc = glGetUniformLocation( shader.ID, "view" );
-	glUniformMatrix4fv( viewLoc, 1, GL_FALSE, glm::value_ptr( camera.GetViewMatrix() ) );
+	glUniformMatrix4fv( viewLoc, 1, GL_FALSE, glm::value_ptr( camera.viewMatrix ) );
 	int projLoc = glGetUniformLocation( shader.ID, "projection" );
 	glUniformMatrix4fv( projLoc, 1, GL_FALSE, glm::value_ptr( camera.projMatrix ) );
 	int modelLoc = glGetUniformLocation( shader.ID, "model" );
@@ -214,7 +165,7 @@ void ChunkManager::Draw( const Camera & camera ) {
 	static glm::vec3 sizeOffset = glm::vec3( ( float )CHUNK_SIZE, ( float )CHUNK_HEIGHT, ( float )CHUNK_SIZE );
 	Aabb             bounds;
 
-	u32 drawCalls = 0;
+	drawCallsLastFrame = 0;
 
 	for ( auto & it : chunks ) {
 		Chunk * chunk = it.second;
@@ -224,14 +175,13 @@ void ChunkManager::Draw( const Camera & camera ) {
 		bounds.min = worldPosition;
 		bounds.max = worldPosition + sizeOffset;
 		// Check if any of eight corners of the chunk is in sight
-		if ( frustrum->IsCubeIn( bounds ) ) {
+		if ( camera.frustrum.IsCubeIn( bounds ) ) {
 			auto translationMatrix = glm::translate( glm::mat4( 1.0f ), worldPosition );
 			glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( translationMatrix ) );
-			chunkDraw( chunk, shader );
-			drawCalls++;
+			chunkDraw( chunk );
+			drawCallsLastFrame++;
 		}
 	}
-	ImGui::Text( "Chunks drawn: %u / %lu\n", drawCalls, chunks.size() );
 }
 
 Chunk * ChunkManager::popChunkFromPool() {
@@ -251,4 +201,27 @@ void ChunkManager::pushChunkToPool( Chunk * item ) {
 		item->poolNextItem = poolHead;
 		poolHead = item;
 	}
+}
+
+void ChunkManager::DebugDraw() {
+	ImGui::Text( "Chunks loaded: %lu\n", chunks.size() );
+	u32 poolSize = 0;
+	for ( auto it = poolHead; it != nullptr; it = it->poolNextItem )
+		poolSize++;
+	ImGui::Text( "Chunks pooled: %d\n", poolSize );
+
+	static int newChunkLoadRadius = chunkLoadRadius;
+	static int newChunkUnloadRadius = chunkUnloadRadius;
+	ImGui::SliderInt( "Chunk load radius", &newChunkLoadRadius, 1, 32 );
+	ImGui::SliderInt( "Chunk unload radius", &newChunkUnloadRadius, 1, 32 );
+
+	bool forceUpdate = false;
+	if ( ImGui::Button( "Apply" ) ) {
+		ZoneScopedN( "ChunkLoadRadiusUpdate" );
+		chunkLoadRadius = newChunkLoadRadius;
+		chunkUnloadRadius = newChunkUnloadRadius;
+		CreateChunksAroundPlayer( WorldToChunkPosition( theGame->player.position ) );
+	}
+	ImGui::Text( "Render distance: %d cubes\n", chunkLoadRadius * CHUNK_SIZE );
+	ImGui::Text( "Chunks drawn: %u / %lu\n", drawCallsLastFrame, chunks.size() );
 }

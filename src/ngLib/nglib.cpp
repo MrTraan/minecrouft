@@ -5,3 +5,24 @@ void ng::Init() {
 }
 
 void ng::Shutdown() {}
+
+#ifdef NG_PROFILING
+void * ng::profiledAlloc( size_t size ) {
+	auto ptr = malloc( size );
+	TracyAlloc( ptr, size );
+	return ptr;
+}
+
+void ng::profiledFree( void * ptr ) {
+	TracyFree( ptr );
+	free( ptr );
+}
+#endif
+
+void * operator new( std::size_t size ) {
+	return ng_alloc( size );
+}
+
+void operator delete( void * ptr ) noexcept {
+	ng_free( ptr );
+}

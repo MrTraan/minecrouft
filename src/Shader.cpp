@@ -1,75 +1,77 @@
 #include "Shader.hpp"
+#include "ngLib/nglib.h"
 
-static std::string readFile(const char *path) {
-	std::ifstream fstream;
+static std::string readFile( const char * path ) {
+	std::ifstream     fstream;
 	std::stringstream sstream;
 
-	fstream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	fstream.exceptions( std::ifstream::failbit | std::ifstream::badbit );
 
-	fstream.open(path);
+	fstream.open( path );
 	sstream << fstream.rdbuf();
 	fstream.close();
 	return sstream.str();
 }
 
-Shader::Shader(const char* vertexPath, const char* fragmentPath) {
-	std::string vertexCode;
-	std::string fragmentCode;
+bool Shader::CompileFromPath( const char * vertexPath, const char * fragmentPath ) {
+	std::string vertexCode = readFile( vertexPath );
+	std::string fragmentCode = readFile( fragmentPath );
 
-	vertexCode = readFile(vertexPath);
-	fragmentCode = readFile(fragmentPath);
+	return CompileFromCode( vertexCode.c_str(), fragmentCode.c_str() );
+}
 
-	unsigned int vertex, fragment;
-	const char *vShaderCode;
-	const char *fShaderCode;
-
+bool Shader::CompileFromCode( const char * vertexCode, const char * fragmentCode ) {
 	// Compile shaders
-	vShaderCode = vertexCode.c_str();
-	vertex = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertex, 1, &vShaderCode, NULL);
-	glCompileShader(vertex);
-	this->checkCompileErrors(vertex, vertexPath);
+	u32 vertex = glCreateShader( GL_VERTEX_SHADER );
+	glShaderSource( vertex, 1, &vertexCode, NULL );
+	glCompileShader( vertex );
+	if ( checkCompileErrors( vertex ) != 0 ) {
+		return false;
+	}
 
-	fShaderCode = fragmentCode.c_str();
-	fragment = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragment, 1, &fShaderCode, NULL);
-	glCompileShader(fragment);
-	this->checkCompileErrors(fragment, fragmentPath);
+	u32 fragment = glCreateShader( GL_FRAGMENT_SHADER );
+	glShaderSource( fragment, 1, &fragmentCode, NULL );
+	glCompileShader( fragment );
+	if ( checkCompileErrors( fragment ) != 0 ) {
+		return false;
+	}
 
 	// Create shader program
-	this->ID = glCreateProgram();
-	glAttachShader(this->ID, vertex);
-	glAttachShader(this->ID, fragment);
-	glLinkProgram(this->ID);
-	this->checkLinkErrors(this->ID, "Program");
+	ID = glCreateProgram();
+	glAttachShader( ID, vertex );
+	glAttachShader( ID, fragment );
+	glLinkProgram( ID );
+	checkLinkErrors( ID );
 
 	// Clean up after linking
-	glDeleteShader(vertex);
-	glDeleteShader(fragment);
+	glDeleteShader( vertex );
+	glDeleteShader( fragment );
+
+	return true;
 }
 
-int Shader::checkCompileErrors(unsigned int shader, const std::string &name) {
-	int success;
-	char infoLog[1024];
+int Shader::checkCompileErrors( unsigned int shader ) {
+	int  success;
+	char infoLog[ 1024 ];
 
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-		std::cerr << "Error::Shader " << name << " Compilation error: " << infoLog << std::endl;
-		return (1);
+	glGetShaderiv( shader, GL_COMPILE_STATUS, &success );
+	if ( !success ) {
+		glGetShaderInfoLog( shader, 1024, NULL, infoLog );
+		ng::Errorf( "Shader compilation failed: %s\n", infoLog );
+		return 1;
 	}
-	return (0);
+	return 0;
 }
 
-int Shader::checkLinkErrors(unsigned int shader, const std::string &name) {
-	int success;
-	char infoLog[1024];
+int Shader::checkLinkErrors( unsigned int shader ) {
+	int  success;
+	char infoLog[ 1024 ];
 
-	glGetProgramiv(shader, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-		std::cerr << "Error::Shader " << name << " Linking error: " << infoLog << std::endl;
-		return (1);
+	glGetProgramiv( shader, GL_LINK_STATUS, &success );
+	if ( !success ) {
+		glGetProgramInfoLog( shader, 1024, NULL, infoLog );
+		ng::Errorf( "Shader link failed: %s\n", infoLog );
+		return 1;
 	}
-	return (0);
+	return 0;
 }

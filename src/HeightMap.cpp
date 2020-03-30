@@ -40,7 +40,7 @@ HeightMap::HeightMap() {
 	elevationMultiplier = 1.55f;
 }
 
-float HeightMap::GetHeightAt( s32 x, s32 y ) {
+float HeightMap::GetHeightAt( s32 x, s32 y ) const {
 	float exponant = GetElevationAt( x, y );
 	float offset = GetOffsetAt( x, y );
 
@@ -51,7 +51,7 @@ float HeightMap::GetHeightAt( s32 x, s32 y ) {
 	return pow( height, exponant ) + offset;
 }
 
-void HeightMap::SetupChunk( Chunk * chunk ) {
+void HeightMap::SetupChunk( Chunk * chunk ) const {
 	ZoneScoped;
 
 	auto chunkPos = ChunkToWorldPosition( chunk->position );

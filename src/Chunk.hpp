@@ -10,14 +10,16 @@
 // To optimize memory allocation, memory for 8192 faces are created right away
 // Because profiling showed that no chunk had under 1024 faces
 // Faces are then allocated 1024 by 1024 when needed
-constexpr int FACES_INITIAL_ALLOC = 3000;
-constexpr int FACES_BATCH_ALLOC = 500;
+constexpr size_t FACES_INITIAL_ALLOC = 3000;
+constexpr size_t FACES_BATCH_ALLOC = 500;
 
 constexpr int   TEXTURE_ROWS = 4;
 constexpr float UV_Y_BASE = ( 1.0f / TEXTURE_ROWS );
 
 // First 16 bits: x coordinate, next 16 bits: z coordinates
 typedef u32 ChunkCoordinates;
+constexpr u16 CHUNK_MAX_X = 16000;
+constexpr u16 CHUNK_MAX_Z = 16000;
 
 static inline ChunkCoordinates createChunkCoordinates( u16 x, u16 z ) { return ( z << 16 ) | x; }
 static inline u16              getXCoord( ChunkCoordinates coord ) { return ( coord )&0xFFFF; }
@@ -28,14 +30,14 @@ enum class eBiome {
 	MOUNTAIN,
 };
 
-enum eBlockType : char { INACTIVE = 0, GRASS, SAND, DIRT, ROCK, SNOW };
+enum class eBlockType : char { INACTIVE = 0, GRASS, SAND, DIRT, ROCK, SNOW };
 
 enum class eDirection {
 	SOUTH,
 	NORTH,
-	BACK,
-	WEST,
 	EAST,
+	WEST,
+	TOP,
 	BOTTOM,
 };
 
@@ -55,6 +57,6 @@ struct Chunk {
 };
 
 Chunk * preallocateChunk();
-void    chunkCreateGeometry( Chunk * chunk, HeightMap * heightMap );
-void    chunkDraw( Chunk * chunk, Shader shader );
+void chunkCreateGeometry( Chunk * chunk );
+void chunkDraw( Chunk * chunk );
 void    chunkDestroy( Chunk * chunk );

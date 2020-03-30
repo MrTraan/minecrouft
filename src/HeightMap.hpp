@@ -14,12 +14,12 @@ class HeightMap {
 public:
 	HeightMap();
 
-	void SetupChunk(Chunk* chunk);
+	void SetupChunk(Chunk* chunk) const;
 
 private:
 	FastNoise heightMapNoise;
 	float surfaceFreq;
-	float GetHeightAt(s32 x, s32 y);
+	float GetHeightAt(s32 x, s32 y) const;
 
 	FastNoise elevationNoise;
 	float elevationFreq;
@@ -34,15 +34,15 @@ private:
 	FastNoise caveNoise;
 	float caveFreq;
 
-	inline float GetElevationAt(s32 x, s32 y) {
+	inline float GetElevationAt(s32 x, s32 y) const {
 		return (elevationNoise.GetNoise((float)x, (float)y) + 1.0f) / 2.0f * elevationMultiplier;
 	}
 
-	inline float GetOffsetAt(s32 x, s32 y) {
+	inline float GetOffsetAt(s32 x, s32 y) const {
 		return (offsetNoise.GetNoise((float)x, (float)y) + 1.0f) / 2.0f * CHUNK_SIZE;
 	}
 
-	inline float GetMoistureAt(s32 x, s32 y) {
+	inline float GetMoistureAt(s32 x, s32 y) const {
 		return (moistureNoise.GetNoise((float)x, (float)y) + 1.0f) / 2.0f;
 	}
 

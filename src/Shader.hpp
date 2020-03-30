@@ -2,35 +2,33 @@
 
 #include <glad/glad.h>
 
-#include <string>
+#include "ngLib/nglib.h"
+
 #include <fstream>
-#include <sstream>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 class Shader {
-public:
-	unsigned int ID;
+  public:
+	u32 ID = 0;
 
-	// Constructor reads, compiles and links subshaders
-	Shader(const char* vertexPath, const char* fragmentPath);
+	bool CompileFromPath( const char * vertexPath, const char * fragmentPath );
+	bool CompileFromCode( const char * vertexCode, const char * fragmentCode );
 
-	void Use() {
-		glUseProgram(this->ID);
+	void Use() { glUseProgram( this->ID ); }
+
+	void SetBool( const char * name, bool value ) const {
+		glUniform1i( glGetUniformLocation( this->ID, name ), ( int )value );
 	}
 
-	void SetBool(const std::string &name, bool value) const {
-		glUniform1i(glGetUniformLocation(this->ID, name.c_str()), (int)value);
-	}
-	
-	void SetInt(const std::string &name, int value) const {
-		glUniform1i(glGetUniformLocation(this->ID, name.c_str()), value);
-	}
-	
-	void SetFloat(const std::string &name, float value) const {
-		glUniform1f(glGetUniformLocation(this->ID, name.c_str()), value);
+	void SetInt( const char * name, int value ) const { glUniform1i( glGetUniformLocation( this->ID, name ), value ); }
+
+	void SetFloat( const char * name, float value ) const {
+		glUniform1f( glGetUniformLocation( this->ID, name ), value );
 	}
 
-private:
-	int checkCompileErrors(unsigned int shader, const std::string &name);
-	int checkLinkErrors(unsigned int shader, const std::string &name);
+  private:
+	int checkCompileErrors( unsigned int shader );
+	int checkLinkErrors( unsigned int shader );
 };
