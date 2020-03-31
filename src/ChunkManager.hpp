@@ -11,7 +11,7 @@
 #include <thread>
 #include <tracy/Tracy.hpp>
 
-#define NUM_MANAGER_THREADS 3
+#define NUM_MANAGER_THREADS 1
 
 struct Camera;
 
@@ -34,11 +34,24 @@ class ChunkManager {
 	bool PushChunkToProducer( ChunkCoordinates coord );
 	void CreateChunksAroundPlayer( ChunkCoordinates chunkPosition );
 
+	struct MetaChunkInfo {
+		ChunkCoordinates coord;
+		size_t           binaryOffset;
+		size_t           binarySize;
+	};
+
+	bool LoadMetaDataFile( const char * metaFilePath );
+	bool SaveWorldToFile( const char * path, const char * metaFilePath );
+	bool LoadWorldFromFile( const char * path, const char * metaFilePath );
+
 	inline bool ChunkIsLoaded( ChunkCoordinates pos );
 	inline bool ChunkIsLoaded( u16 x, u16 y );
 
 	std::map< ChunkCoordinates, Chunk * > chunks;
+	std::map< ChunkCoordinates, MetaChunkInfo > chunksMetaInfo;
 	HeightMap                             heightMap;
+
+	FILE * chunkDataFp = nullptr;
 
 	ChunkCoordinates lastPosition;
 
@@ -48,6 +61,6 @@ class ChunkManager {
 	Chunk * popChunkFromPool();
 	void    pushChunkToPool( Chunk * item );
 
-	u32 drawCallsLastFrame = 0;
+	u32  drawCallsLastFrame = 0;
 	void DebugDraw();
 };

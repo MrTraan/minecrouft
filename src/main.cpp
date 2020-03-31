@@ -3,28 +3,25 @@
 #include <GLFW/glfw3.h>
 #include <LZ4.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw_gl3.h>
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyOpenGL.hpp>
 
-#include <Game.h>
 #include <Camera.hpp>
 #include <Chunk.hpp>
 #include <ChunkManager.hpp>
 #include <Frustrum.hpp>
+#include <Game.h>
 #include <IO.hpp>
-#include <Mesh.hpp>
 #include <Player.hpp>
-#include <Shader.hpp>
 #include <Skybox.hpp>
 #include <Window.hpp>
 #include <ngLib/nglib.h>
 
-#define GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX 0x9048
-#define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
+Game * theGame;
+
+static void DrawDebugWindow();
 
 void GLAPIENTRY MessageCallback( GLenum         source,
                                  GLenum         type,
@@ -38,12 +35,6 @@ void GLAPIENTRY MessageCallback( GLenum         source,
 	fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
 	         ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, severity, message );
 }
-
-constexpr char windowName[] = "Minecrouft";
-
-Game * theGame;
-
-void DrawDebugWindow();
 
 int main( void ) {
 	ng::Init();
@@ -89,15 +80,22 @@ int main( void ) {
 
 	auto inputSize = sizeof( playerChunk->cubes );
 	ng::Printf( "Size before compression: %llu\n", inputSize );
-	int sizeCompressed;
+	int    sizeCompressed;
+	char * compressedData;
+	auto   minSize = LZ4_compressBound( inputSize );
+	compressedData = new char[ minSize ];
 	{
 		ZoneScopedN( "One Chunk compression" );
-		auto   minSize = LZ4_compressBound( inputSize );
-		char * compressedData = new char[ minSize ];
 		sizeCompressed =
 		    LZ4_compress_default( ( char * )( &( playerChunk->cubes ) ), compressedData, inputSize, minSize );
-		delete[] compressedData;
 	}
+	{
+		Chunk output;
+		ZoneScopedN( "One Chunk decompression" );
+		auto ret = LZ4_decompress_safe( compressedData, ( char * )( &( output.cubes ) ), sizeCompressed, inputSize );
+		ng_assert( ret > 0 );
+	}
+	delete[] compressedData;
 	ng::Printf( "Size after compression: %llu\n", sizeCompressed );
 
 	while ( !window.ShouldClose() ) {
@@ -117,7 +115,6 @@ int main( void ) {
 		static bool wireframeMode = false;
 		// Custom event handlers
 		{
-
 			if ( io.keyboard.IsKeyDown( KEY_ESCAPE ) ) {
 				glfwSetWindowShouldClose( window.GetGlfwWindow(), GL_TRUE );
 			}
@@ -157,11 +154,7 @@ int main( void ) {
 			ImGui_ImplGlfwGL3_RenderDrawData( ImGui::GetDrawData() );
 		}
 
-		{
-			ZoneScopedN( "SwapBuffers" );
-			window.SwapBuffers();
-		}
-
+		window.SwapBuffers();
 		TracyGpuCollect;
 		FrameMark;
 	}
@@ -181,8 +174,8 @@ int main( void ) {
 void DrawDebugWindow() {
 	ImGui::Begin( "Debug" );
 
-		ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-		             ImGui::GetIO().Framerate );
+	ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
+	             ImGui::GetIO().Framerate );
 
 	if ( ImGui::TreeNode( "Chunk manager" ) ) {
 		theGame->chunkManager.DebugDraw();

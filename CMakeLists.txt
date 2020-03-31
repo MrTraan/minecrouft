@@ -34,6 +34,7 @@ set(MY_SOURCE_FILES
     "src/HeightMap.cpp"
 	"src/Player.cpp"
 	"src/IO.cpp"
+	"src/Hud.cpp"
 	
 	"src/ngLib/console.cpp"
 	"src/ngLib/logs.cpp"

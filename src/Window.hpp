@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <stdexcept>
+#include "tracy/Tracy.hpp"
 
 constexpr char WINDOW_TITLE[] = "Minecrouft";
 constexpr int  WINDOW_WIDTH = 1080;
@@ -13,8 +14,8 @@ static void glfwErrorCallback( int code, const char * msg ) { printf( "Glfw erro
 
 class Window {
   public:
-	int    width;
-	int    height;
+	int width;
+	int height;
 
 	void Init( int width = WINDOW_WIDTH, int height = WINDOW_HEIGHT, char * title = ( char * )WINDOW_TITLE ) {
 		this->width = width;
@@ -60,7 +61,10 @@ class Window {
 
 	void Clear() { glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); }
 
-	void SwapBuffers() { glfwSwapBuffers( this->glWindow ); }
+	void SwapBuffers() {
+		ZoneScoped;
+		glfwSwapBuffers( this->glWindow );
+	}
 
 	void PollEvents() { glfwPollEvents(); }
 
