@@ -1,12 +1,15 @@
 #pragma once
 
-struct Hud {
-	float reticuleLines[3 * 4] = {
-		0.0f, 0.2f, 0.0f,
-		0.0f, -0.2f, 0.0f,
-		0.2f, 0.0f, 0.0f,
-		-0.2f, 0.0, 0.0f
-	};
+#include "Shader.hpp"
+#include "ngLib/types.h"
 
+struct Hud {
+	Shader shader;
+
+	u32 VAO;
+	u32 VBO;
+
+	void Init();
 	void Draw();
+	void Shutdown();
 };

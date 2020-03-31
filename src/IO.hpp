@@ -29,7 +29,6 @@ constexpr int MAX_CONCURRENT_KEY_DOWN = 16;
 
 struct Keyboard {
 	void Init( Window & window );
-	void Update( Window & window );
 
 	void RegisterKeyDown( SDL_Keycode key );
 	void RegisterKeyRelease( SDL_Keycode key );
@@ -44,8 +43,26 @@ struct Keyboard {
 };
 
 struct Mouse {
+
+	enum class ButtonState {
+		UP,
+		PRESSED,
+		DOWN,
+		RELEASED,
+	};
+
+	enum class Button {
+		LEFT,
+		RIGHT,
+	};
+
+	ButtonState leftClick = ButtonState::UP;
+	ButtonState rightClick = ButtonState::UP;
+
 	void Init( Window & window );
-	void Update( Window & window );
+
+	bool IsButtonDown( Button button ) const;
+	bool IsButtonPressed( Button button ) const;
 
 	glm::vec2 offset;
 };

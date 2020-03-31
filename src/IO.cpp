@@ -2,17 +2,30 @@
 
 #include <Window.hpp>
 
+#include "Game.h"
 #include <SDL2/SDL.h>
 #include <glad/glad.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_sdl.h>
 #include <vector>
-#include "Game.h"
 
 void IO::Update( Window & window ) {
-	keyboard.Update( window );
-	mouse.Update( window );
+	// clear keyboard and mouse state
+	for ( int & k : keyboard.keyPressed ) {
+		k = KEY_NONE;
+	}
+	mouse.offset.x = 0;
+	mouse.offset.y = 0;
+
+	if ( mouse.leftClick == Mouse::ButtonState::PRESSED )
+		mouse.leftClick = Mouse::ButtonState::DOWN;
+	if ( mouse.leftClick == Mouse::ButtonState::RELEASED )
+		mouse.leftClick = Mouse::ButtonState::UP;
+	if ( mouse.rightClick == Mouse::ButtonState::PRESSED )
+		mouse.rightClick = Mouse::ButtonState::DOWN;
+	if ( mouse.rightClick == Mouse::ButtonState::RELEASED )
+		mouse.rightClick = Mouse::ButtonState::UP;
 
 	SDL_Event event;
 	while ( SDL_PollEvent( &event ) ) {
@@ -28,7 +41,7 @@ void IO::Update( Window & window ) {
 			window.width = event.window.data1;
 			window.height = event.window.data2;
 			glViewport( 0, 0, window.width, window.height );
-			theGame->camera.UpdateProjectionMatrix( (float)window.width / window.height );
+			theGame->camera.UpdateProjectionMatrix( ( float )window.width / window.height );
 			// TODO: Refresh UI size
 		}
 		if ( event.type == SDL_KEYDOWN ) {
@@ -41,6 +54,23 @@ void IO::Update( Window & window ) {
 		}
 		if ( event.type == SDL_MOUSEMOTION ) {
 			mouse.offset = glm::vec2( event.motion.xrel, event.motion.yrel );
+		}
+
+		if ( event.type == SDL_MOUSEBUTTONUP ) {
+			if ( event.button.button == SDL_BUTTON_LEFT ) {
+				mouse.leftClick = Mouse::ButtonState::RELEASED;
+			}
+			if ( event.button.button == SDL_BUTTON_RIGHT ) {
+				mouse.rightClick = Mouse::ButtonState::RELEASED;
+			}
+		}
+		if ( event.type == SDL_MOUSEBUTTONDOWN ) {
+			if ( event.button.button == SDL_BUTTON_LEFT ) {
+				mouse.leftClick = Mouse::ButtonState::PRESSED;
+			}
+			if ( event.button.button == SDL_BUTTON_RIGHT ) {
+				mouse.rightClick = Mouse::ButtonState::PRESSED;
+			}
 		}
 	}
 }
@@ -60,11 +90,11 @@ void IO::DebugDraw() {
 			keyDowns += "D ";
 		else if ( keyDown == KEY_NONE )
 			keyDowns += "X ";
-		else 
+		else
 			keyDowns += "O ";
 	}
 
-	ImGui::Text("Key downs:\n%s", keyDowns.c_str() );
+	ImGui::Text( "Key downs:\n%s", keyDowns.c_str() );
 }
 
 void Keyboard::Init( Window & window ) {
@@ -72,12 +102,6 @@ void Keyboard::Init( Window & window ) {
 	for ( int i = 0; i < MAX_CONCURRENT_KEY_DOWN; i++ ) {
 		keyDowns[ i ] = KEY_NONE;
 		keyPressed[ i ] = KEY_NONE;
-	}
-}
-
-void Keyboard::Update( Window & window ) {
-	for ( int & k : keyPressed ) {
-		k = KEY_NONE;
 	}
 }
 
@@ -133,7 +157,22 @@ void Mouse::Init( Window & window ) {
 	SDL_SetWindowGrab( window.glWindow, SDL_TRUE );
 }
 
-void Mouse::Update( Window & window ) {
-	offset.x = 0;
-	offset.y = 0;
+bool Mouse::IsButtonDown( Button button ) const {
+	if ( button == Button::LEFT ) {
+		return leftClick == ButtonState::PRESSED || leftClick == ButtonState::DOWN;
+	}
+	if ( button == Button::RIGHT ) {
+		return rightClick == ButtonState::PRESSED || rightClick == ButtonState::DOWN;
+	}
+	return false;
+}
+
+bool Mouse::IsButtonPressed( Button button ) const {
+	if ( button == Button::LEFT ) {
+		return leftClick == ButtonState::PRESSED;
+	}
+	if ( button == Button::RIGHT ) {
+		return rightClick == ButtonState::PRESSED;
+	}
+	return false;
 }

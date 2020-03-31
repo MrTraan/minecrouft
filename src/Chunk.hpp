@@ -17,13 +17,27 @@ constexpr int   TEXTURE_ROWS = 4;
 constexpr float UV_Y_BASE = ( 1.0f / TEXTURE_ROWS );
 
 // First 16 bits: x coordinate, next 16 bits: z coordinates
-typedef u32 ChunkCoordinates;
+struct ChunkCoordinates {
+	u16 x;
+	u16 z;
+
+	bool operator==( const ChunkCoordinates & c ) const { return c.x == x && c.z == z; }
+	bool operator<( const ChunkCoordinates & c ) const {
+		u32 old = ( z << 16 ) | x;
+		u32 cold = ( c.z << 16 ) | c.x;
+		return old < cold;
+	}
+};
+
 constexpr u16 CHUNK_MAX_X = 16000;
 constexpr u16 CHUNK_MAX_Z = 16000;
 
-static inline ChunkCoordinates createChunkCoordinates( u16 x, u16 z ) { return ( z << 16 ) | x; }
-static inline u16              getXCoord( ChunkCoordinates coord ) { return ( coord )&0xFFFF; }
-static inline u16              getZCoord( ChunkCoordinates coord ) { return ( coord >> 16 ) & 0xFFFF; }
+static inline ChunkCoordinates createChunkCoordinates( u16 x, u16 z ) {
+	ChunkCoordinates c = {x, z};
+	return c;
+}
+static inline u16 getXCoord( ChunkCoordinates coord ) { return coord.x; }
+static inline u16 getZCoord( ChunkCoordinates coord ) { return coord.z; }
 
 enum class eBiome {
 	FOREST,
@@ -57,6 +71,6 @@ struct Chunk {
 };
 
 Chunk * preallocateChunk();
-void chunkCreateGeometry( Chunk * chunk );
-void chunkDraw( Chunk * chunk );
+void    chunkCreateGeometry( Chunk * chunk );
+void    chunkDraw( Chunk * chunk );
 void    chunkDestroy( Chunk * chunk );

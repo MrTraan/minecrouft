@@ -40,6 +40,7 @@ set(MY_SOURCE_FILES
 	"src/Player.cpp"
 	"src/IO.cpp"
 	"src/Hud.cpp"
+	"src/Guizmo.cpp"
 	
 	"src/ngLib/console.cpp"
 	"src/ngLib/logs.cpp"

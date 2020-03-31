@@ -20,6 +20,7 @@
 #include <Skybox.hpp>
 #include <Window.hpp>
 #include <ngLib/nglib.h>
+#include <Guizmo.hpp>
 
 Game * theGame;
 
@@ -42,6 +43,7 @@ int main( int ac, char ** av ) {
 	IO &           io = theGame->io;
 	ChunkManager & chunkManager = theGame->chunkManager;
 	Skybox &       skybox = theGame->skybox;
+	Hud &          hud = theGame->hud;
 
 	window.Init();
 
@@ -49,6 +51,7 @@ int main( int ac, char ** av ) {
 	ImGui::CreateContext();
 	ImGui_ImplSDL2_InitForOpenGL( window.glWindow, window.glContext );
 	ImGui_ImplOpenGL3_Init( "#version 150" );
+	Guizmo::Init();
 
 	TracyGpuContext;
 
@@ -57,6 +60,7 @@ int main( int ac, char ** av ) {
 	io.Init( window );
 	chunkManager.Init( player.position );
 	skybox.Init();
+	hud.Init();
 
 	auto lastFrameTime = std::chrono::high_resolution_clock::now();
 
@@ -78,6 +82,7 @@ int main( int ac, char ** av ) {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame( window.glWindow );
 		ImGui::NewFrame();
+		Guizmo::NewFrame();
 
 		static bool debugMouse = false;
 		static bool wireframeMode = false;
@@ -105,6 +110,7 @@ int main( int ac, char ** av ) {
 		if ( !debugMouse ) {
 			camera.Update( io, player, dt );
 			player.Update( io, dt );
+			player.TrySelectingBlock(io, chunkManager , camera );
 		}
 
 		skybox.Draw( camera.viewMatrix, camera.projMatrix );
@@ -112,6 +118,9 @@ int main( int ac, char ** av ) {
 		chunkManager.Update( camera.position );
 
 		chunkManager.Draw( camera );
+
+		hud.Draw();
+		Guizmo::Draw( camera );
 
 		ng::GetConsole().Draw();
 		DrawDebugWindow();
