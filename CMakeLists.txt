@@ -1,26 +1,31 @@
 # CMake entry point.
 
-cmake_minimum_required (VERSION 2.6)
-message("CMake version: ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
-project (minecrouft)
-set (CMAKE_CXX_STANDARD 17)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+cmake_minimum_required (VERSION 3.8)
 
+project (minecrouft)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+
+set (CMAKE_CXX_STANDARD 17)
 set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(OpenGL REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
 find_package(lz4 CONFIG REQUIRED)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
 
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_compile_definitions( TRACY_ENABLE=1 )
 
 set(GLM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/")
 
-add_compile_definitions( TRACY_ENABLE=1 )
+include_directories(
+	${GLM_INCLUDE_DIRS}
+	${SDL2_INCLUDE_DIRS}
+	"./src"
+	"./lib"
+)
 
 set(MY_SOURCE_FILES
 	"src/main.cpp"
@@ -43,10 +48,12 @@ set(MY_SOURCE_FILES
 
 	"lib/glad.c"
 	# imgui
-	"./src/imgui/imgui.cpp"
-	"./src/imgui/imgui_demo.cpp"
-	"./src/imgui/imgui_draw.cpp"
-	"./src/imgui/imgui_impl_glfw_gl3.cpp"
+	"./lib/imgui/imgui.cpp"
+	"./lib/imgui/imgui_widgets.cpp"
+	"./lib/imgui/imgui_demo.cpp"
+	"./lib/imgui/imgui_draw.cpp"
+	"./lib/imgui/imgui_impl_sdl.cpp"
+	"./lib/imgui/imgui_impl_opengl3.cpp"
 
 	"./lib/FastNoise/FastNoise.cpp"
 
@@ -56,21 +63,12 @@ set(MY_SOURCE_FILES
 ## Used for ycm
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-include_directories(
-	${OPENGL_INCLUDE_DIR}
-	${GLM_INCLUDE_DIRS}
-	${LIBZIP_INCLUDE_DIR_ZIP}
-	"./src"
-	"./inc"
-	"./lib"
-)
-
 add_executable(minecrouft
 	${MY_SOURCE_FILES})
 
 target_link_libraries(minecrouft PRIVATE
 	${OPENGL_gl_LIBRARY} # filled by "find_package(OpenGL REQUIRED)"
-	glfw
+	SDL2::SDL2main SDL2::SDL2-static
 	lz4::lz4
 )
 

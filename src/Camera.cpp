@@ -13,11 +13,11 @@
 void Camera::Init( float aspectRatio, const glm::vec3 & position, const glm::vec3 up ) {
 	this->position = position;
 	this->worldUp = up;
-	projMatrix = glm::perspective( fov, aspectRatio, 0.1f, viewDistance );
-	updateCameraVectors();
+	UpdateProjectionMatrix( aspectRatio );
+	UpdateCameraVectors();
 }
 
-void Camera::updateCameraVectors() {
+void Camera::UpdateCameraVectors() {
 	glm::vec3 front;
 
 	front.x = cosf( glm::radians( this->yaw ) ) * cosf( glm::radians( this->pitch ) );
@@ -31,6 +31,10 @@ void Camera::updateCameraVectors() {
 	viewMatrix = glm::lookAt( this->position, this->position + this->front, this->up );
 }
 
+void Camera::UpdateProjectionMatrix( float aspectRatio ) {
+	projMatrix = glm::perspective( fov, aspectRatio, 0.1f, viewDistance );
+}
+
 void Camera::Update( const IO & io, Player & player, float dt ) {
 	constexpr int yDirection = -1;
 	yaw += io.mouse.offset.x * sensitivity;
@@ -42,7 +46,7 @@ void Camera::Update( const IO & io, Player & player, float dt ) {
 	if ( pitch < -89.0f ) {
 		pitch = -89.0f;
 	}
-	updateCameraVectors();
+	UpdateCameraVectors();
 	frustrum.Update( viewMatrix, projMatrix );
 
 	// Rotate player

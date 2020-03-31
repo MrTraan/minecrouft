@@ -1,36 +1,38 @@
 #pragma once
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <SDL2/SDL.h>
 #include <glm/glm.hpp>
 
 class Window;
 
 enum eKey {
 	KEY_NONE = 0,
-	KEY_W = GLFW_KEY_W,
-	KEY_A = GLFW_KEY_A,
-	KEY_S = GLFW_KEY_S,
-	KEY_D = GLFW_KEY_D,
-	KEY_V = GLFW_KEY_V,
+	KEY_W = SDLK_w,
+	KEY_A = SDLK_a,
+	KEY_S = SDLK_s,
+	KEY_D = SDLK_d,
+	KEY_V = SDLK_v,
 
-	KEY_UP = GLFW_KEY_UP,
-	KEY_DOWN = GLFW_KEY_DOWN,
-	KEY_LEFT = GLFW_KEY_LEFT,
-	KEY_RIGHT = GLFW_KEY_RIGHT,
+	KEY_UP = SDLK_UP,
+	KEY_DOWN = SDLK_DOWN,
+	KEY_LEFT = SDLK_LEFT,
+	KEY_RIGHT = SDLK_RIGHT,
 
-	KEY_LEFT_SHIFT = GLFW_KEY_LEFT_SHIFT,
-	KEY_ESCAPE = GLFW_KEY_ESCAPE,
-	KEY_SPACE = GLFW_KEY_SPACE
+	KEY_LEFT_SHIFT = SDLK_LSHIFT,
+	KEY_RIGHT_SHIFT = SDLK_RSHIFT,
+	KEY_ESCAPE = SDLK_ESCAPE,
+	KEY_SPACE = SDLK_SPACE,
+	KEY_ENTER = SDLK_RETURN,
 };
 
 constexpr int MAX_CONCURRENT_KEY_DOWN = 16;
 
 struct Keyboard {
 	void Init( Window & window );
-	void Update();
+	void Update( Window & window );
 
-	void RegisterKeyPress( int key );
-	void RegisterKeyRelease( int key );
+	void RegisterKeyDown( SDL_Keycode key );
+	void RegisterKeyRelease( SDL_Keycode key );
 
 	bool IsKeyDown( eKey key ) const;
 	bool IsKeyPressed( eKey key ) const;
@@ -45,11 +47,7 @@ struct Mouse {
 	void Init( Window & window );
 	void Update( Window & window );
 
-	glm::vec2 pos;
 	glm::vec2 offset;
-
-  private:
-	GLFWwindow * glWindow;
 };
 
 struct IO {
@@ -61,9 +59,8 @@ struct IO {
 		mouse.Init( window );
 	}
 
-	void Update( Window & window ) {
-		keyboard.Update();
-		mouse.Update( window );
-	}
+	void Update( Window & window );
+
+	void DebugDraw();
 };
 

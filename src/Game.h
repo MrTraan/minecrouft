@@ -1,10 +1,11 @@
 #pragma once
 
 #include <Camera.hpp>
-#include <Player.hpp>
-#include <IO.hpp>
 #include <ChunkManager.hpp>
+#include <IO.hpp>
+#include <Player.hpp>
 #include <Skybox.hpp>
+#include <Window.hpp>
 
 struct Game {
 	Camera       camera;
@@ -12,6 +13,7 @@ struct Game {
 	IO           io;
 	ChunkManager chunkManager;
 	Skybox       skybox;
+	Window       window;
 };
 
 extern Game * theGame;

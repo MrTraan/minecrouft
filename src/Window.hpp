@@ -1,16 +1,12 @@
 #pragma once
-#include <GLFW/glfw3.h>
+#include "tracy/Tracy.hpp"
+#include <SDL2/SDL.h>
 #include <glad/glad.h>
 #include <stdexcept>
-#include "tracy/Tracy.hpp"
 
 constexpr char WINDOW_TITLE[] = "Minecrouft";
 constexpr int  WINDOW_WIDTH = 1080;
 constexpr int  WINDOW_HEIGHT = 720;
-
-static void framebufferSizeCallback( GLFWwindow * window, int width, int height ) { glViewport( 0, 0, width, height ); }
-
-static void glfwErrorCallback( int code, const char * msg ) { printf( "Glfw error: %s\n", msg ); }
 
 class Window {
   public:
@@ -20,32 +16,35 @@ class Window {
 	void Init( int width = WINDOW_WIDTH, int height = WINDOW_HEIGHT, char * title = ( char * )WINDOW_TITLE ) {
 		this->width = width;
 		this->height = height;
-		if ( !glfwInit() ) {
-			throw std::runtime_error( "Fatal Error: Could not instantiate glfw" );
-		}
-		glfwSetErrorCallback( glfwErrorCallback );
-		glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
-		glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
-		glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
-		glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
-		//		glfwWindowHint(GLFW_SAMPLES, 4);
-
-		auto monitor = glfwGetPrimaryMonitor();
-		auto videoMode = glfwGetVideoMode( monitor );
-		this->glWindow = glfwCreateWindow( width, height, title, NULL, NULL );
-		///* this->glWindow = glfwCreateWindow(2048, 1152, */
-		// this->glWindow = glfwCreateWindow(videoMode->width, videoMode->height,
-		//                            this->Title, monitor, NULL);
+#if __APPLE__
+		// GL 3.2 Core + GLSL 150
+		const char * glsl_version = "#version 150";
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG ); // Always required on Mac
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
+#else
+		// GL 3.0 + GLSL 130
+		const char * glsl_version = "#version 130";
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, 0 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
+#endif
+		SDL_WindowFlags window_flags =
+		    ( SDL_WindowFlags )( SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI );
+		glWindow =
+		    SDL_CreateWindow( title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, window_flags );
 		if ( !this->glWindow ) {
 			throw std::runtime_error( "Fatal Error: Could not create GLFW Window" );
 		}
 
-		glfwMakeContextCurrent( this->glWindow );
-		glfwSetFramebufferSizeCallback( this->glWindow, framebufferSizeCallback );
-		glfwSwapInterval( 1 );
+		glContext = SDL_GL_CreateContext( glWindow );
+		SDL_GL_MakeCurrent( glWindow, glContext );
+		SDL_GL_SetSwapInterval( 1 ); // Enable vsync
 
 		// glad: load all OpenGL function pointers
-		if ( !gladLoadGLLoader( ( GLADloadproc )glfwGetProcAddress ) )
+		if ( !gladLoadGL() )
 			throw std::runtime_error( "Failed to initialize glad\n" );
 
 		// configure global opengl state
@@ -53,23 +52,18 @@ class Window {
 	}
 
 	void Shutdown() {
-		glfwDestroyWindow( glWindow );
-		glfwTerminate();
+		SDL_GL_DeleteContext( glContext );
+		SDL_DestroyWindow( glWindow );
 	}
-
-	bool ShouldClose() { return glfwWindowShouldClose( this->glWindow ) != 0; }
 
 	void Clear() { glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); }
 
 	void SwapBuffers() {
 		ZoneScoped;
-		glfwSwapBuffers( this->glWindow );
+		SDL_GL_SwapWindow( glWindow );
 	}
 
-	void PollEvents() { glfwPollEvents(); }
-
-	GLFWwindow * GetGlfwWindow() { return this->glWindow; }
-
-  private:
-	GLFWwindow * glWindow;
+	bool          shouldClose = false;
+	SDL_Window *  glWindow;
+	SDL_GLContext glContext;
 };

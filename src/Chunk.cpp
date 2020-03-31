@@ -108,9 +108,9 @@ void chunkCreateGeometry( Chunk * chunk ) {
 							p4.z = indices[ 2 ] + dv[ 2 ];
 
 							if ( d == 0 )
-								pushFace( chunk, p4, p1, p2, p3, h, w, dir, reverse, mask[ n ] );
+								pushFace( chunk, p4, p1, p2, p3, (float)h, (float)w, dir, reverse, mask[ n ] );
 							else
-								pushFace( chunk, p1, p2, p3, p4, w, h, dir, reverse, mask[ n ] );
+								pushFace( chunk, p1, p2, p3, p4, (float)w, (float)h, dir, reverse, mask[ n ] );
 
 							for ( int l = 0; l < h; l++ )
 								for ( int k = 0; k < w; k++ )
