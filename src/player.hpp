@@ -15,7 +15,7 @@ struct Player {
 	float cubeSelectionRange = 3.0f;
 
 	void Update( const IO & io, float dt );
-	bool TrySelectingBlock( const IO & io, const ChunkManager & chunkManager, const Camera & camera );
+	bool TrySelectingBlock( const IO & io, ChunkManager & chunkManager, const Camera & camera );
 
 	void DebugDraw() {}
 };

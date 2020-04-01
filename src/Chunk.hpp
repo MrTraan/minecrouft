@@ -44,7 +44,7 @@ enum class eBiome {
 	MOUNTAIN,
 };
 
-enum class eBlockType : char { INACTIVE = 0, GRASS, SAND, DIRT, ROCK, SNOW };
+enum class eBlockType : char { INACTIVE = 0, GRASS, SAND, DIRT, ROCK, SNOW, WATER };
 
 enum class eDirection {
 	SOUTH,
@@ -57,8 +57,7 @@ enum class eDirection {
 
 struct Chunk {
 	Mesh * mesh = nullptr;
-	u32    facesAllocated = 0;
-	u32    facesBuilt = 0;
+	Mesh * transparentMesh = nullptr;
 
 	// 3 dimensionnal to note cube presence, because why not
 	eBlockType cubes[ CHUNK_SIZE ][ CHUNK_HEIGHT ][ CHUNK_SIZE ];
@@ -68,9 +67,12 @@ struct Chunk {
 	ChunkCoordinates position;
 
 	Chunk * poolNextItem;
+
+	void CreateGLBuffers();
+	void UpdateGLBuffers();
+	void DeleteGLBuffers();
 };
 
 Chunk * preallocateChunk();
 void    chunkCreateGeometry( Chunk * chunk );
-void    chunkDraw( Chunk * chunk );
 void    chunkDestroy( Chunk * chunk );

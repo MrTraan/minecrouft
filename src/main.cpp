@@ -64,11 +64,6 @@ int main( int ac, char ** av ) {
 
 	auto lastFrameTime = std::chrono::high_resolution_clock::now();
 
-	glEnable( GL_MULTISAMPLE );
-	glEnable( GL_DEBUG_OUTPUT );
-	glEnable( GL_CULL_FACE );
-	glCullFace( GL_BACK );
-
 	while ( !window.shouldClose ) {
 		ZoneScopedN( "MainLoop" );
 
@@ -120,10 +115,10 @@ int main( int ac, char ** av ) {
 		chunkManager.Draw( camera );
 
 		hud.Draw();
-		Guizmo::Draw( camera );
-
 		ng::GetConsole().Draw();
 		DrawDebugWindow();
+
+		Guizmo::Draw( camera );
 
 		{
 			ZoneScopedN( "Render_IMGUI" );

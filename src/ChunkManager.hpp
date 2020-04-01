@@ -3,6 +3,7 @@
 #include <Chunk.hpp>
 #include <Frustrum.hpp>
 #include <Shader.hpp>
+#include <TextureAtlas.hpp>
 #include <condition_variable>
 #include <glm/glm.hpp>
 #include <list>
@@ -24,21 +25,10 @@ class ChunkManager {
 	void Init( const glm::vec3 & playerPos );
 	void Shutdown();
 
-	Shader shader;
-
-	int chunkLoadRadius = 6;
-	int chunkUnloadRadius = 12;
-
 	void Update( const glm::vec3 & playerPos );
 	void Draw( const Camera & camera );
 	bool PushChunkToProducer( ChunkCoordinates coord );
 	void CreateChunksAroundPlayer( ChunkCoordinates chunkPosition );
-
-	struct MetaChunkInfo {
-		ChunkCoordinates coord;
-		size_t           binaryOffset;
-		size_t           binarySize;
-	};
 
 	bool LoadMetaDataFile( const char * metaFilePath );
 	bool SaveWorldToFile( const char * path, const char * metaFilePath );
@@ -46,10 +36,29 @@ class ChunkManager {
 
 	inline bool ChunkIsLoaded( ChunkCoordinates pos );
 	inline bool ChunkIsLoaded( u16 x, u16 y );
+	
+	Chunk * GetChunkAt( ChunkCoordinates coord );
+	
+	Chunk * popChunkFromPool();
+	void    pushChunkToPool( Chunk * item );
 
-	std::map< ChunkCoordinates, Chunk * > chunks;
+	void DebugDraw();
+
+	int chunkLoadRadius = 6;
+	int chunkUnloadRadius = 12;
+
+	Shader shader;
+
+	struct MetaChunkInfo {
+		ChunkCoordinates coord;
+		size_t           binaryOffset;
+		size_t           binarySize;
+	};
+
+
+	std::map< ChunkCoordinates, Chunk * >       chunks;
 	std::map< ChunkCoordinates, MetaChunkInfo > chunksMetaInfo;
-	HeightMap                             heightMap;
+	HeightMap                                   heightMap;
 
 	FILE * chunkDataFp = nullptr;
 
@@ -58,9 +67,12 @@ class ChunkManager {
 	std::thread builderRoutineThreads[ NUM_MANAGER_THREADS ];
 
 	Chunk * poolHead = nullptr;
-	Chunk * popChunkFromPool();
-	void    pushChunkToPool( Chunk * item );
 
+	TextureAtlas textureAtlas;
+
+	// DEBUG
 	u32  drawCallsLastFrame = 0;
-	void DebugDraw();
+	bool debugDrawOpaque = true;
+	bool debugDrawTransparent = true;
+
 };

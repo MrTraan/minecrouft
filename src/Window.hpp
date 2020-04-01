@@ -48,7 +48,21 @@ class Window {
 			throw std::runtime_error( "Failed to initialize glad\n" );
 
 		// configure global opengl state
+		glDepthFunc( GL_LESS );
+		glFrontFace( GL_CCW );
+
 		glEnable( GL_DEPTH_TEST );
+
+		glEnable( GL_MULTISAMPLE );
+		glEnable( GL_DEBUG_OUTPUT );
+		glEnable( GL_CULL_FACE );
+		glCullFace( GL_BACK );
+
+		glEnable( GL_BLEND );
+		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+		//glDisable( GL_DEPTH_TEST );
+		//glDepthMask( GL_FALSE );
 	}
 
 	void Shutdown() {

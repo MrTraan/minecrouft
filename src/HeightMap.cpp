@@ -7,6 +7,7 @@
 static constexpr s32 rockLevel = ( CHUNK_HEIGHT / 2 ) + CHUNK_SIZE * 3;
 static constexpr s32 snowLevel = rockLevel + CHUNK_SIZE * 2;
 static constexpr s32 caveLevel = ( CHUNK_HEIGHT / 2 ) - CHUNK_SIZE;
+static constexpr s32 waterLevel = ( CHUNK_HEIGHT / 2 ) + CHUNK_SIZE;
 
 HeightMap::HeightMap() {
 	std::srand( std::time( nullptr ) );
@@ -58,10 +59,10 @@ void HeightMap::SetupChunk( Chunk * chunk ) const {
 
 	for ( s32 x = 0; x < CHUNK_SIZE; x++ ) {
 		for ( s32 z = 0; z < CHUNK_SIZE; z++ ) {
-			//auto type = ( caveNoise.GetNoise( chunkPos.x + x, chunkPos.z + z ) + 1.f ) / 2.f;
+			// auto type = ( caveNoise.GetNoise( chunkPos.x + x, chunkPos.z + z ) + 1.f ) / 2.f;
 			for ( s32 y = 0; y < caveLevel; y++ ) {
-				//auto height = ( caveNoise.GetNoise( chunkPos.x + x, chunkPos.z + z, chunkPos.y + y ) );
-				//if ( height > 0.0f ) {
+				// auto height = ( caveNoise.GetNoise( chunkPos.x + x, chunkPos.z + z, chunkPos.y + y ) );
+				// if ( height > 0.0f ) {
 				//	if ( type < 0.33f )
 				//		chunk->cubes[ x ][ y ][ z ] = eBlockType::SAND;
 				//	else if ( type < 0.5f )
@@ -86,6 +87,8 @@ void HeightMap::SetupChunk( Chunk * chunk ) const {
 							chunk->cubes[ x ][ y ][ z ] = eBlockType::SNOW;
 					} else
 						chunk->cubes[ x ][ y ][ z ] = eBlockType::SNOW;
+				} else if ( y < waterLevel ) {
+					chunk->cubes[ x ][ y ][ z ] = eBlockType::WATER;
 				} else {
 					chunk->cubes[ x ][ y ][ z ] = eBlockType::INACTIVE;
 				}

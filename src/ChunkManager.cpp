@@ -2,6 +2,7 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "ngLib/nglib.h"
 #include <ChunkManager.hpp>
+#include <Guizmo.hpp>
 #include <LZ4.h>
 #include <algorithm>
 #include <chrono>
@@ -34,8 +35,9 @@ static void builderThreadRoutine( ChunkManager * manager ) {
 				ChunkManager::MetaChunkInfo info = manager->chunksMetaInfo[ chunk->position ];
 				fseek( manager->chunkDataFp, info.binaryOffset, SEEK_SET );
 				fread( readBuffer, info.binarySize, 1, manager->chunkDataFp );
-				auto ret = LZ4_decompress_safe( readBuffer, ( char * )( &chunk->cubes ), info.binarySize, sizeof( Chunk::cubes ) );
-				ng_assert( ret == sizeof( Chunk::cubes) );
+				auto ret = LZ4_decompress_safe( readBuffer, ( char * )( &chunk->cubes ), info.binarySize,
+				                                sizeof( Chunk::cubes ) );
+				ng_assert( ret == sizeof( Chunk::cubes ) );
 			} else {
 				manager->heightMap.SetupChunk( chunk );
 				// A new chunk has been generated, we should write it to save file
@@ -44,7 +46,7 @@ static void builderThreadRoutine( ChunkManager * manager ) {
 			buildingQueueOut.enqueue( chunk );
 		}
 	}
-	delete [] readBuffer;
+	delete[] readBuffer;
 }
 
 ChunkCoordinates WorldToChunkPosition( const glm::vec3 & pos ) {
@@ -62,6 +64,7 @@ glm::vec3 ChunkToWorldPosition( ChunkCoordinates pos ) {
 void ChunkManager::Init( const glm::vec3 & playerPos ) {
 	ZoneScoped;
 	shader.CompileFromPath( "./resources/shaders/vertex.glsl", "./resources/shaders/fragment.glsl" );
+	textureAtlas = loadTextureAtlas( "./resources/blocks_pixel_perfect.png", 5, 3 );
 
 	for ( int i = 0; i < NUM_MANAGER_THREADS; i++ )
 		builderRoutineThreads[ i ] = std::thread( builderThreadRoutine, this );
@@ -70,7 +73,7 @@ void ChunkManager::Init( const glm::vec3 & playerPos ) {
 	chunkDataFp = fopen( "world.save", "a+b" );
 	ng_assert( chunkDataFp != nullptr );
 	if ( chunkDataFp == nullptr ) {
-		ng::Errorf( "Could not open save file %s\n", "world.save");
+		ng::Errorf( "Could not open save file %s\n", "world.save" );
 	}
 
 	ChunkCoordinates position = WorldToChunkPosition( playerPos );
@@ -82,7 +85,7 @@ void ChunkManager::Init( const glm::vec3 & playerPos ) {
 	while ( playerChunkCreated == false ) {
 		while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
 			chunks[ builtChunk->position ] = builtChunk;
-			meshCreateGLBuffers( builtChunk->mesh );
+			builtChunk->CreateGLBuffers();
 			if ( builtChunk->position == position ) {
 				playerChunkCreated = true;
 				break;
@@ -99,7 +102,7 @@ void ChunkManager::Shutdown() {
 	for ( int i = 0; i < NUM_MANAGER_THREADS; i++ )
 		builderRoutineThreads[ i ].join();
 	for ( auto & e : chunks ) {
-		meshDeleteBuffers( e.second->mesh );
+		e.second->DeleteGLBuffers();
 		chunkDestroy( e.second );
 		delete e.second;
 	}
@@ -115,6 +118,13 @@ inline bool ChunkManager::ChunkIsLoaded( ChunkCoordinates pos ) { return chunks.
 
 inline bool ChunkManager::ChunkIsLoaded( u16 x, u16 y ) {
 	return chunks.find( createChunkCoordinates( x, y ) ) != chunks.end();
+}
+
+Chunk * ChunkManager::GetChunkAt( ChunkCoordinates coord ) {
+	if ( chunks.find( coord ) != chunks.end() ) {
+		return chunks[ coord ];
+	}
+	return nullptr;
 }
 
 bool ChunkManager::PushChunkToProducer( ChunkCoordinates coord ) {
@@ -133,7 +143,7 @@ void ChunkManager::Update( const glm::vec3 & playerPos ) {
 	while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
 		if ( !ChunkIsLoaded( builtChunk->position ) ) {
 			chunks[ builtChunk->position ] = builtChunk;
-			meshCreateGLBuffers( builtChunk->mesh );
+			builtChunk->CreateGLBuffers();
 		} else {
 			// Race condition: the element was built twice
 			pushChunkToPool( builtChunk );
@@ -149,7 +159,7 @@ void ChunkManager::Update( const glm::vec3 & playerPos ) {
 		auto cpos = it->second->position;
 		if ( abs( getXCoord( position ) - getXCoord( cpos ) ) > chunkUnloadRadius ||
 		     abs( getZCoord( position ) - getZCoord( cpos ) ) > chunkUnloadRadius ) {
-			meshDeleteBuffers( it->second->mesh );
+			it->second->DeleteGLBuffers();
 			pushChunkToPool( it->second );
 			it = chunks.erase( it );
 		} else {
@@ -187,10 +197,10 @@ bool ChunkManager::LoadMetaDataFile( const char * metaFilePath ) {
 
 	MetaChunkInfo info;
 	while ( fread( &info, sizeof( MetaChunkInfo ), 1, metaFp ) > 0 ) {
-		chunksMetaInfo[ info.coord ] = info; 
+		chunksMetaInfo[ info.coord ] = info;
 	}
 
-	ng::Printf("%llu meta info read\n", chunksMetaInfo.size() );
+	ng::Printf( "%llu meta info read\n", chunksMetaInfo.size() );
 
 	fclose( metaFp );
 	return true;
@@ -264,7 +274,7 @@ bool ChunkManager::LoadWorldFromFile( const char * path, const char * metaFilePa
 	}
 
 	for ( auto & e : chunks ) {
-		meshDeleteBuffers( e.second->mesh );
+		e.second->DeleteGLBuffers();
 		pushChunkToPool( e.second );
 	}
 	chunks.clear();
@@ -281,7 +291,8 @@ bool ChunkManager::LoadWorldFromFile( const char * path, const char * metaFilePa
 		fseek( dataFp, info.binaryOffset, SEEK_SET );
 		fread( readBuffer, info.binarySize, 1, dataFp );
 
-		auto ret = LZ4_decompress_safe( readBuffer, ( char * )( &chunk->cubes ), info.binarySize, sizeof( Chunk::cubes ) );
+		auto ret =
+		    LZ4_decompress_safe( readBuffer, ( char * )( &chunk->cubes ), info.binarySize, sizeof( Chunk::cubes ) );
 		ng_assert( ret > 0 );
 		buildingQueueIn.enqueue( chunk );
 	}
@@ -297,7 +308,7 @@ bool ChunkManager::LoadWorldFromFile( const char * path, const char * metaFilePa
 	while ( playerChunkCreated == false ) {
 		while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
 			chunks[ builtChunk->position ] = builtChunk;
-			meshCreateGLBuffers( builtChunk->mesh );
+			builtChunk->CreateGLBuffers();
 			if ( builtChunk->position == playerPosition ) {
 				playerChunkCreated = true;
 				break;
@@ -318,24 +329,47 @@ void ChunkManager::Draw( const Camera & camera ) {
 	glUniformMatrix4fv( projLoc, 1, GL_FALSE, glm::value_ptr( camera.projMatrix ) );
 	int modelLoc = glGetUniformLocation( shader.ID, "model" );
 
+	bindTextureAtlas( textureAtlas );
+
 	static glm::vec3 sizeOffset = glm::vec3( ( float )CHUNK_SIZE, ( float )CHUNK_HEIGHT, ( float )CHUNK_SIZE );
 	Aabb             bounds;
 
 	drawCallsLastFrame = 0;
 
-	for ( auto & it : chunks ) {
-		Chunk * chunk = it.second;
+	if ( debugDrawOpaque == true ) {
+		for ( auto & it : chunks ) {
+			Chunk * chunk = it.second;
 
-		ng_assert( chunk != nullptr );
-		auto worldPosition = ChunkToWorldPosition( chunk->position );
-		bounds.min = worldPosition;
-		bounds.max = worldPosition + sizeOffset;
-		// Check if any of eight corners of the chunk is in sight
-		if ( camera.frustrum.IsCubeIn( bounds ) ) {
-			auto translationMatrix = glm::translate( glm::mat4( 1.0f ), worldPosition );
-			glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( translationMatrix ) );
-			chunkDraw( chunk );
-			drawCallsLastFrame++;
+			ng_assert( chunk != nullptr );
+			auto worldPosition = ChunkToWorldPosition( chunk->position );
+			bounds.min = worldPosition;
+			bounds.max = worldPosition + sizeOffset;
+			// Check if any of eight corners of the chunk is in sight
+			if ( camera.frustrum.IsCubeIn( bounds ) ) {
+				auto translationMatrix = glm::translate( glm::mat4( 1.0f ), worldPosition );
+				glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( translationMatrix ) );
+				meshDraw( chunk->mesh );
+				drawCallsLastFrame++;
+			}
+		}
+	}
+
+	if ( debugDrawTransparent == true ) {
+		for ( auto & it : chunks ) {
+			Chunk * chunk = it.second;
+			ng_assert( chunk != nullptr );
+			if ( chunk->transparentMesh->facesBuilt == 0 ) {
+				continue;
+			}
+			auto worldPosition = ChunkToWorldPosition( chunk->position );
+			bounds.min = worldPosition;
+			bounds.max = worldPosition + sizeOffset;
+			// Check if any of eight corners of the chunk is in sight
+			if ( camera.frustrum.IsCubeIn( bounds ) ) {
+				auto translationMatrix = glm::translate( glm::mat4( 1.0f ), worldPosition );
+				glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( translationMatrix ) );
+				meshDraw( chunk->transparentMesh );
+			}
 		}
 	}
 }
@@ -380,6 +414,38 @@ void ChunkManager::DebugDraw() {
 	}
 	ImGui::Text( "Render distance: %d cubes\n", chunkLoadRadius * CHUNK_SIZE );
 	ImGui::Text( "Chunks drawn: %u / %lu\n", drawCallsLastFrame, chunks.size() );
+
+	static bool drawChunkBoundaries = false;
+	ImGui::Checkbox( "Draw chunk boundaries", &drawChunkBoundaries );
+	if ( drawChunkBoundaries ) {
+		ChunkCoordinates playerChunkCoord = WorldToChunkPosition( theGame->player.position );
+		glm::vec3        playerChunkPosition = ChunkToWorldPosition( playerChunkCoord );
+
+		// Draw current chunk horizontal lines
+		for ( int i = 0; i < CHUNK_HEIGHT; i += CHUNK_HEIGHT / 16 ) {
+			Guizmo::Line( playerChunkPosition + glm::vec3( 0.0f, i, 0.0f ),
+			              playerChunkPosition + glm::vec3( CHUNK_SIZE, i, 0.0f ), Guizmo::colYellow );
+			Guizmo::Line( playerChunkPosition + glm::vec3( 0.0f, i, 0.0f ),
+			              playerChunkPosition + glm::vec3( 0.0f, i, CHUNK_SIZE ), Guizmo::colYellow );
+			Guizmo::Line( playerChunkPosition + glm::vec3( CHUNK_SIZE, i, 0.0f ),
+			              playerChunkPosition + glm::vec3( CHUNK_SIZE, i, CHUNK_SIZE ), Guizmo::colYellow );
+			Guizmo::Line( playerChunkPosition + glm::vec3( 0.0f, i, CHUNK_SIZE ),
+			              playerChunkPosition + glm::vec3( CHUNK_SIZE, i, CHUNK_SIZE ), Guizmo::colYellow );
+		}
+
+		// Draw current chunk and neihgbors vertical lines
+		for ( int x = -1; x <= 2; x++ ) {
+			for ( int z = -1; z <= 2; z++ ) {
+				Guizmo::Line( playerChunkPosition + glm::vec3( x * CHUNK_SIZE, 0.0f, z * CHUNK_SIZE ),
+				              playerChunkPosition + glm::vec3( x * CHUNK_SIZE, CHUNK_HEIGHT, z * CHUNK_SIZE ),
+				              ( x == 0 || x == 1 ) && ( z == 0 || z == 1 ) ? Guizmo::colWhite : Guizmo::colRed );
+			}
+		}
+	}
+
+	ImGui::Checkbox( "Draw opaque cubes", &debugDrawOpaque );
+	ImGui::SameLine();
+	ImGui::Checkbox( "Draw transparent cubes", &debugDrawTransparent );
 
 	if ( ImGui::Button( "Test save" ) ) {
 		SaveWorldToFile( "world.save", "world.meta" );

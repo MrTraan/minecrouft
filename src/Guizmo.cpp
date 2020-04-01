@@ -1,8 +1,8 @@
 #include "Guizmo.hpp"
-#include "Shader.hpp"
-#include <vector>
-#include "glm/gtc/type_ptr.hpp"
 #include "Camera.hpp"
+#include "Shader.hpp"
+#include "glm/gtc/type_ptr.hpp"
+#include <vector>
 
 namespace Guizmo {
 
@@ -37,16 +37,47 @@ void Init() {
 	glEnableVertexAttribArray( 1 );
 }
 
-void NewFrame() {
-	lineDrawList.clear();
-}
+void NewFrame() { lineDrawList.clear(); }
 
 void Line( glm::vec3 a, glm::vec3 b, glm::vec3 color ) {
 	LineData data = {a, color, b, color};
 	lineDrawList.push_back( data );
 }
 
+void LinesAroundCube( glm::vec3 cubePosition ) {
+	int       x = cubePosition.x;
+	int       y = cubePosition.y;
+	int       z = cubePosition.z;
+	float     o = 0.001f;
+	glm::vec3 ov( -o, -o, -o );
+
+	Guizmo::Line( glm::vec3( x, y, z ) + ov, glm::vec3( x + 1 + 2 * o, y, z ) + ov, Guizmo::colWhite );
+	Guizmo::Line( glm::vec3( x, y, z ) + ov, glm::vec3( x, y, z + 1 + 2 * o ) + ov, Guizmo::colWhite );
+	Guizmo::Line( glm::vec3( x, y, z + 1 + 2 * o ) + ov, glm::vec3( x + 1 + 2 * o, y, z + 1 + 2 * o ) + ov,
+	              Guizmo::colWhite );
+	Guizmo::Line( glm::vec3( x + 1 + 2 * o, y, z ) + ov, glm::vec3( x + 1 + 2 * o, y, z + 1 + 2 * o ) + ov,
+	              Guizmo::colWhite );
+
+	Guizmo::Line( glm::vec3( x, y + 1 + 2 * o, z ) + ov, glm::vec3( x + 1 + 2 * o, y + 1 + 2 * o, z ) + ov,
+	              Guizmo::colWhite );
+	Guizmo::Line( glm::vec3( x, y + 1 + 2 * o, z ) + ov, glm::vec3( x, y + 1 + 2 * o, z + 1 + 2 * o ) + ov,
+	              Guizmo::colWhite );
+	Guizmo::Line( glm::vec3( x, y + 1 + 2 * o, z + 1 + 2 * o ) + ov,
+	              glm::vec3( x + 1 + 2 * o, y + 1 + 2 * o, z + 1 + 2 * o ) + ov, Guizmo::colWhite );
+	Guizmo::Line( glm::vec3( x + 1 + 2 * o, y + 1 + 2 * o, z ) + ov,
+	              glm::vec3( x + 1 + 2 * o, y + 1 + 2 * o, z + 1 + 2 * o ) + ov, Guizmo::colWhite );
+
+	Guizmo::Line( glm::vec3( x, y, z ) + ov, glm::vec3( x, y + 1 + 2 * o, z ) + ov, Guizmo::colWhite );
+	Guizmo::Line( glm::vec3( x + 1 + 2 * o, y, z ) + ov, glm::vec3( x + 1 + 2 * o, y + 1 + 2 * o, z ) + ov,
+	              Guizmo::colWhite );
+	Guizmo::Line( glm::vec3( x, y, z + 1 + 2 * o ) + ov, glm::vec3( x, y + 1 + 2 * o, z + 1 + 2 * o ) + ov,
+	              Guizmo::colWhite );
+	Guizmo::Line( glm::vec3( x + 1 + 2 * o, y, z + 1 + 2 * o ) + ov,
+	              glm::vec3( x + 1 + 2 * o, y + 1 + 2 * o, z + 1 + 2 * o ) + ov, Guizmo::colWhite );
+}
+
 void Draw( const Camera & camera ) {
+	ZoneScoped;
 	if ( lineDrawList.size() == 0 )
 		return;
 

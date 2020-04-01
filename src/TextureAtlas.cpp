@@ -7,7 +7,6 @@
 TextureAtlas loadTextureAtlas( const std::string & path, s32 lines, s32 columns ) {
 	int width, height, channels;
 
-	stbi_set_flip_vertically_on_load( true );
 	stbi_uc * data = stbi_load( path.c_str(), &width, &height, &channels, 0 );
 
 	if ( !data ) {
@@ -40,7 +39,7 @@ TextureAtlas loadTextureAtlas( const std::string & path, s32 lines, s32 columns 
 	glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST );
 	glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
 
-	glTexStorage3D( GL_TEXTURE_2D_ARRAY, 3, GL_RGB8, singleImageWidth, singleImageHeight, lines * columns );
+	glTexStorage3D( GL_TEXTURE_2D_ARRAY, 6, GL_RGBA8, singleImageWidth, singleImageHeight, lines * columns );
 
 	glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT );
 	glTexParameteri( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT );
