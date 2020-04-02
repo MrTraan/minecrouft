@@ -64,7 +64,7 @@ glm::vec3 ChunkToWorldPosition( ChunkCoordinates pos ) {
 void ChunkManager::Init( const glm::vec3 & playerPos ) {
 	ZoneScoped;
 	shader.CompileFromPath( "./resources/shaders/vertex.glsl", "./resources/shaders/fragment.glsl" );
-	textureAtlas = loadTextureAtlas( "./resources/blocks_pixel_perfect.png", 5, 3 );
+	textureAtlas = loadTextureAtlas( "./resources/blocks_pixel_perfect.png", 7, 3 );
 
 	for ( int i = 0; i < NUM_MANAGER_THREADS; i++ )
 		builderRoutineThreads[ i ] = std::thread( builderThreadRoutine, this );
@@ -189,7 +189,7 @@ void ChunkManager::CreateChunksAroundPlayer( ChunkCoordinates chunkPosition ) {
 bool ChunkManager::LoadMetaDataFile( const char * metaFilePath ) {
 	chunksMetaInfo.clear();
 	FILE * metaFp = fopen( metaFilePath, "rb" );
-	ng_assert( metaFp != nullptr );
+	//ng_assert( metaFp != nullptr );
 	if ( metaFp == nullptr ) {
 		ng::Errorf( "Could not open meta save file %s\n", metaFilePath );
 		return false;

@@ -3,6 +3,7 @@
 #include "Shader.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include <vector>
+#include "tracy/Tracy.hpp"
 
 namespace Guizmo {
 
@@ -23,7 +24,6 @@ void Init() {
 
 	glGenVertexArrays( 1, &VAO );
 	glGenBuffers( 1, &VBO );
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	glBindVertexArray( VAO );
 
 	glBindBuffer( GL_ARRAY_BUFFER, VBO );
@@ -45,9 +45,9 @@ void Line( glm::vec3 a, glm::vec3 b, glm::vec3 color ) {
 }
 
 void LinesAroundCube( glm::vec3 cubePosition ) {
-	int       x = cubePosition.x;
-	int       y = cubePosition.y;
-	int       z = cubePosition.z;
+	float       x = cubePosition.x;
+	float       y = cubePosition.y;
+	float       z = cubePosition.z;
 	float     o = 0.001f;
 	glm::vec3 ov( -o, -o, -o );
 

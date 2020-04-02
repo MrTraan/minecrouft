@@ -71,18 +71,19 @@ void HeightMap::SetupChunk( Chunk * chunk ) const {
 				//		chunk->cubes[ x ][ y ][ z ] = eBlockType::ROCK;
 				//} else
 				//	chunk->cubes[ x ][ y ][ z ] = eBlockType::INACTIVE;
-				chunk->cubes[ x ][ y ][ z ] = eBlockType::ROCK;
+				chunk->cubes[ x ][ y ][ z ] = eBlockType::STONE;
 			}
 
-			auto height = GetHeightAt( chunkPos.x + x, chunkPos.z + z ) + CHUNK_HEIGHT / 2;
-			auto type = GetMoistureAt( chunkPos.x + x, chunkPos.z + z );
+			int  height = ( int )( GetHeightAt( chunkPos.x + x, chunkPos.z + z ) + CHUNK_HEIGHT / 2 );
+			float type = GetMoistureAt( chunkPos.x + x, chunkPos.z + z );
 			for ( s32 y = caveLevel; y < CHUNK_HEIGHT; y++ ) {
-				if ( y < height ) {
+				if ( y <= height ) {
 					if ( height < rockLevel ) {
-						chunk->cubes[ x ][ y ][ z ] = eBlockType::GRASS;
+						chunk->cubes[ x ][ y ][ z ] =
+						    y == height && y >= waterLevel - 1 ? eBlockType::GRASS : eBlockType::DIRT;
 					} else if ( height < snowLevel ) {
 						if ( type < 0.5f )
-							chunk->cubes[ x ][ y ][ z ] = eBlockType::GRASS;
+							chunk->cubes[ x ][ y ][ z ] = y == height ? eBlockType::GRASS : eBlockType::DIRT;
 						else
 							chunk->cubes[ x ][ y ][ z ] = eBlockType::SNOW;
 					} else

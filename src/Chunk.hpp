@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
+#include <Block.hpp>
 #include <HeightMap.hpp>
 #include <Mesh.hpp>
 #include <Shader.hpp>
@@ -44,8 +45,6 @@ enum class eBiome {
 	MOUNTAIN,
 };
 
-enum class eBlockType : char { INACTIVE = 0, GRASS, SAND, DIRT, ROCK, SNOW, WATER };
-
 enum class eDirection {
 	SOUTH,
 	NORTH,
@@ -76,3 +75,12 @@ struct Chunk {
 Chunk * preallocateChunk();
 void    chunkCreateGeometry( Chunk * chunk );
 void    chunkDestroy( Chunk * chunk );
+void    chunkPushFace( Mesh *     mesh,
+                       glm::vec3  a,
+                       glm::vec3  b,
+                       glm::vec3  c,
+                       glm::vec3  d,
+                       float      width,
+                       float      height,
+                       eDirection direction,
+                       eBlockType type );

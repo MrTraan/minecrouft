@@ -9,6 +9,7 @@
 #include <IO.hpp>
 #include <Player.hpp>
 #include <constants.hpp>
+#include "tracy/Tracy.hpp"
 
 void Camera::Init( float aspectRatio, const glm::vec3 & position, const glm::vec3 up ) {
 	this->position = position;
@@ -36,6 +37,7 @@ void Camera::UpdateProjectionMatrix( float aspectRatio ) {
 }
 
 void Camera::Update( const IO & io, Player & player, float dt ) {
+	ZoneScoped;
 	constexpr int yDirection = -1;
 	yaw += io.mouse.offset.x * sensitivity;
 	pitch += io.mouse.offset.y * sensitivity * yDirection;

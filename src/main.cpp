@@ -15,12 +15,12 @@
 #include <ChunkManager.hpp>
 #include <Frustrum.hpp>
 #include <Game.h>
+#include <Guizmo.hpp>
 #include <IO.hpp>
 #include <Player.hpp>
 #include <Skybox.hpp>
 #include <Window.hpp>
 #include <ngLib/nglib.h>
-#include <Guizmo.hpp>
 
 Game * theGame;
 
@@ -56,6 +56,7 @@ int main( int ac, char ** av ) {
 	TracyGpuContext;
 
 	player.position = glm::vec3( SHRT_MAX / 4, 180, SHRT_MAX / 4 );
+	player.Init();
 	camera.Init( ( float )window.width / window.height, player.position, glm::vec3( 0.0f, 1.0f, 0.0f ) );
 	io.Init( window );
 	chunkManager.Init( player.position );
@@ -72,12 +73,15 @@ int main( int ac, char ** av ) {
 		           1000000.0f;
 		lastFrameTime = currentFrameTime;
 
-		window.Clear();
-		io.Update( window );
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame( window.glWindow );
-		ImGui::NewFrame();
-		Guizmo::NewFrame();
+		{
+			ZoneScopedN( "NewFrameSetup" );
+			window.Clear();
+			io.Update( window );
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplSDL2_NewFrame( window.glWindow );
+			ImGui::NewFrame();
+			Guizmo::NewFrame();
+		}
 
 		static bool debugMouse = false;
 		static bool wireframeMode = false;
@@ -105,7 +109,6 @@ int main( int ac, char ** av ) {
 		if ( !debugMouse ) {
 			camera.Update( io, player, dt );
 			player.Update( io, dt );
-			player.TrySelectingBlock(io, chunkManager , camera );
 		}
 
 		skybox.Draw( camera.viewMatrix, camera.projMatrix );
@@ -113,6 +116,7 @@ int main( int ac, char ** av ) {
 		chunkManager.Update( camera.position );
 
 		chunkManager.Draw( camera );
+		player.Draw( camera );
 
 		hud.Draw();
 		ng::GetConsole().Draw();

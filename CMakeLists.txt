@@ -11,14 +11,19 @@ set (CMAKE_CXX_STANDARD 17)
 set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(OpenGL REQUIRED)
-find_package(SDL2 CONFIG REQUIRED)
-find_package(lz4 CONFIG REQUIRED)
+find_package(SDL2 REQUIRED)
+find_package(lz4 REQUIRED)
 
 add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
 
-add_compile_definitions( TRACY_ENABLE=1 )
+if ( ENABLE_PROFILING )
+	add_compile_definitions( TRACY_ENABLE=1 )
+endif( ENABLE_PROFILING )
 
 set(GLM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/")
+
+## Used for ycm
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(
 	${GLM_INCLUDE_DIRS}
@@ -27,12 +32,13 @@ include_directories(
 	"./lib"
 )
 
-set(MY_SOURCE_FILES
+add_executable(minecrouft
 	"src/main.cpp"
 	"src/Camera.cpp"
 	"src/Shader.cpp"
 	"src/Mesh.cpp"
 	"src/Chunk.cpp"
+	"src/Block.cpp"
 	"src/TextureAtlas.cpp"
 	"src/ChunkManager.cpp"
 	"src/Frustrum.cpp"
@@ -41,6 +47,7 @@ set(MY_SOURCE_FILES
 	"src/IO.cpp"
 	"src/Hud.cpp"
 	"src/Guizmo.cpp"
+	"src/Skybox.cpp"
 	
 	"src/ngLib/console.cpp"
 	"src/ngLib/logs.cpp"
@@ -60,12 +67,6 @@ set(MY_SOURCE_FILES
 
 	"./lib/tracy/TracyClient.cpp"
 )
-
-## Used for ycm
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-add_executable(minecrouft
-	${MY_SOURCE_FILES})
 
 target_link_libraries(minecrouft PRIVATE
 	${OPENGL_gl_LIBRARY} # filled by "find_package(OpenGL REQUIRED)"

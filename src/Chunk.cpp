@@ -10,16 +10,7 @@
 #include <stdlib.h>
 #include <tracy/Tracy.hpp>
 
-static void pushFace( Mesh *     mesh,
-                      glm::vec3  a,
-                      glm::vec3  b,
-                      glm::vec3  c,
-                      glm::vec3  d,
-                      float      width,
-                      float      height,
-                      eDirection direction,
-                      int        reverse,
-                      eBlockType type );
+constexpr glm::vec3 waterVerticesOffset( 0.0f, -0.1f, 0.0f );
 
 void chunkCreateGeometry( Chunk * chunk ) {
 	ZoneScoped;
@@ -27,13 +18,13 @@ void chunkCreateGeometry( Chunk * chunk ) {
 	chunk->mesh->facesBuilt = 0;
 	chunk->mesh->IndicesCount = 0;
 	chunk->mesh->VerticesCount = 0;
-	
+
 	chunk->transparentMesh->facesBuilt = 0;
 	chunk->transparentMesh->IndicesCount = 0;
 	chunk->transparentMesh->VerticesCount = 0;
 
-	int        dims[ 3 ] = {CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE};
-	glm::ivec3 p1, p2, p3, p4;
+	int       dims[ 3 ] = {CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE};
+	glm::vec3 p1, p2, p3, p4;
 
 	for ( int reverse = 0; reverse < 2; reverse++ ) {
 		for ( int d = 0; d < 3; d++ ) {
@@ -113,21 +104,18 @@ void chunkCreateGeometry( Chunk * chunk ) {
 
 							if ( mask[ n ] == eBlockType::WATER ) {
 								// ONLY DRAW TOP SURFACE
-								 if ( dir == eDirection::TOP ) {
-									if ( d == 0 )
-										pushFace( chunk->transparentMesh, p4, p1, p2, p3, ( float )h, ( float )w, dir,
-										          reverse, mask[ n ] );
-									else
-										pushFace( chunk->transparentMesh, p1, p2, p3, p4, ( float )w, ( float )h, dir,
-										          reverse, mask[ n ] );
+								if ( dir == eDirection::TOP ) {
+									chunkPushFace( chunk->transparentMesh, p4 + waterVerticesOffset,
+									               p1 + waterVerticesOffset, p2 + waterVerticesOffset,
+									               p3 + waterVerticesOffset, ( float )h, ( float )w, dir, mask[ n ] );
 								}
 							} else {
 								if ( d == 0 )
-									pushFace( chunk->mesh, p4, p1, p2, p3, ( float )h, ( float )w, dir, reverse,
-									          mask[ n ] );
+									chunkPushFace( chunk->mesh, p4, p1, p2, p3, ( float )h, ( float )w, dir,
+									               mask[ n ] );
 								else
-									pushFace( chunk->mesh, p1, p2, p3, p4, ( float )w, ( float )h, dir, reverse,
-									          mask[ n ] );
+									chunkPushFace( chunk->mesh, p1, p2, p3, p4, ( float )w, ( float )h, dir,
+									               mask[ n ] );
 							}
 
 							for ( int l = 0; l < h; l++ )
@@ -156,39 +144,15 @@ void chunkCreateGeometry( Chunk * chunk ) {
 //	chunk->facesAllocated = chunk->facesBuilt;
 //}
 
-void pushFace( Mesh *     mesh,
-               glm::vec3  a,
-               glm::vec3  b,
-               glm::vec3  c,
-               glm::vec3  d,
-               float      width,
-               float      height,
-               eDirection direction,
-               int        reverse,
-               eBlockType type ) {
-	int uvModifier;
-
-	switch ( type ) {
-	case eBlockType::GRASS:
-		uvModifier = 0;
-		break;
-	case eBlockType::SNOW:
-		uvModifier = 1;
-		break;
-	case eBlockType::ROCK:
-		uvModifier = 2;
-		break;
-	case eBlockType::SAND:
-		uvModifier = 3;
-		break;
-	case eBlockType::WATER:
-		uvModifier = 4;
-		break;
-	default:
-		uvModifier = 0;
-		break;
-	}
-
+void chunkPushFace( Mesh *     mesh,
+                    glm::vec3  a,
+                    glm::vec3  b,
+                    glm::vec3  c,
+                    glm::vec3  d,
+                    float      width,
+                    float      height,
+                    eDirection direction,
+                    eBlockType type ) {
 	while ( mesh->facesAllocated <= mesh->facesBuilt ) {
 		ZoneScopedN( "GrowingFacesAllocated" );
 		auto grownIndices = ( u32 * )ng_alloc( sizeof( u32 ) * 6 * ( FACES_BATCH_ALLOC + mesh->facesAllocated ) );
@@ -213,20 +177,20 @@ void pushFace( Mesh *     mesh,
 	mesh->facesBuilt++;
 
 	mesh->IndicesCount += 6;
-	if ( reverse ) {
-		mesh->Indices[ ii + 0 ] = vi + 1;
-		mesh->Indices[ ii + 1 ] = vi + 0;
-		mesh->Indices[ ii + 2 ] = vi + 3;
-		mesh->Indices[ ii + 3 ] = vi + 3;
-		mesh->Indices[ ii + 4 ] = vi + 2;
-		mesh->Indices[ ii + 5 ] = vi + 1;
+	if ( direction == eDirection::WEST || direction == eDirection::BOTTOM || direction == eDirection::SOUTH ) {
+		mesh->Indices[ ii + 0 ] = vi + 1; // b
+		mesh->Indices[ ii + 1 ] = vi + 0; // a
+		mesh->Indices[ ii + 2 ] = vi + 3; // d
+		mesh->Indices[ ii + 3 ] = vi + 3; // d
+		mesh->Indices[ ii + 4 ] = vi + 2; // c
+		mesh->Indices[ ii + 5 ] = vi + 1; // b
 	} else {
-		mesh->Indices[ ii + 0 ] = vi + 1;
-		mesh->Indices[ ii + 1 ] = vi + 2;
-		mesh->Indices[ ii + 2 ] = vi + 3;
-		mesh->Indices[ ii + 3 ] = vi + 3;
-		mesh->Indices[ ii + 4 ] = vi + 0;
-		mesh->Indices[ ii + 5 ] = vi + 1;
+		mesh->Indices[ ii + 0 ] = vi + 1; // b
+		mesh->Indices[ ii + 1 ] = vi + 2; // c
+		mesh->Indices[ ii + 2 ] = vi + 3; // d
+		mesh->Indices[ ii + 3 ] = vi + 3; // d
+		mesh->Indices[ ii + 4 ] = vi + 0; // a
+		mesh->Indices[ ii + 5 ] = vi + 1; // b
 	}
 
 	mesh->VerticesCount += 4;
@@ -257,15 +221,18 @@ void pushFace( Mesh *     mesh,
 	v[ vi + 3 ].Position[ 1 ] = d.y;
 	v[ vi + 3 ].Position[ 2 ] = d.z;
 
+	float top, bottom, side;
+	BlockGetTextureIndices( type, top, bottom, side );
+
 	switch ( direction ) {
 	case eDirection::TOP:
 		for ( int i = 0; i < 4; i++ ) {
-			v[ vi + i ].TexIndex = float( uvModifier * 3 );
+			v[ vi + i ].TexIndex = top;
 		}
 		break;
 	case eDirection::BOTTOM:
 		for ( int i = 0; i < 4; i++ ) {
-			v[ vi + i ].TexIndex = float( uvModifier * 3 + 2 );
+			v[ vi + i ].TexIndex = bottom;
 		}
 		break;
 	case eDirection::SOUTH:
@@ -273,7 +240,7 @@ void pushFace( Mesh *     mesh,
 	case eDirection::WEST:
 	case eDirection::NORTH:
 		for ( int i = 0; i < 4; i++ ) {
-			v[ vi + i ].TexIndex = float( uvModifier * 3 + 1 );
+			v[ vi + i ].TexIndex = side;
 		}
 		break;
 	}

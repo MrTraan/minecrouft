@@ -21,6 +21,9 @@ struct Mesh {
 	unsigned int VAO, VBO, EBO;
 };
 
+void PrepareTexturedUnitCube( Mesh * mesh, float textureIndex );
+void UpdateTextureIndexOnUnitCube( Mesh * mesh, float textureIndex  );
+
 void meshCreateGLBuffers( Mesh * mesh );
 void meshDeleteBuffers( Mesh * mesh );
 void meshUpdateBuffer( Mesh * mesh );

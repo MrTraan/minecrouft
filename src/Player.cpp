@@ -1,3 +1,4 @@
+#include "glm/gtc/type_ptr.hpp"
 #include <Camera.hpp>
 #include <ChunkManager.hpp>
 #include <Guizmo.hpp>
@@ -5,9 +6,19 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <player.hpp>
 
+#include "Game.h"
 #include <imgui/imgui.h>
 
+void Player::Init() {
+	damageSpriteShader.CompileFromPath( "./resources/shaders/vertex.glsl", "./resources/shaders/fragment.glsl" );
+
+	PrepareTexturedUnitCube( &damageSprite, 20 );
+	// PrepareTexturedUnitCube( &damageSprite, 7 );
+	meshCreateGLBuffers( &damageSprite );
+}
+
 void Player::Update( const IO & io, float dt ) {
+	ZoneScoped;
 	float moveSpeed = speed * dt;
 
 	if ( io.keyboard.IsKeyDown( eKey::KEY_SPACE ) )
@@ -21,15 +32,113 @@ void Player::Update( const IO & io, float dt ) {
 		position -= glm::normalize( glm::cross( front, up ) ) * moveSpeed;
 	if ( io.keyboard.IsKeyDown( eKey::KEY_D ) )
 		position += glm::normalize( glm::cross( front, up ) ) * moveSpeed;
+
+	HitInfo hitInfo;
+	if ( TrySelectingBlock( io, theGame->chunkManager, hitInfo ) ) {
+		Guizmo::LinesAroundCube( hitInfo.cubeWorldCoord );
+		ChunkManager & chunkManager = theGame->chunkManager;
+		glm::vec3      chunkPos = ChunkToWorldPosition( hitInfo.hitChunk->position );
+		int            cx = hitInfo.cubeWorldCoord.x - chunkPos.x;
+		int            cy = hitInfo.cubeWorldCoord.y - chunkPos.y;
+		int            cz = hitInfo.cubeWorldCoord.z - chunkPos.z;
+
+		if ( io.mouse.IsButtonDown( Mouse::Button::LEFT ) ) {
+			if ( isHittingCube && hitCubeWorldCoord == hitInfo.cubeWorldCoord ) {
+				hittingSince += dt;
+				eBlockType blockType = hitInfo.hitChunk->cubes[ cx ][ cy ][ cz ];
+				if ( hittingSince >= BlockGetResistance( blockType ) ) {
+					hitInfo.hitChunk->cubes[ cx ][ cy ][ cz ] = eBlockType::INACTIVE;
+					chunkCreateGeometry( hitInfo.hitChunk );
+					hitInfo.hitChunk->UpdateGLBuffers();
+				} else {
+					// Update damage texture
+					float         damageRatio = hittingSince / BlockGetResistance( blockType );
+					constexpr int numDamageTexture = 10;
+					constexpr int damageTextureOffset = 10;
+					UpdateTextureIndexOnUnitCube( &damageSprite, floor( damageRatio * numDamageTexture ) + damageTextureOffset );
+					meshUpdateBuffer( &damageSprite );
+				}
+
+			} else {
+				hittingSince = 0.0f;
+				isHittingCube = true;
+				hitCubeWorldCoord = hitInfo.cubeWorldCoord;
+			}
+			// tape tape tape
+		} else {
+			isHittingCube = false;
+		}
+
+		if ( io.mouse.IsButtonPressed( Mouse::Button::RIGHT ) ) {
+			int offsetX = 0;
+			int offsetY = 0;
+			int offsetZ = 0;
+			switch ( hitInfo.hitDirection ) {
+			case eDirection::BOTTOM:
+				offsetY = -1;
+				break;
+			case eDirection::EAST:
+				offsetX = 1;
+				break;
+			case eDirection::NORTH:
+				offsetZ = 1;
+				break;
+			case eDirection::SOUTH:
+				offsetZ = -1;
+				break;
+			case eDirection::TOP:
+				offsetY = 1;
+				break;
+			case eDirection::WEST:
+				offsetX = -1;
+				break;
+			}
+
+			ChunkCoordinates coord = hitInfo.hitChunk->position;
+			Chunk *          chunkToUpdate = hitInfo.hitChunk;
+			if ( cx + offsetX >= CHUNK_SIZE ) {
+				coord.x++;
+				chunkToUpdate = ( chunkManager.chunks.at( coord ) );
+				cx = 0;
+				offsetX = 0;
+			}
+			if ( cx + offsetX < 0 ) {
+				coord.x--;
+				chunkToUpdate = ( chunkManager.chunks.at( coord ) );
+				cx = CHUNK_SIZE - 1;
+				offsetX = 0;
+			}
+			if ( cz + offsetZ >= CHUNK_SIZE ) {
+				coord.z++;
+				chunkToUpdate = ( chunkManager.chunks.at( coord ) );
+				cz = 0;
+				offsetZ = 0;
+			}
+			if ( cz + offsetZ < 0 ) {
+				coord.z--;
+				chunkToUpdate = ( chunkManager.chunks.at( coord ) );
+				cz = CHUNK_SIZE - 1;
+				offsetZ = 0;
+			}
+
+			chunkToUpdate->cubes[ cx + offsetX ][ cy + offsetY ][ cz + offsetZ ] = eBlockType::STONE;
+			chunkCreateGeometry( chunkToUpdate );
+			chunkToUpdate->UpdateGLBuffers();
+		}
+
+	} else {
+		isHittingCube = false;
+		hittingSince = 0.0f;
+	}
 }
 
 static int   sign( float x ) { return ( x > 0 ) ? 1 : ( ( x < 0 ) ? -1 : 0 ); }
 static float intBound( float s, float ds ) { return ( ds > 0 ? ( ceil( s ) - s ) / ds : ( s - floor( s ) ) / -ds ); }
 
-bool Player::TrySelectingBlock( const IO & io, ChunkManager & chunkManager, const Camera & camera ) {
+bool Player::TrySelectingBlock( const IO & io, ChunkManager & chunkManager, HitInfo & hitInfo ) {
 	ZoneScoped;
-	glm::vec3 direction = camera.front;
-	glm::vec3 origin = camera.position;
+	glm::vec3 direction = front;
+	glm::vec3 origin = position;
 
 	float range = cubeSelectionRange;
 
@@ -45,7 +154,7 @@ bool Player::TrySelectingBlock( const IO & io, ChunkManager & chunkManager, cons
 	float tMaxY = intBound( origin.y, direction.y );
 	float tMaxZ = intBound( origin.z, direction.z );
 
-	float deltaX = stepX /  direction.x;
+	float deltaX = stepX / direction.x;
 	float deltaY = stepY / direction.y;
 	float deltaZ = stepZ / direction.z;
 
@@ -81,75 +190,38 @@ bool Player::TrySelectingBlock( const IO & io, ChunkManager & chunkManager, cons
 		int cy = y - chunkPos.y;
 		int cz = z - chunkPos.z;
 
-		if ( chunk->cubes[ cx ][ cy ][ cz ] != eBlockType::INACTIVE ) {
-			Guizmo::LinesAroundCube( glm::vec3( x, y, z ) );
-
-			if ( io.mouse.IsButtonPressed( Mouse::Button::LEFT ) ) {
-				chunk->cubes[ cx ][ cy ][ cz ] = eBlockType::INACTIVE;
-				chunkCreateGeometry( chunk );
-				chunk->UpdateGLBuffers();
-			}
-
-			if ( io.mouse.IsButtonPressed( Mouse::Button::RIGHT ) ) {
-				int offsetX = 0;
-				int offsetY = 0;
-				int offsetZ = 0;
-				switch ( direction ) {
-				case eDirection::BOTTOM:
-					offsetY = -1;
-					break;
-				case eDirection::EAST:
-					offsetX = 1;
-					break;
-				case eDirection::NORTH:
-					offsetZ = 1;
-					break;
-				case eDirection::SOUTH:
-					offsetZ = -1;
-					break;
-				case eDirection::TOP:
-					offsetY = 1;
-					break;
-				case eDirection::WEST:
-					offsetX = -1;
-					break;
-				}
-
-				ChunkCoordinates coord = chunk->position;
-				Chunk *          chunkToUpdate = chunk;
-				if ( cx + offsetX >= CHUNK_SIZE ) {
-					coord.x++;
-					chunkToUpdate = ( chunkManager.chunks.at( coord ) );
-					cx = 0;
-					offsetX = 0;
-				}
-				if ( cx + offsetX < 0 ) {
-					coord.x--;
-					chunkToUpdate = ( chunkManager.chunks.at( coord ) );
-					cx = CHUNK_SIZE - 1;
-					offsetX = 0;
-				}
-				if ( cz + offsetZ >= CHUNK_SIZE ) {
-					coord.z++;
-					chunkToUpdate = ( chunkManager.chunks.at( coord ) );
-					cz = 0;
-					offsetZ = 0;
-				}
-				if ( cz + offsetZ < 0 ) {
-					coord.z--;
-					chunkToUpdate = ( chunkManager.chunks.at( coord ) );
-					cz = CHUNK_SIZE - 1;
-					offsetZ = 0;
-				}
-
-				chunkToUpdate->cubes[ cx + offsetX ][ cy + offsetY ][ cz + offsetZ ] = eBlockType::ROCK;
-				chunkCreateGeometry( chunkToUpdate );
-				chunkToUpdate->UpdateGLBuffers();
-			}
-
+		if ( BlockTypeIsCollidable( chunk->cubes[ cx ][ cy ][ cz ] ) ) {
+			hitInfo.cubeWorldCoord = glm::vec3( x, y, z );
+			hitInfo.hitChunk = chunk;
+			hitInfo.hitDirection = direction;
 			return true;
 		}
 	}
 
 	return false;
 }
+
+void Player::Draw( const Camera & camera ) {
+	if ( isHittingCube ) {
+		damageSpriteShader.Use();
+		int viewLoc = glGetUniformLocation( damageSpriteShader.ID, "view" );
+		glUniformMatrix4fv( viewLoc, 1, GL_FALSE, glm::value_ptr( camera.viewMatrix ) );
+		int projLoc = glGetUniformLocation( damageSpriteShader.ID, "projection" );
+		glUniformMatrix4fv( projLoc, 1, GL_FALSE, glm::value_ptr( camera.projMatrix ) );
+		int  modelLoc = glGetUniformLocation( damageSpriteShader.ID, "model" );
+		auto translationMatrix = glm::translate( glm::mat4( 1.0f ), hitCubeWorldCoord );
+		// auto translationMatrix = glm::mat4( 1.0f );
+		// translationMatrix = glm::translate( translationMatrix, glm::vec3( 8208.0f, 167.0f, 8187.0f ) );
+		 translationMatrix = glm::scale( translationMatrix, glm::vec3( 1.01f, 1.01f, 1.01f ) );
+		 translationMatrix = glm::translate( translationMatrix, glm::vec3( -0.005f, -0.005f, -0.005f ) );
+		// translationMatrix = glm::scale( translationMatrix, glm::vec3(1.1f, 1.1f, 1.1f ) );
+		// translationMatrix = glm::translate( translationMatrix, glm::vec3( -0.05f, -0.05f, -0.05f));
+		glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( translationMatrix ) );
+
+		bindTextureAtlas( theGame->chunkManager.textureAtlas );
+
+		meshDraw( &damageSprite );
+	}
+}
+
+void Player::DebugDraw() { ImGui::Text( "Hitting since: %f", hittingSince ); }

@@ -1,5 +1,6 @@
 #include <Chunk.hpp>
 #include <Frustrum.hpp>
+#include <tracy/Tracy.hpp>
 
 void Frustrum::Update( const glm::mat4 & view, const glm::mat4 & projection ) {
 	glm::mat4 matrix = projection * view;

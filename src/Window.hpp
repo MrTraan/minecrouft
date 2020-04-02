@@ -60,9 +60,6 @@ class Window {
 
 		glEnable( GL_BLEND );
 		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-
-		//glDisable( GL_DEPTH_TEST );
-		//glDepthMask( GL_FALSE );
 	}
 
 	void Shutdown() {
@@ -70,7 +67,10 @@ class Window {
 		SDL_DestroyWindow( glWindow );
 	}
 
-	void Clear() { glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); }
+	void Clear() {
+		ZoneScoped;
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	}
 
 	void SwapBuffers() {
 		ZoneScoped;

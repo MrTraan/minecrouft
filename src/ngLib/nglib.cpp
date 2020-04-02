@@ -6,7 +6,7 @@ void ng::Init() {
 
 void ng::Shutdown() {}
 
-#ifdef NG_PROFILING
+#ifdef TRACY_ENABLE
 void * ng::profiledAlloc( size_t size ) {
 	auto ptr = malloc( size );
 	TracyAlloc( ptr, size );

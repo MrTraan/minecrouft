@@ -1,6 +1,8 @@
 #pragma once
 
+#include <Mesh.hpp>
 #include <glm/glm.hpp>
+#include "Chunk.hpp"
 
 struct IO;
 struct Camera;
@@ -14,8 +16,23 @@ struct Player {
 	float speed = 6.0f;
 	float cubeSelectionRange = 3.0f;
 
-	void Update( const IO & io, float dt );
-	bool TrySelectingBlock( const IO & io, ChunkManager & chunkManager, const Camera & camera );
+	struct HitInfo {
+		glm::vec3  cubeWorldCoord;
+		Chunk *    hitChunk;
+		eDirection hitDirection;
+	};
 
-	void DebugDraw() {}
+	void Init();
+	void Update( const IO & io, float dt );
+	bool TrySelectingBlock( const IO & io, ChunkManager & chunkManager, HitInfo & hitInfo );
+
+	void Draw( const Camera & camera );
+
+	Mesh      damageSprite;
+	Shader    damageSpriteShader;
+	bool      isHittingCube = false;
+	float     hittingSince = 0.0f;
+	glm::vec3 hitCubeWorldCoord;
+
+	void DebugDraw();
 };
