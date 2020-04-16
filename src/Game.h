@@ -9,6 +9,13 @@
 #include <Window.hpp>
 
 struct Game {
+	enum class State {
+		MENU,
+		PLAYING,
+		LOADING,
+	};
+
+	State        state;
 	Camera       camera;
 	Player       player;
 	IO           io;

@@ -17,19 +17,15 @@ class Window {
 		this->width = width;
 		this->height = height;
 #if __APPLE__
-		// GL 3.2 Core + GLSL 150
-		const char * glsl_version = "#version 150";
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG ); // Always required on Mac
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
 #else
-		// GL 3.0 + GLSL 130
-		const char * glsl_version = "#version 130";
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, 0 );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 6 );
 #endif
 		SDL_WindowFlags window_flags =
 		    ( SDL_WindowFlags )( SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI );
@@ -38,17 +34,16 @@ class Window {
 		if ( !this->glWindow ) {
 			throw std::runtime_error( "Fatal Error: Could not create GLFW Window" );
 		}
-
 		glContext = SDL_GL_CreateContext( glWindow );
 		SDL_GL_MakeCurrent( glWindow, glContext );
-		SDL_GL_SetSwapInterval( 1 ); // Enable vsync
+		SDL_GL_SetSwapInterval( 0 ); // Enable vsync
 
 		// glad: load all OpenGL function pointers
 		if ( !gladLoadGL() )
 			throw std::runtime_error( "Failed to initialize glad\n" );
 
 		// configure global opengl state
-		glDepthFunc( GL_LESS );
+		glDepthFunc( GL_LEQUAL );
 		glFrontFace( GL_CCW );
 
 		glEnable( GL_DEPTH_TEST );
@@ -77,7 +72,7 @@ class Window {
 		SDL_GL_SwapWindow( glWindow );
 	}
 
-	bool          shouldClose = false;
-	SDL_Window *  glWindow;
-	SDL_GLContext glContext;
+	bool           shouldClose = false;
+	SDL_Window *   glWindow;
+	SDL_GLContext  glContext;
 };

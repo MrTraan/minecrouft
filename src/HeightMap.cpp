@@ -9,10 +9,7 @@ static constexpr s32 snowLevel = rockLevel + CHUNK_SIZE * 2;
 static constexpr s32 caveLevel = ( CHUNK_HEIGHT / 2 ) - CHUNK_SIZE;
 static constexpr s32 waterLevel = ( CHUNK_HEIGHT / 2 ) + CHUNK_SIZE;
 
-HeightMap::HeightMap() {
-	std::srand( std::time( nullptr ) );
-	int seed = std::rand();
-
+void HeightMap::Init( int seed ) {
 	elevationFreq = 0.003f;
 	elevationNoise.SetSeed( seed );
 	elevationNoise.SetNoiseType( FastNoise::Perlin );
@@ -74,7 +71,7 @@ void HeightMap::SetupChunk( Chunk * chunk ) const {
 				chunk->cubes[ x ][ y ][ z ] = eBlockType::STONE;
 			}
 
-			int  height = ( int )( GetHeightAt( chunkPos.x + x, chunkPos.z + z ) + CHUNK_HEIGHT / 2 );
+			int   height = ( int )( GetHeightAt( chunkPos.x + x, chunkPos.z + z ) + CHUNK_HEIGHT / 2 );
 			float type = GetMoistureAt( chunkPos.x + x, chunkPos.z + z );
 			for ( s32 y = caveLevel; y < CHUNK_HEIGHT; y++ ) {
 				if ( y <= height ) {

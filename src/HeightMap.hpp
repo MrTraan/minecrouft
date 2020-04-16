@@ -10,13 +10,11 @@
 // Forward declaration
 struct Chunk;
 
-class HeightMap {
-public:
-	HeightMap();
+struct HeightMap {
+	void Init( int seed );
 
 	void SetupChunk(Chunk* chunk) const;
 
-private:
 	FastNoise heightMapNoise;
 	float surfaceFreq;
 	float GetHeightAt(s32 x, s32 y) const;

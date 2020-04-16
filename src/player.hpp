@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Chunk.hpp"
 #include <Mesh.hpp>
 #include <glm/glm.hpp>
-#include "Chunk.hpp"
 
 struct IO;
 struct Camera;
@@ -28,10 +28,11 @@ struct Player {
 
 	void Draw( const Camera & camera );
 
-	Mesh      damageSprite;
+	VoxelMesh      damageSprite;
 	Shader    damageSpriteShader;
 	bool      isHittingCube = false;
 	float     hittingSince = 0.0f;
+	bool      destroyCubeInstant = false;
 	glm::vec3 hitCubeWorldCoord;
 
 	void DebugDraw();

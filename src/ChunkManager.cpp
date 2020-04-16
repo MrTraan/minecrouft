@@ -8,7 +8,6 @@
 #include <chrono>
 #include <concurrentqueue.h>
 #include <imgui/imgui.h>
-#include <stdio.h>
 #include <tracy/Tracy.hpp>
 
 #include <Game.h>
@@ -18,32 +17,52 @@ MPMCChunkQueue buildingQueueIn;
 MPMCChunkQueue buildingQueueOut;
 
 std::atomic_bool buildersShouldRun( true );
+std::atomic_bool builderShouldSaveEverything( false );
+std::atomic_bool builderIsBuildingSaveFile( false );
 
 static void builderThreadRoutine( ChunkManager * manager ) {
 	using namespace std::chrono_literals;
-	char * readBuffer = new char[ sizeof( Chunk::cubes ) ];
+	char *   readBuffer = new char[ sizeof( Chunk::cubes ) ];
+	ng::File chunkDataFile;
+	bool     opened = chunkDataFile.Open( manager->saveFilePath.c_str(), ng::File::MODE_RW );
+	ng_assert( opened == true );
+	if ( opened == false ) {
+		ng::Errorf( "Could not open save file %s\n", manager->saveFilePath.c_str() );
+	}
+	ng::File metaFile;
+	opened = metaFile.Open( manager->metaSaveFilePath.c_str(), ng::File::MODE_RW );
+	ng_assert( opened == true );
+	if ( opened == false ) {
+		ng::Errorf( "Could not open save file %s\n", manager->metaSaveFilePath.c_str() );
+	}
+
+	// TODO: Create a chunk to unload queue
+
 	while ( buildersShouldRun.load() == true ) {
 		Chunk * chunk;
-		bool    found = buildingQueueIn.try_dequeue( chunk );
-		if ( !found ) {
-			std::this_thread::sleep_for( 16ms );
-		} else {
+
+		if ( builderShouldSaveEverything.load() == true ) {
+		}
+
+		if ( buildingQueueIn.try_dequeue( chunk ) == true ) {
 			// Check if chunk is in save file
 			// Otherwise, generate from heightmap and save to file
-			if ( manager->chunksMetaInfo.find( chunk->position ) != manager->chunksMetaInfo.end() ) {
+			if ( manager->chunksMetaInfo.contains( chunk->position ) ) {
 				// load from file
-				ChunkManager::MetaChunkInfo info = manager->chunksMetaInfo[ chunk->position ];
-				fseek( manager->chunkDataFp, info.binaryOffset, SEEK_SET );
-				fread( readBuffer, info.binarySize, 1, manager->chunkDataFp );
-				auto ret = LZ4_decompress_safe( readBuffer, ( char * )( &chunk->cubes ), info.binarySize,
-				                                sizeof( Chunk::cubes ) );
-				ng_assert( ret == sizeof( Chunk::cubes ) );
+				const ChunkManager::MetaChunkInfo & info = manager->chunksMetaInfo.at( chunk->position );
+				chunkDataFile.SeekOffset( info.binaryOffset, ng::File::SeekWhence::START );
+				size_t sizeRead = chunkDataFile.Read( readBuffer, info.binarySize );
+				ng_assert( sizeRead == info.binarySize );
+				auto ret = LZ4_decompress_safe( readBuffer, ( char * )( &chunk->cubes ), ( int )info.binarySize,
+				                                ( int )sizeof( Chunk::cubes ) );
+				ng_assert( ret == ( int )sizeof( Chunk::cubes ) );
 			} else {
 				manager->heightMap.SetupChunk( chunk );
-				// A new chunk has been generated, we should write it to save file
 			}
 			chunkCreateGeometry( chunk );
 			buildingQueueOut.enqueue( chunk );
+		} else {
+			std::this_thread::sleep_for( 16ms );
 		}
 	}
 	delete[] readBuffer;
@@ -61,39 +80,93 @@ glm::vec3 ChunkToWorldPosition( ChunkCoordinates pos ) {
 	return glm::vec3( ( s32 )getXCoord( pos ) * CHUNK_SIZE, 0, ( s32 )getZCoord( pos ) * CHUNK_SIZE );
 }
 
-void ChunkManager::Init( const glm::vec3 & playerPos ) {
+std::string GenerateSaveFilePath( const char * worldName ) {
+	std::string saveFilePath = saveFilesFolderPath;
+	saveFilePath += "/";
+	saveFilePath += worldName;
+	saveFilePath += saveFileExtension;
+	return saveFilePath;
+}
+
+std::string GenerateMetaSaveFilePath( const char * worldName ) {
+	std::string saveFileMetaPath = saveFilesFolderPath;
+	saveFileMetaPath += "/";
+	saveFileMetaPath += worldName;
+	saveFileMetaPath += saveFileMetaExtension;
+	return saveFileMetaPath;
+}
+
+void ChunkManager::Init( const char * worldName, const glm::vec3 & playerPos ) {
 	ZoneScoped;
-	shader.CompileFromPath( "./resources/shaders/vertex.glsl", "./resources/shaders/fragment.glsl" );
+	shader.CompileFromPath( "./resources/shaders/voxel_vertex.glsl", "./resources/shaders/voxel_fragment.glsl" );
+	wireframeShader.CompileFromPath( "./resources/shaders/wireframe_vertex.glsl",
+	                                 "./resources/shaders/wireframe_fragment.glsl" );
 	textureAtlas = loadTextureAtlas( "./resources/blocks_pixel_perfect.png", 7, 3 );
 
-	for ( int i = 0; i < NUM_MANAGER_THREADS; i++ )
-		builderRoutineThreads[ i ] = std::thread( builderThreadRoutine, this );
+	strncpy( this->worldName, worldName, WORLD_NAME_MAX_SIZE );
+	saveFilePath = GenerateSaveFilePath( worldName );
+	metaSaveFilePath = GenerateMetaSaveFilePath( worldName );
 
-	LoadMetaDataFile( "world.meta" );
-	chunkDataFp = fopen( "world.save", "a+b" );
-	ng_assert( chunkDataFp != nullptr );
-	if ( chunkDataFp == nullptr ) {
-		ng::Errorf( "Could not open save file %s\n", "world.save" );
-	}
+	LoadWorld( saveFilePath, metaSaveFilePath );
+
+	heightMap.Init( worldSeed );
 
 	ChunkCoordinates position = WorldToChunkPosition( playerPos );
 	CreateChunksAroundPlayer( position );
 
-	// Flush building queue while player chunk is not ready
-	Chunk * builtChunk = nullptr;
-	bool    playerChunkCreated = false;
-	while ( playerChunkCreated == false ) {
-		while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
-			chunks[ builtChunk->position ] = builtChunk;
-			builtChunk->CreateGLBuffers();
-			if ( builtChunk->position == position ) {
-				playerChunkCreated = true;
-				break;
-			}
-		}
-		using namespace std::chrono_literals;
-		std::this_thread::sleep_for( 10ms );
+	for ( int i = 0; i < NUM_MANAGER_THREADS; i++ ) {
+		builderRoutineThreads[ i ] = std::thread( builderThreadRoutine, this );
 	}
+}
+
+void ChunkManager::LoadWorld( const std::string & saveFilePath, const std::string & saveFileMetaPath ) {
+	chunksMetaInfo.clear();
+
+	ng::File metaFile;
+	bool     opened = metaFile.Open( saveFileMetaPath.c_str(), ng::File::MODE_RW );
+	ng_assert( opened == true );
+	if ( opened == false ) {
+		ng::Errorf( "Could not open save file %s\n", saveFileMetaPath.c_str() );
+	}
+
+	int seed = 0;
+	if ( metaFile.Read( &seed, sizeof( int ) ) == 0 ) {
+		std::srand( std::time( nullptr ) );
+		seed = std::rand();
+		ng::Printf( "Generated new seed %d for world\n", seed );
+	}
+	worldSeed = seed;
+
+	MetaChunkInfo info;
+	while ( metaFile.Read( &info, sizeof( MetaChunkInfo ) ) == sizeof( MetaChunkInfo ) ) {
+		chunksMetaInfo[ info.coord ] = info;
+	}
+
+	ng::Printf( "%llu meta info read\n", chunksMetaInfo.size() );
+
+	metaFile.Close();
+}
+
+void ChunkManager::CreateNewWorld( const char * worldName ) {
+	strncpy( this->worldName, worldName, WORLD_NAME_MAX_SIZE );
+
+	saveFilePath = GenerateSaveFilePath( worldName );
+	metaSaveFilePath = GenerateMetaSaveFilePath( worldName );
+
+	ng::File saveFile, metaSaveFile;
+	bool     success =
+	    saveFile.Open( saveFilePath.c_str(), ng::File::MODE_CREATE | ng::File::MODE_TRUNCATE | ng::File::MODE_RW );
+	if ( success != true ) {
+		ng::Errorf( "Could not create save file %s\n", saveFilePath.c_str() );
+	}
+	success = metaSaveFile.Open( metaSaveFilePath.c_str(),
+	                             ng::File::MODE_CREATE | ng::File::MODE_TRUNCATE | ng::File::MODE_RW );
+	if ( success != true ) {
+		ng::Errorf( "Could not create meta save file %s\n", metaSaveFilePath.c_str() );
+	}
+
+	saveFile.Close();
+	metaSaveFile.Close();
 }
 
 void ChunkManager::Shutdown() {
@@ -103,20 +176,20 @@ void ChunkManager::Shutdown() {
 		builderRoutineThreads[ i ].join();
 	for ( auto & e : chunks ) {
 		e.second->DeleteGLBuffers();
-		chunkDestroy( e.second );
+		e.second->Destroy();
 		delete e.second;
 	}
 	while ( poolHead != nullptr ) {
-		chunkDestroy( poolHead );
+		poolHead->Destroy();
 		auto newHead = poolHead->poolNextItem;
 		delete poolHead;
 		poolHead = newHead;
 	}
 }
 
-inline bool ChunkManager::ChunkIsLoaded( ChunkCoordinates pos ) { return chunks.find( pos ) != chunks.end(); }
+inline bool ChunkManager::ChunkIsLoaded( ChunkCoordinates pos ) const { return chunks.find( pos ) != chunks.end(); }
 
-inline bool ChunkManager::ChunkIsLoaded( u16 x, u16 y ) {
+inline bool ChunkManager::ChunkIsLoaded( u16 x, u16 y ) const {
 	return chunks.find( createChunkCoordinates( x, y ) ) != chunks.end();
 }
 
@@ -131,6 +204,7 @@ bool ChunkManager::PushChunkToProducer( ChunkCoordinates coord ) {
 	auto chunk = popChunkFromPool();
 	chunk->position = coord;
 	chunk->biome = eBiome::MOUNTAIN;
+	chunk->isDirty = false;
 	return buildingQueueIn.enqueue( chunk );
 }
 
@@ -138,17 +212,7 @@ void ChunkManager::Update( const glm::vec3 & playerPos ) {
 	ZoneScoped;
 	ChunkCoordinates position = WorldToChunkPosition( playerPos );
 
-	// Flush building queue
-	Chunk * builtChunk = nullptr;
-	while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
-		if ( !ChunkIsLoaded( builtChunk->position ) ) {
-			chunks[ builtChunk->position ] = builtChunk;
-			builtChunk->CreateGLBuffers();
-		} else {
-			// Race condition: the element was built twice
-			pushChunkToPool( builtChunk );
-		}
-	}
+	FlushLoadingQueue();
 
 	if ( position == lastPosition )
 		return;
@@ -170,6 +234,19 @@ void ChunkManager::Update( const glm::vec3 & playerPos ) {
 	CreateChunksAroundPlayer( position );
 }
 
+void ChunkManager::FlushLoadingQueue() {
+	Chunk * builtChunk = nullptr;
+	while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
+		if ( !ChunkIsLoaded( builtChunk->position ) ) {
+			chunks[ builtChunk->position ] = builtChunk;
+			builtChunk->CreateGLBuffers();
+		} else {
+			// Race condition: the element was built twice
+			pushChunkToPool( builtChunk );
+		}
+	}
+}
+
 void ChunkManager::CreateChunksAroundPlayer( ChunkCoordinates chunkPosition ) {
 	ZoneScoped;
 	glm::u16vec2 cursor( 0, 0 );
@@ -184,26 +261,6 @@ void ChunkManager::CreateChunksAroundPlayer( ChunkCoordinates chunkPosition ) {
 			}
 		}
 	}
-}
-
-bool ChunkManager::LoadMetaDataFile( const char * metaFilePath ) {
-	chunksMetaInfo.clear();
-	FILE * metaFp = fopen( metaFilePath, "rb" );
-	//ng_assert( metaFp != nullptr );
-	if ( metaFp == nullptr ) {
-		ng::Errorf( "Could not open meta save file %s\n", metaFilePath );
-		return false;
-	}
-
-	MetaChunkInfo info;
-	while ( fread( &info, sizeof( MetaChunkInfo ), 1, metaFp ) > 0 ) {
-		chunksMetaInfo[ info.coord ] = info;
-	}
-
-	ng::Printf( "%llu meta info read\n", chunksMetaInfo.size() );
-
-	fclose( metaFp );
-	return true;
 }
 
 bool ChunkManager::SaveWorldToFile( const char * path, const char * metaFilePath ) {
@@ -227,6 +284,8 @@ bool ChunkManager::SaveWorldToFile( const char * path, const char * metaFilePath
 	char * compressedData = new char[ chunkCompressedBoundSize ];
 
 	size_t writeOffset = 0;
+
+	fwrite( &worldSeed, sizeof( int ), 1, metaFp );
 
 	for ( auto it : chunks ) {
 		ChunkCoordinates coord = it.first;
@@ -254,74 +313,17 @@ bool ChunkManager::SaveWorldToFile( const char * path, const char * metaFilePath
 	return true;
 }
 
-bool ChunkManager::LoadWorldFromFile( const char * path, const char * metaFilePath ) {
-	ZoneScoped;
-
-	// TODO: Flush jobs before
-
-	FILE * dataFp = fopen( path, "rb" );
-	ng_assert( dataFp != nullptr );
-	if ( dataFp == nullptr ) {
-		ng::Errorf( "Could not open save file %s\n", path );
-		return false;
-	}
-	FILE * metaFp = fopen( metaFilePath, "rb" );
-	ng_assert( metaFp != nullptr );
-	if ( metaFp == nullptr ) {
-		ng::Errorf( "Could not open save file %s\n", metaFilePath );
-		fclose( dataFp );
-		return false;
-	}
-
-	for ( auto & e : chunks ) {
-		e.second->DeleteGLBuffers();
-		pushChunkToPool( e.second );
-	}
-	chunks.clear();
-
-	// Prepare a buffer large enough to read uncompressed bytes
-	char * readBuffer = new char[ sizeof( Chunk::cubes ) ];
-
-	MetaChunkInfo info;
-	while ( fread( &info, sizeof( MetaChunkInfo ), 1, metaFp ) > 0 ) {
-		Chunk * chunk = popChunkFromPool();
-		chunk->position = info.coord;
-		chunk->biome = eBiome::MOUNTAIN;
-
-		fseek( dataFp, info.binaryOffset, SEEK_SET );
-		fread( readBuffer, info.binarySize, 1, dataFp );
-
-		auto ret =
-		    LZ4_decompress_safe( readBuffer, ( char * )( &chunk->cubes ), info.binarySize, sizeof( Chunk::cubes ) );
-		ng_assert( ret > 0 );
-		buildingQueueIn.enqueue( chunk );
-	}
-
-	delete[] readBuffer;
-	fclose( dataFp );
-	fclose( metaFp );
-
-	// Flush building queue while player chunk is not ready
-	ChunkCoordinates playerPosition = WorldToChunkPosition( theGame->player.position );
-	Chunk *          builtChunk = nullptr;
-	bool             playerChunkCreated = false;
-	while ( playerChunkCreated == false ) {
-		while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
-			chunks[ builtChunk->position ] = builtChunk;
-			builtChunk->CreateGLBuffers();
-			if ( builtChunk->position == playerPosition ) {
-				playerChunkCreated = true;
-				break;
-			}
-		}
-		using namespace std::chrono_literals;
-		std::this_thread::sleep_for( 10ms );
-	}
-	return true;
-}
-
 void ChunkManager::Draw( const Camera & camera ) {
 	ZoneScoped;
+
+	if ( debugDrawWireframe ) {
+		wireframeShader.Use();
+		int viewLoc = glGetUniformLocation( wireframeShader.ID, "view" );
+		glUniformMatrix4fv( viewLoc, 1, GL_FALSE, glm::value_ptr( camera.viewMatrix ) );
+		int projLoc = glGetUniformLocation( wireframeShader.ID, "projection" );
+		glUniformMatrix4fv( projLoc, 1, GL_FALSE, glm::value_ptr( camera.projMatrix ) );
+	}
+
 	shader.Use();
 	int viewLoc = glGetUniformLocation( shader.ID, "view" );
 	glUniformMatrix4fv( viewLoc, 1, GL_FALSE, glm::value_ptr( camera.viewMatrix ) );
@@ -349,6 +351,18 @@ void ChunkManager::Draw( const Camera & camera ) {
 				auto translationMatrix = glm::translate( glm::mat4( 1.0f ), worldPosition );
 				glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( translationMatrix ) );
 				meshDraw( chunk->mesh );
+				if ( debugDrawWireframe ) {
+					wireframeShader.Use();
+					glEnable( GL_POLYGON_OFFSET_LINE );
+					glPolygonOffset( -1.0f, -1.0f );
+					int  modelLoc = glGetUniformLocation( wireframeShader.ID, "model" );
+					auto translationMatrix = glm::translate( glm::mat4( 1.0f ), worldPosition );
+					glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( translationMatrix ) );
+					meshDrawWireframe( chunk->mesh );
+					glPolygonOffset( 0.0f, 0.0f );
+					glDisable( GL_POLYGON_OFFSET_LINE );
+					shader.Use();
+				}
 				drawCallsLastFrame++;
 			}
 		}
@@ -358,7 +372,7 @@ void ChunkManager::Draw( const Camera & camera ) {
 		for ( auto & it : chunks ) {
 			Chunk * chunk = it.second;
 			ng_assert( chunk != nullptr );
-			if ( chunk->transparentMesh->facesBuilt == 0 ) {
+			if ( chunk->transparentMesh->verticesCount == 0 ) {
 				continue;
 			}
 			auto worldPosition = ChunkToWorldPosition( chunk->position );
@@ -394,6 +408,9 @@ void ChunkManager::pushChunkToPool( Chunk * item ) {
 }
 
 void ChunkManager::DebugDraw() {
+	if ( builderIsBuildingSaveFile.load() == true ) {
+		ImGui::Text( "SAVE IN PROGRESS..." );
+	}
 	ImGui::Text( "Chunks loaded: %lu\n", chunks.size() );
 	u32 poolSize = 0;
 	for ( auto it = poolHead; it != nullptr; it = it->poolNextItem )
@@ -446,12 +463,10 @@ void ChunkManager::DebugDraw() {
 	ImGui::Checkbox( "Draw opaque cubes", &debugDrawOpaque );
 	ImGui::SameLine();
 	ImGui::Checkbox( "Draw transparent cubes", &debugDrawTransparent );
+	ImGui::SameLine();
+	ImGui::Checkbox( "Draw wireframes", &debugDrawWireframe );
 
 	if ( ImGui::Button( "Test save" ) ) {
-		SaveWorldToFile( "world.save", "world.meta" );
-	}
-
-	if ( ImGui::Button( "Test load" ) ) {
-		LoadWorldFromFile( "world.save", "world.meta" );
+		SaveWorldToFile( saveFilePath.c_str(), metaSaveFilePath.c_str() );
 	}
 }

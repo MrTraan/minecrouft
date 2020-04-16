@@ -4,42 +4,42 @@
 
 bool BlockTypeIsCollidable( eBlockType type ) { return type != eBlockType::INACTIVE && type != eBlockType::WATER; }
 
-void BlockGetTextureIndices( eBlockType type, float & top, float & bottom, float & side ) {
+void BlockGetTextureIndices( eBlockType type, u8 & top, u8 & bottom, u8 & side ) {
 	switch ( type ) {
 	case eBlockType::GRASS:
-		top = 0.0f;
-		bottom = 2.0f;
-		side = 1.0f;
+		top = 0;
+		bottom = 2;
+		side = 1;
 		break;
 	case eBlockType::DIRT:
-		top = 2.0f;
-		bottom = 2.0f;
-		side = 2.0f;
+		top = 2;
+		bottom = 2;
+		side = 2;
 		break;
 	case eBlockType::SNOW:
-		top = 3.0f;
-		bottom = 5.0f;
-		side = 4.0f;
+		top = 3;
+		bottom = 5;
+		side = 4;
 		break;
 	case eBlockType::COBBLESTONE:
-		top = 6.0f;
-		bottom = 6.0f;
-		side = 6.0f;
+		top = 6;
+		bottom = 6;
+		side = 6;
 		break;
 	case eBlockType::STONE:
-		top = 7.0f;
-		bottom = 7.0f;
-		side = 7.0f;
+		top = 7;
+		bottom = 7;
+		side = 7;
 		break;
 	case eBlockType::SAND:
-		top = 8.0f;
-		bottom = 8.0f;
-		side = 8.0f;
+		top = 8;
+		bottom = 8;
+		side = 8;
 		break;
 	case eBlockType::WATER:
-		top = 9.0f;
-		bottom = 9.0f;
-		side = 9.0f;
+		top = 9;
+		bottom = 9;
+		side = 9;
 		break;
 	default:
 		ng_assert( false );

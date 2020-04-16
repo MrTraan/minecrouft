@@ -8,11 +8,8 @@
 #include <Shader.hpp>
 #include <constants.hpp>
 
-// To optimize memory allocation, memory for 8192 faces are created right away
-// Because profiling showed that no chunk had under 1024 faces
-// Faces are then allocated 1024 by 1024 when needed
-constexpr size_t FACES_INITIAL_ALLOC = 3000;
-constexpr size_t FACES_BATCH_ALLOC = 500;
+constexpr size_t CHUNK_VERTICES_INITIAL_ALLOC = 3000;
+constexpr size_t CHUNK_VERTICES_BATCH_ALLOC = 3000;
 
 constexpr int   TEXTURE_ROWS = 4;
 constexpr float UV_Y_BASE = ( 1.0f / TEXTURE_ROWS );
@@ -55,32 +52,34 @@ enum class eDirection {
 };
 
 struct Chunk {
-	Mesh * mesh = nullptr;
-	Mesh * transparentMesh = nullptr;
+	VoxelMesh * mesh = nullptr;
+	VoxelMesh * transparentMesh = nullptr;
+	bool   isDirty = false;
 
 	// 3 dimensionnal to note cube presence, because why not
 	eBlockType cubes[ CHUNK_SIZE ][ CHUNK_HEIGHT ][ CHUNK_SIZE ];
 
-	eBiome biome;
+	eBiome biome = eBiome::FOREST;
 
 	ChunkCoordinates position;
 
-	Chunk * poolNextItem;
+	Chunk * poolNextItem = nullptr;
 
 	void CreateGLBuffers();
 	void UpdateGLBuffers();
 	void DeleteGLBuffers();
+
+	void Destroy();
 };
 
 Chunk * preallocateChunk();
 void    chunkCreateGeometry( Chunk * chunk );
-void    chunkDestroy( Chunk * chunk );
-void    chunkPushFace( Mesh *     mesh,
-                       glm::vec3  a,
-                       glm::vec3  b,
-                       glm::vec3  c,
-                       glm::vec3  d,
-                       float      width,
-                       float      height,
-                       eDirection direction,
-                       eBlockType type );
+void    chunkPushFace( VoxelMesh *       mesh,
+                       glm::u32vec3 a,
+                       glm::u32vec3 b,
+                       glm::u32vec3 c,
+                       glm::u32vec3 d,
+                       int          width,
+                       int          height,
+                       eDirection   direction,
+                       eBlockType   type );

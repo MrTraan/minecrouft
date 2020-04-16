@@ -6,8 +6,9 @@ project (minecrouft)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd26812")
 
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(OpenGL REQUIRED)
@@ -24,13 +25,6 @@ set(GLM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/")
 
 ## Used for ycm
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-include_directories(
-	${GLM_INCLUDE_DIRS}
-	${SDL2_INCLUDE_DIRS}
-	"./src"
-	"./lib"
-)
 
 add_executable(minecrouft
 	"src/main.cpp"
@@ -67,6 +61,21 @@ add_executable(minecrouft
 
 	"./lib/tracy/TracyClient.cpp"
 )
+
+target_include_directories(minecrouft
+PRIVATE
+	"./src"
+SYSTEM
+	${GLM_INCLUDE_DIRS}
+	${SDL2_INCLUDE_DIRS}
+	"./lib"
+
+)
+
+include_directories(
+	"./src"
+)
+
 
 target_link_libraries(minecrouft PRIVATE
 	${OPENGL_gl_LIBRARY} # filled by "find_package(OpenGL REQUIRED)"

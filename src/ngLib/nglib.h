@@ -14,11 +14,17 @@
 		ng::Errorf( "ASSERTION FAILED: " #condition "\n" );                                                            \
 		DEBUG_BREAK;                                                                                                   \
 	}
+#define ng_assert_msg( condition, format, ... )                                                                        \
+	if ( !( condition ) ) {                                                                                            \
+		ng::Errorf( "ASSERTION FAILED: " #condition ": " format, __VA_ARGS__ );                                        \
+		DEBUG_BREAK;                                                                                                   \
+	}
 #else
 #define ng_assert( condition )
+#define ng_assert_msg( condition, format, ... )
 #endif
 
-#ifdef TRACY_ENABLE 
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
 #define ng_alloc( size ) ng::profiledAlloc( size )
 #define ng_free( ptr ) ng::profiledFree( ptr )

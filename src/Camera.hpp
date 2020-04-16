@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include "Frustrum.hpp"
 
-constexpr float CAM_DEFAULT_SENSITIVITY = 0.4f;
+constexpr float CAM_DEFAULT_SENSITIVITY = 25.0f;
 constexpr float CAM_DEFAULT_ZOOM = 45.0f;
 
 struct Player;

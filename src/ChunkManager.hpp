@@ -16,13 +16,20 @@
 
 struct Camera;
 
+constexpr const char * saveFilesFolderPath = "./savegames";
+constexpr const char * saveFileExtension = ".save";
+constexpr const char * saveFileMetaExtension = ".meta";
+constexpr size_t       WORLD_NAME_MAX_SIZE = 50;
+
 ChunkCoordinates WorldToChunkPosition( const glm::vec3 & playerPos );
 glm::vec3        ChunkToWorldPosition( const glm::i32vec2 & pos );
 glm::vec3        ChunkToWorldPosition( ChunkCoordinates pos );
 
-class ChunkManager {
-  public:
-	void Init( const glm::vec3 & playerPos );
+std::string GenerateSaveFilePath( const char * worldName );
+std::string GenerateMetaSaveFilePath( const char * worldName );
+
+struct ChunkManager {
+	void Init( const char * worldName, const glm::vec3 & playerPos );
 	void Shutdown();
 
 	void Update( const glm::vec3 & playerPos );
@@ -30,17 +37,20 @@ class ChunkManager {
 	bool PushChunkToProducer( ChunkCoordinates coord );
 	void CreateChunksAroundPlayer( ChunkCoordinates chunkPosition );
 
-	bool LoadMetaDataFile( const char * metaFilePath );
 	bool SaveWorldToFile( const char * path, const char * metaFilePath );
-	bool LoadWorldFromFile( const char * path, const char * metaFilePath );
 
-	inline bool ChunkIsLoaded( ChunkCoordinates pos );
-	inline bool ChunkIsLoaded( u16 x, u16 y );
-	
+	void LoadWorld( const std::string & saveFilePath, const std::string & saveFileMetaPath );
+	void CreateNewWorld( const char * worldName );
+
+	inline bool ChunkIsLoaded( ChunkCoordinates pos ) const;
+	inline bool ChunkIsLoaded( u16 x, u16 y ) const;
+
 	Chunk * GetChunkAt( ChunkCoordinates coord );
-	
+
 	Chunk * popChunkFromPool();
 	void    pushChunkToPool( Chunk * item );
+
+	void FlushLoadingQueue();
 
 	void DebugDraw();
 
@@ -48,6 +58,7 @@ class ChunkManager {
 	int chunkUnloadRadius = 12;
 
 	Shader shader;
+	Shader wireframeShader;
 
 	struct MetaChunkInfo {
 		ChunkCoordinates coord;
@@ -55,12 +66,13 @@ class ChunkManager {
 		size_t           binarySize;
 	};
 
-
+	char                                        worldName[ WORLD_NAME_MAX_SIZE ];
+	std::string                                 saveFilePath;
+	std::string                                 metaSaveFilePath;
+	float                                       worldSeed;
 	std::map< ChunkCoordinates, Chunk * >       chunks;
 	std::map< ChunkCoordinates, MetaChunkInfo > chunksMetaInfo;
 	HeightMap                                   heightMap;
-
-	FILE * chunkDataFp = nullptr;
 
 	ChunkCoordinates lastPosition;
 
@@ -74,5 +86,5 @@ class ChunkManager {
 	u32  drawCallsLastFrame = 0;
 	bool debugDrawOpaque = true;
 	bool debugDrawTransparent = true;
-
+	bool debugDrawWireframe = false;
 };

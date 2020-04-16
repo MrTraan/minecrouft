@@ -43,30 +43,31 @@ void Player::Update( const IO & io, float dt ) {
 		int            cz = hitInfo.cubeWorldCoord.z - chunkPos.z;
 
 		if ( io.mouse.IsButtonDown( Mouse::Button::LEFT ) ) {
-			if ( isHittingCube && hitCubeWorldCoord == hitInfo.cubeWorldCoord ) {
-				hittingSince += dt;
-				eBlockType blockType = hitInfo.hitChunk->cubes[ cx ][ cy ][ cz ];
-				if ( hittingSince >= BlockGetResistance( blockType ) ) {
-					hitInfo.hitChunk->cubes[ cx ][ cy ][ cz ] = eBlockType::INACTIVE;
-					chunkCreateGeometry( hitInfo.hitChunk );
-					hitInfo.hitChunk->UpdateGLBuffers();
-				} else {
-					// Update damage texture
-					float         damageRatio = hittingSince / BlockGetResistance( blockType );
-					constexpr int numDamageTexture = 10;
-					constexpr int damageTextureOffset = 10;
-					UpdateTextureIndexOnUnitCube( &damageSprite, floor( damageRatio * numDamageTexture ) + damageTextureOffset );
-					meshUpdateBuffer( &damageSprite );
-				}
-
-			} else {
+			if ( !isHittingCube || hitCubeWorldCoord != hitInfo.cubeWorldCoord ) {
+				// Starting to hit a new cube
 				hittingSince = 0.0f;
 				isHittingCube = true;
 				hitCubeWorldCoord = hitInfo.cubeWorldCoord;
 			}
-			// tape tape tape
+			hittingSince += dt;
+			eBlockType blockType = hitInfo.hitChunk->cubes[ cx ][ cy ][ cz ];
+			if ( hittingSince >= BlockGetResistance( blockType ) ||
+			     ( destroyCubeInstant && io.mouse.IsButtonPressed( Mouse::Button::LEFT ) ) ) {
+				hitInfo.hitChunk->cubes[ cx ][ cy ][ cz ] = eBlockType::INACTIVE;
+				chunkCreateGeometry( hitInfo.hitChunk );
+				hitInfo.hitChunk->UpdateGLBuffers();
+			} else {
+				// Update damage texture
+				float         damageRatio = hittingSince / BlockGetResistance( blockType );
+				constexpr int numDamageTexture = 10;
+				constexpr int damageTextureOffset = 10;
+				UpdateTextureIndexOnUnitCube( &damageSprite,
+				                              floor( damageRatio * numDamageTexture ) + damageTextureOffset );
+				meshUpdateBuffer( &damageSprite );
+			}
 		} else {
 			isHittingCube = false;
+			hittingSince = 0.0f;
 		}
 
 		if ( io.mouse.IsButtonPressed( Mouse::Button::RIGHT ) ) {
@@ -212,16 +213,23 @@ void Player::Draw( const Camera & camera ) {
 		auto translationMatrix = glm::translate( glm::mat4( 1.0f ), hitCubeWorldCoord );
 		// auto translationMatrix = glm::mat4( 1.0f );
 		// translationMatrix = glm::translate( translationMatrix, glm::vec3( 8208.0f, 167.0f, 8187.0f ) );
-		 translationMatrix = glm::scale( translationMatrix, glm::vec3( 1.01f, 1.01f, 1.01f ) );
-		 translationMatrix = glm::translate( translationMatrix, glm::vec3( -0.005f, -0.005f, -0.005f ) );
+		// translationMatrix = glm::scale( translationMatrix, glm::vec3( 1.01f, 1.01f, 1.01f ) );
+		// translationMatrix = glm::translate( translationMatrix, glm::vec3( -0.005f, -0.005f, -0.005f ) );
 		// translationMatrix = glm::scale( translationMatrix, glm::vec3(1.1f, 1.1f, 1.1f ) );
 		// translationMatrix = glm::translate( translationMatrix, glm::vec3( -0.05f, -0.05f, -0.05f));
 		glUniformMatrix4fv( modelLoc, 1, GL_FALSE, glm::value_ptr( translationMatrix ) );
 
 		bindTextureAtlas( theGame->chunkManager.textureAtlas );
 
+		glEnable( GL_POLYGON_OFFSET_FILL );
+		glPolygonOffset( -1.0f, -1.0f );
 		meshDraw( &damageSprite );
+		glPolygonOffset( 0.0f, 0.0f );
+		glDisable( GL_POLYGON_OFFSET_FILL );
 	}
 }
 
-void Player::DebugDraw() { ImGui::Text( "Hitting since: %f", hittingSince ); }
+void Player::DebugDraw() {
+	ImGui::Text( "Hitting since: %f", hittingSince );
+	ImGui::Checkbox( "Destroy cube instant", &destroyCubeInstant );
+}

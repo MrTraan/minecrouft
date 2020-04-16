@@ -39,8 +39,8 @@ void Camera::UpdateProjectionMatrix( float aspectRatio ) {
 void Camera::Update( const IO & io, Player & player, float dt ) {
 	ZoneScoped;
 	constexpr int yDirection = -1;
-	yaw += io.mouse.offset.x * sensitivity;
-	pitch += io.mouse.offset.y * sensitivity * yDirection;
+	yaw += io.mouse.offset.x * sensitivity * dt;
+	pitch += io.mouse.offset.y * sensitivity * yDirection * dt;
 
 	if ( pitch > 89.0f ) {
 		pitch = 89.0f;
@@ -63,6 +63,6 @@ void Camera::DebugDraw() {
 	ImGui::PushID( "Camera" );
 	ImGui::Text( "Camera position: %f, %f, %f", position.x, position.y, position.z );
 	ImGui::Text( "Yaw: %f Pitch: %f", yaw, pitch );
-	ImGui::DragFloat( "Sensitivity", &sensitivity, 0.1f, 0.0f, 5.0f );
+	ImGui::DragFloat( "Sensitivity", &sensitivity, 0.1f, 0.0f, 100.0f );
 	ImGui::PopID();
 }

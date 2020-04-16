@@ -4,6 +4,8 @@
 
 #include <string>
 #include <vector>
+#include <mutex>
+
 using ngString = std::string;
 
 namespace ng {
@@ -25,6 +27,7 @@ struct Console {
 	};
 
 	std::vector< Log > logs;
+	std::mutex mutex;
 
 	void PrintLog( const char * text, LogSeverity severity );
 	void Draw();
