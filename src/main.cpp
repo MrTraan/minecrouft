@@ -1,17 +1,18 @@
 #include <glad/glad.h>
 
+#include "glm/gtc/type_ptr.hpp"
 #include <LZ4.h>
 #include <SDL.h>
 #include <algorithm>
 #include <chrono>
 #include <glm/glm.hpp>
-#include "glm/gtc/type_ptr.hpp"
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_sdl.h>
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyOpenGL.hpp>
 
+#include "packer.h"
 #include <Camera.hpp>
 #include <Chunk.hpp>
 #include <ChunkManager.hpp>
@@ -37,7 +38,9 @@ Game * theGame;
 
 static void DrawDebugWindow();
 
-static void FixedUpdate() {}
+static void FixedUpdate() {
+	theGame->player.FixedUpdate();
+}
 
 static void Update( float dt ) {
 	theGame->camera.Update( theGame->io, theGame->player, dt );
@@ -51,12 +54,14 @@ static void Render() {
 	theGame->hud.Draw();
 }
 
-constexpr float        FIXED_TIMESTEP = 1.0f / 30.0f;
-
 int main( int ac, char ** av ) {
-	( void )ac;
-	( void )av;
 	ng::Init();
+
+	if ( ac > 1 && strcmp( "--create-archive", av[ 1 ] ) == 0 ) {
+		bool success = PackerCreateArchive( "C:\\Users\\natha\\code\\repos\\minecrouft\\resources", "archive.lz4" );
+		ng_assert( success == true );
+		return 0;
+	}
 
 	if ( SDL_Init( SDL_INIT_AUDIO | SDL_INIT_VIDEO ) < 0 ) {
 		ng::Errorf( "SDL_Init failed: %s\n", SDL_GetError() );
@@ -113,6 +118,9 @@ int main( int ac, char ** av ) {
 
 	theGame = new Game();
 	theGame->state = Game::State::MENU;
+
+	bool success = PackerReadArchive( "resources.lz4", &theGame->package );
+	ng_assert( success == true );
 
 	Window &       window = theGame->window;
 	Camera &       camera = theGame->camera;

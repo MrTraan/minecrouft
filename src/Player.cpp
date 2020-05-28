@@ -7,10 +7,11 @@
 #include <player.hpp>
 
 #include "Game.h"
+#include "packer_resource_list.h"
 #include <imgui/imgui.h>
 
 void Player::Init() {
-	damageSpriteShader.CompileFromPath( "./resources/shaders/vertex.glsl", "./resources/shaders/fragment.glsl" );
+	damageSpriteShader.CompileFromResource( SHADERS_DEFAULT_VERT, SHADERS_DEFAULT_FRAG );
 
 	PrepareTexturedUnitCube( &damageSprite, 20 );
 	// PrepareTexturedUnitCube( &damageSprite, 7 );
@@ -24,14 +25,17 @@ void Player::Update( const IO & io, float dt ) {
 	if ( io.keyboard.IsKeyDown( eKey::KEY_SPACE ) )
 		moveSpeed = 20 * dt;
 
+	glm::vec3 translation(0.0f, 0.0f, 0.0f);
 	if ( io.keyboard.IsKeyDown( eKey::KEY_W ) )
-		position += moveSpeed * front;
+		translation += moveSpeed * front;
 	if ( io.keyboard.IsKeyDown( eKey::KEY_S ) )
-		position -= moveSpeed * front;
+		translation -= moveSpeed * front;
 	if ( io.keyboard.IsKeyDown( eKey::KEY_A ) )
-		position -= glm::normalize( glm::cross( front, up ) ) * moveSpeed;
+		translation -= glm::normalize( glm::cross( front, up ) ) * moveSpeed;
 	if ( io.keyboard.IsKeyDown( eKey::KEY_D ) )
-		position += glm::normalize( glm::cross( front, up ) ) * moveSpeed;
+		translation += glm::normalize( glm::cross( front, up ) ) * moveSpeed;
+
+	position += translation;
 
 	HitInfo hitInfo;
 	if ( TrySelectingBlock( io, theGame->chunkManager, hitInfo ) ) {
@@ -130,6 +134,40 @@ void Player::Update( const IO & io, float dt ) {
 	} else {
 		isHittingCube = false;
 		hittingSince = 0.0f;
+	}
+}
+
+void Player::FixedUpdate() {
+	return;
+	auto feetPosition = position - glm::vec3(0.0f, 1.0f, 0.0f );
+	auto       chunkPosition = WorldToChunkPosition( feetPosition );
+	auto const currentChunk = theGame->chunkManager.GetChunkAt( chunkPosition );
+	auto       chunkWorldPos = ChunkToWorldPosition( currentChunk->position );
+	auto       positionInsideChunk = feetPosition - chunkWorldPos;
+	int        cx = positionInsideChunk.x;
+	int        cy = positionInsideChunk.y;
+	int        cz = positionInsideChunk.z;
+
+	if ( !BlockTypeIsCollidable( currentChunk->cubes[ cx ][ cy ][ cz ] ) ) {
+		position.y -= rb.mass * FIXED_TIMESTEP;
+	}
+	feetPosition = position - glm::vec3(0.0f, 1.0f, 0.0f );
+	positionInsideChunk = feetPosition - chunkWorldPos;
+	cx = positionInsideChunk.x;
+	cy = positionInsideChunk.y;
+	cz = positionInsideChunk.z;
+	while ( BlockTypeIsCollidable( currentChunk->cubes[ cx ][ cy ][ cz ] ) ) {
+		// push outside the cube
+		float deltaY = feetPosition.y - ( int )feetPosition.y;
+		float deltaX = feetPosition.x - ( int )feetPosition.x;
+
+		if ( deltaY < 0.5f ) {
+			feetPosition.y -= 1.0f + deltaY;
+			cy--;
+		} else {
+			feetPosition.y += 1.0f - deltaY;
+			cy++;
+		}
 	}
 }
 

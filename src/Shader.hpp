@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 
 #include "ngLib/nglib.h"
+#include "packer.h"
 
 #include <fstream>
 #include <iostream>
@@ -14,7 +15,8 @@ class Shader {
 	u32 ID = 0;
 
 	bool CompileFromPath( const char * vertexPath, const char * fragmentPath );
-	bool CompileFromCode( const char * vertexCode, const char * fragmentCode );
+	bool CompileFromCode( const char * vertexCode, int vertexSize, const char * fragmentCode, int fragmentSize );
+	bool CompileFromResource( const PackerResource & vertex, const PackerResource & frag );
 
 	void Use() { glUseProgram( this->ID ); }
 

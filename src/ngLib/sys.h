@@ -96,4 +96,6 @@ bool ListFilesInDirectory( const char *                 path,
                            std::vector< std::string > & results,
                            ListFileMode                 mode = ListFileMode::NORMAL );
 
+bool IsDirectory( const char * path );
+
 }; // namespace ng

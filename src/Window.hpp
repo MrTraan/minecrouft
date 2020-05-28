@@ -27,6 +27,7 @@ class Window {
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 6 );
 #endif
+		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 8 );
 		SDL_WindowFlags window_flags =
 		    ( SDL_WindowFlags )( SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI );
 		glWindow =
@@ -36,7 +37,7 @@ class Window {
 		}
 		glContext = SDL_GL_CreateContext( glWindow );
 		SDL_GL_MakeCurrent( glWindow, glContext );
-		SDL_GL_SetSwapInterval( 0 ); // Enable vsync
+		SDL_GL_SetSwapInterval( 1 ); // Enable vsync
 
 		// glad: load all OpenGL function pointers
 		if ( !gladLoadGL() )

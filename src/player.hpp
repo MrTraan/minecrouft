@@ -3,6 +3,7 @@
 #include "Chunk.hpp"
 #include <Mesh.hpp>
 #include <glm/glm.hpp>
+#include "rigidbody.h"
 
 struct IO;
 struct Camera;
@@ -24,11 +25,14 @@ struct Player {
 
 	void Init();
 	void Update( const IO & io, float dt );
+	void FixedUpdate();
 	bool TrySelectingBlock( const IO & io, ChunkManager & chunkManager, HitInfo & hitInfo );
 
 	void Draw( const Camera & camera );
 
-	VoxelMesh      damageSprite;
+	bool grounded = false;
+	RigidBody rb;
+	VoxelMesh damageSprite;
 	Shader    damageSpriteShader;
 	bool      isHittingCube = false;
 	float     hittingSince = 0.0f;

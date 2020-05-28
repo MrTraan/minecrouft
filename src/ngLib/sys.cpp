@@ -135,7 +135,7 @@ size_t File::Read( void * dst, size_t size ) {
 #if defined( SYS_WIN )
 	DWORD bytesRead;
 	BOOL  success = ReadFile( handler, dst, size, &bytesRead, nullptr );
-	//ng_assert( success == 0 );
+	// ng_assert( success == 0 );
 	return ( size_t )bytesRead;
 #else
 	NG_UNSUPPORTED_PLATFORM
@@ -148,7 +148,7 @@ size_t File::Write( const void * src, size_t size ) {
 #if defined( SYS_WIN )
 	DWORD bytesRead;
 	BOOL  success = WriteFile( handler, src, size, &bytesRead, nullptr );
-	ng_assert( success == 0 );
+	ng_assert( success != 0 );
 	return ( size_t )bytesRead;
 #else
 	NG_UNSUPPORTED_PLATFORM
@@ -159,7 +159,7 @@ int64 File::GetSize() {
 #if defined( SYS_WIN )
 	LARGE_INTEGER size;
 	BOOL          success = GetFileSizeEx( handler, &size );
-	ng_assert( success == 0 );
+	ng_assert( success != 0 );
 	return size.QuadPart;
 #else
 	NG_UNSUPPORTED_PLATFORM
@@ -202,6 +202,16 @@ bool ListFilesInDirectory( const char *                 path,
 	NG_UNSUPPORTED_PLATFORM
 #endif
 	return success;
+}
+
+bool IsDirectory( const char * path ) {
+#if defined( SYS_WIN )
+	DWORD attributes = GetFileAttributesA( path );
+	ng_assert( attributes != INVALID_FILE_ATTRIBUTES );
+	return ( attributes & FILE_ATTRIBUTE_DIRECTORY ) != 0;
+#else
+	NG_UNSUPPORTED_PLATFORM
+#endif
 }
 
 }; // namespace ng

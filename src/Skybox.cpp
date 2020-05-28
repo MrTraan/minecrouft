@@ -3,10 +3,12 @@
 #include <glad/glad.h>
 #include <stb_image.h>
 
+#include "Game.h"
+#include "packer_resource_list.h"
+#include "tracy/Tracy.hpp"
 #include <Shader.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "tracy/Tracy.hpp"
 
 static constexpr float skyboxVertices[] = {
     // positions
@@ -29,22 +31,19 @@ static constexpr float skyboxVertices[] = {
     1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,
 };
 
-#define BASE_PATH "./resources/skybox/"
-
 void Skybox::Init() {
-	shader.CompileFromPath( "./resources/shaders/skybox_vertex.glsl", "./resources/shaders/skybox_fragment.glsl" );
-	constexpr int          numFaces = 6;
-	constexpr const char * faces[ numFaces ] = {
-
-	    BASE_PATH "right.png",  BASE_PATH "left.png",  BASE_PATH "top.png",
-	    BASE_PATH "bottom.png", BASE_PATH "front.png", BASE_PATH "back.png",
+	shader.CompileFromResource( SHADERS_SKYBOX_VERT, SHADERS_SKYBOX_FRAG );
+	constexpr int            numFaces = 6;
+	constexpr PackerResource faces[ numFaces ] = {
+	    SKYBOX_RIGHT_PNG, SKYBOX_LEFT_PNG, SKYBOX_TOP_PNG, SKYBOX_BOTTOM_PNG, SKYBOX_FRONT_PNG, SKYBOX_BACK_PNG,
 	};
 	glGenTextures( 1, &textureID );
 	glBindTexture( GL_TEXTURE_CUBE_MAP, textureID );
 
 	int width, height, nrChannels;
 	for ( int i = 0; i < numFaces; i++ ) {
-		unsigned char * data = stbi_load( faces[ i ], &width, &height, &nrChannels, 0 );
+		stbi_uc * data = stbi_load_from_memory( theGame->package.GrabResourceData( faces[ i ] ), faces[ i ].size,
+		                                        &width, &height, &nrChannels, 0 );
 		if ( data ) {
 			glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 			              data );

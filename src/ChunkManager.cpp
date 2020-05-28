@@ -1,6 +1,7 @@
 #include "Camera.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "ngLib/nglib.h"
+#include "packer_resource_list.h"
 #include <ChunkManager.hpp>
 #include <Guizmo.hpp>
 #include <LZ4.h>
@@ -98,10 +99,9 @@ std::string GenerateMetaSaveFilePath( const char * worldName ) {
 
 void ChunkManager::Init( const char * worldName, const glm::vec3 & playerPos ) {
 	ZoneScoped;
-	shader.CompileFromPath( "./resources/shaders/voxel_vertex.glsl", "./resources/shaders/voxel_fragment.glsl" );
-	wireframeShader.CompileFromPath( "./resources/shaders/wireframe_vertex.glsl",
-	                                 "./resources/shaders/wireframe_fragment.glsl" );
-	textureAtlas = loadTextureAtlas( "./resources/blocks_pixel_perfect.png", 7, 3 );
+	shader.CompileFromResource( SHADERS_VOXEL_VERT, SHADERS_VOXEL_FRAG );
+	wireframeShader.CompileFromResource( SHADERS_WIREFRAME_VERT, SHADERS_WIREFRAME_FRAG );
+	textureAtlas = loadTextureAtlas( BLOCKS_PIXEL_PERFECT_PNG, 7, 3 );
 
 	strncpy( this->worldName, worldName, WORLD_NAME_MAX_SIZE );
 	saveFilePath = GenerateSaveFilePath( worldName );

@@ -3,14 +3,18 @@
 #include "ngLib/logs.h"
 #include <stb_image.h>
 #include <stdexcept>
+#include "Game.h"
 
-TextureAtlas loadTextureAtlas( const std::string & path, s32 lines, s32 columns ) {
+TextureAtlas loadTextureAtlas( const PackerResource & resource, s32 lines, s32 columns ) {
 	int width, height, channels;
 
-	stbi_uc * data = stbi_load( path.c_str(), &width, &height, &channels, 0 );
+	ng_assert( resource.type == PackerResource::Type::PNG );
+
+	stbi_uc * data = stbi_load_from_memory( theGame->package.GrabResourceData( resource ), resource.size, &width,
+	                                           &height, &channels, 0 );
 
 	if ( !data ) {
-		printf( "Could not load file %s\n", path.c_str() );
+		printf( "Could not load resource %s\n", resource.name );
 		throw std::runtime_error( "Failed to load texture file" );
 	}
 
@@ -61,7 +65,6 @@ TextureAtlas loadTextureAtlas( const std::string & path, s32 lines, s32 columns 
 	float aniso;
 	glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso );
 	glTexParameterf( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso );
-	ng::Printf( "Aniso level: %f\n", aniso );
 
 	delete[] singleImage;
 	stbi_image_free( data );

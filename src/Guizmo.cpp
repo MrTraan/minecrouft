@@ -4,6 +4,7 @@
 #include "glm/gtc/type_ptr.hpp"
 #include <vector>
 #include "tracy/Tracy.hpp"
+#include "packer_resource_list.h"
 
 namespace Guizmo {
 
@@ -20,7 +21,7 @@ struct LineData {
 static std::vector< LineData > lineDrawList;
 
 void Init() {
-	colorShader.CompileFromPath( "resources/shaders/colored_vertex.glsl", "resources/shaders/colored_fragment.glsl" );
+	colorShader.CompileFromResource( SHADERS_COLORED_VERT, SHADERS_COLORED_FRAG );
 
 	glGenVertexArrays( 1, &VAO );
 	glGenBuffers( 1, &VBO );

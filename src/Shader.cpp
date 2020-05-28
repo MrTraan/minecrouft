@@ -1,4 +1,5 @@
 #include "Shader.hpp"
+#include "Game.h"
 #include "ngLib/nglib.h"
 
 static std::string readFile( const char * path ) {
@@ -17,20 +18,20 @@ bool Shader::CompileFromPath( const char * vertexPath, const char * fragmentPath
 	std::string vertexCode = readFile( vertexPath );
 	std::string fragmentCode = readFile( fragmentPath );
 
-	return CompileFromCode( vertexCode.c_str(), fragmentCode.c_str() );
+	return CompileFromCode( vertexCode.c_str(), vertexCode.size(), fragmentCode.c_str(), fragmentCode.size() );
 }
 
-bool Shader::CompileFromCode( const char * vertexCode, const char * fragmentCode ) {
+bool Shader::CompileFromCode( const char * vertexCode, int vertexSize, const char * fragmentCode, int fragmentSize ) {
 	// Compile shaders
 	u32 vertex = glCreateShader( GL_VERTEX_SHADER );
-	glShaderSource( vertex, 1, &vertexCode, NULL );
+	glShaderSource( vertex, 1, &vertexCode, &vertexSize );
 	glCompileShader( vertex );
 	if ( checkCompileErrors( vertex ) != 0 ) {
 		return false;
 	}
 
 	u32 fragment = glCreateShader( GL_FRAGMENT_SHADER );
-	glShaderSource( fragment, 1, &fragmentCode, NULL );
+	glShaderSource( fragment, 1, &fragmentCode, &fragmentSize );
 	glCompileShader( fragment );
 	if ( checkCompileErrors( fragment ) != 0 ) {
 		return false;
@@ -48,6 +49,14 @@ bool Shader::CompileFromCode( const char * vertexCode, const char * fragmentCode
 	glDeleteShader( fragment );
 
 	return true;
+}
+
+bool Shader::CompileFromResource( const PackerResource & vertex, const PackerResource & frag ) {
+	ng_assert( vertex.type == PackerResource::Type::VERTEX_SHADER );
+	ng_assert( frag.type == PackerResource::Type::FRAGMENT_SHADER );
+
+	return CompileFromCode( ( char * )theGame->package.GrabResourceData( vertex ), vertex.size,
+	                        ( char * )theGame->package.GrabResourceData( frag ), frag.size );
 }
 
 int Shader::checkCompileErrors( unsigned int shader ) {

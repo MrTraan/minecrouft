@@ -1,6 +1,7 @@
 #include "Hud.hpp"
 #include <glad/glad.h>
 #include "glm/gtc/type_ptr.hpp"
+#include "packer_resource_list.h"
 
 static constexpr float reticuleLines[] = {
     0.0f, 0.2f, 0.0f,     1.0f, 0.0f, 0.0f,
@@ -10,7 +11,7 @@ static constexpr float reticuleLines[] = {
 };
 
 void Hud::Init() {
-	shader.CompileFromPath( "resources/shaders/colored_vertex.glsl", "resources/shaders/colored_fragment.glsl" );
+	shader.CompileFromResource( SHADERS_COLORED_VERT, SHADERS_COLORED_FRAG );
 	glGenVertexArrays( 1, &VAO );
 	glGenBuffers( 1, &VBO );
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).

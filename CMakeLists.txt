@@ -42,6 +42,8 @@ add_executable(minecrouft
 	"src/Hud.cpp"
 	"src/Guizmo.cpp"
 	"src/Skybox.cpp"
+	"src/packer.cpp"
+	"src/matrix.cpp"
 	
 	"src/ngLib/console.cpp"
 	"src/ngLib/logs.cpp"
@@ -60,7 +62,7 @@ add_executable(minecrouft
 	"./lib/FastNoise/FastNoise.cpp"
 
 	"./lib/tracy/TracyClient.cpp"
-)
+ )
 
 target_include_directories(minecrouft
 PRIVATE
@@ -83,6 +85,5 @@ target_link_libraries(minecrouft PRIVATE
 	lz4::lz4
 )
 
-add_custom_command(TARGET minecrouft POST_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/resources" $<TARGET_FILE_DIR:minecrouft>/resources)
+configure_file("${PROJECT_SOURCE_DIR}/resources/resources.lz4" "resources.lz4" COPYONLY)
 
