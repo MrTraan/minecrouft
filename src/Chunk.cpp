@@ -12,13 +12,13 @@
 
 constexpr glm::u32vec3 waterVerticesOffset( 0, -1, 0 );
 
-void chunkCreateGeometry( Chunk * chunk ) {
+void Chunk::CreateGeometry() {
 	ZoneScoped;
 	static thread_local eBlockType mask[ CHUNK_SIZE * CHUNK_HEIGHT ];
-	chunk->mesh->verticesCount = 0;
-	chunk->transparentMesh->verticesCount = 0;
+	mesh->verticesCount = 0;
+	transparentMesh->verticesCount = 0;
 
-	int dims[ 3 ] = {CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE};
+	int dims[ 3 ] = { CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE };
 
 	for ( int reverse = 0; reverse < 2; reverse++ ) {
 		for ( int d = 0; d < 3; d++ ) {
@@ -32,8 +32,8 @@ void chunkCreateGeometry( Chunk * chunk ) {
 			else if ( d == 2 )
 				dir = ( reverse ? eDirection::SOUTH : eDirection::NORTH );
 
-			int indices[ 3 ] = {0, 0, 0};
-			int offset[ 3 ] = {0, 0, 0};
+			int indices[ 3 ] = { 0, 0, 0 };
+			int offset[ 3 ] = { 0, 0, 0 };
 			offset[ d ] = 1;
 
 			for ( indices[ d ] = -1; indices[ d ] < dims[ d ]; ) {
@@ -42,12 +42,12 @@ void chunkCreateGeometry( Chunk * chunk ) {
 				for ( indices[ v ] = 0; indices[ v ] < dims[ v ]; indices[ v ]++ ) {
 					for ( indices[ u ] = 0; indices[ u ] < dims[ u ]; indices[ u ]++ ) {
 						eBlockType face1 =
-						    ( indices[ d ] >= 0 ? chunk->cubes[ indices[ 0 ] ][ indices[ 1 ] ][ indices[ 2 ] ]
+						    ( indices[ d ] >= 0 ? blocks->blockArray[ indices[ 0 ] ][ indices[ 1 ] ][ indices[ 2 ] ]
 						                        : eBlockType::INACTIVE );
 						eBlockType face2 =
 						    ( indices[ d ] < dims[ d ] - 1
-						          ? chunk->cubes[ indices[ 0 ] + offset[ 0 ] ][ indices[ 1 ] + offset[ 1 ] ]
-						                        [ indices[ 2 ] + offset[ 2 ] ]
+						          ? blocks->blockArray[ indices[ 0 ] + offset[ 0 ] ][ indices[ 1 ] + offset[ 1 ] ]
+						                              [ indices[ 2 ] + offset[ 2 ] ]
 						          : eBlockType::INACTIVE );
 
 						mask[ n++ ] =
@@ -79,8 +79,9 @@ void chunkCreateGeometry( Chunk * chunk ) {
 
 							indices[ u ] = i;
 							indices[ v ] = j;
-							int du[ 3 ] = {0, 0, 0};
-							int dv[ 3 ] = {0, 0, 0};
+							;
+							int du[ 3 ] = { 0, 0, 0 };
+							int dv[ 3 ] = { 0, 0, 0 };
 							du[ u ] = w;
 							dv[ v ] = h;
 							glm::u32vec3 p1( indices[ 0 ], indices[ 1 ], indices[ 2 ] );
@@ -96,15 +97,15 @@ void chunkCreateGeometry( Chunk * chunk ) {
 							if ( mask[ n ] == eBlockType::WATER ) {
 								// ONLY DRAW TOP SURFACE
 								if ( dir == eDirection::TOP ) {
-									chunkPushFace( chunk->transparentMesh, p4 + waterVerticesOffset,
-									               p1 + waterVerticesOffset, p2 + waterVerticesOffset,
-									               p3 + waterVerticesOffset, h, w, dir, mask[ n ] );
+									chunkPushFace( transparentMesh, p4 + waterVerticesOffset, p1 + waterVerticesOffset,
+									               p2 + waterVerticesOffset, p3 + waterVerticesOffset, h, w, dir,
+									               mask[ n ] );
 								}
 							} else {
 								if ( d == 0 ) {
-									chunkPushFace( chunk->mesh, p4, p1, p2, p3, h, w, dir, mask[ n ] );
+									chunkPushFace( mesh, p4, p1, p2, p3, h, w, dir, mask[ n ] );
 								} else {
-									chunkPushFace( chunk->mesh, p1, p2, p3, p4, w, h, dir, mask[ n ] );
+									chunkPushFace( mesh, p1, p2, p3, p4, w, h, dir, mask[ n ] );
 								}
 							}
 
@@ -201,6 +202,10 @@ void chunkPushFace( VoxelMesh *  mesh,
 		}
 		break;
 	}
+
+	for ( int i = 0; i < 6; i++ ) {
+		v[ vi + i ].direction = ( u8 )direction;
+	}
 }
 
 Chunk * preallocateChunk() {
@@ -219,6 +224,50 @@ Chunk * preallocateChunk() {
 	chunk->transparentMesh->verticesAllocated = 6 * 8;
 
 	return chunk;
+}
+
+void ChunkBlocks::SetupFromHeightmap( const HeightMap & hm, glm::vec3 worldPosition ) {
+	ZoneScoped;
+
+	for ( s32 x = 0; x < CHUNK_SIZE; x++ ) {
+		for ( s32 z = 0; z < CHUNK_SIZE; z++ ) {
+			// auto type = ( caveNoise.GetNoise( worldPosition.x + x, worldPosition.z + z ) + 1.f ) / 2.f;
+			for ( s32 y = 0; y < HeightMap::caveLevel; y++ ) {
+				// auto height = ( caveNoise.GetNoise( worldPosition.x + x, worldPosition.z + z, worldPosition.y + y )
+				// ); if ( height > 0.0f ) {
+				//	if ( type < 0.33f )
+				//		chunk->blockArray[ x ][ y ][ z ] = eBlockType::SAND;
+				//	else if ( type < 0.5f )
+				//		chunk->blockArray[ x ][ y ][ z ] = eBlockType::DIRT;
+				//	else
+				//		chunk->blockArray[ x ][ y ][ z ] = eBlockType::ROCK;
+				//} else
+				//	chunk->blockArray[ x ][ y ][ z ] = eBlockType::INACTIVE;
+				blockArray[ x ][ y ][ z ] = eBlockType::STONE;
+			}
+
+			int   height = ( int )( hm.GetHeightAt( worldPosition.x + x, worldPosition.z + z ) + CHUNK_HEIGHT / 2 );
+			float type = hm.GetMoistureAt( worldPosition.x + x, worldPosition.z + z );
+			for ( s32 y = HeightMap::caveLevel; y < CHUNK_HEIGHT; y++ ) {
+				if ( y <= height ) {
+					if ( height < HeightMap::rockLevel ) {
+						blockArray[ x ][ y ][ z ] =
+						    y == height && y >= HeightMap::waterLevel - 1 ? eBlockType::GRASS : eBlockType::DIRT;
+					} else if ( height < HeightMap::snowLevel ) {
+						if ( type < 0.5f )
+							blockArray[ x ][ y ][ z ] = y == height ? eBlockType::GRASS : eBlockType::DIRT;
+						else
+							blockArray[ x ][ y ][ z ] = eBlockType::SNOW;
+					} else
+						blockArray[ x ][ y ][ z ] = eBlockType::SNOW;
+				} else if ( y < HeightMap::waterLevel ) {
+					blockArray[ x ][ y ][ z ] = eBlockType::WATER;
+				} else {
+					blockArray[ x ][ y ][ z ] = eBlockType::INACTIVE;
+				}
+			}
+		}
+	}
 }
 
 void Chunk::CreateGLBuffers() {

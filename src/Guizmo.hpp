@@ -13,5 +13,5 @@ void Init();
 void NewFrame();
 void Line( glm::vec3 a, glm::vec3 b, glm::vec3 color );
 void LinesAroundCube( glm::vec3 cubePosition );
-void Draw( const Camera & camera );
+void Draw();
 }; // namespace Guizmo

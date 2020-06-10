@@ -33,8 +33,8 @@ static constexpr float skyboxVertices[] = {
 
 void Skybox::Init() {
 	shader.CompileFromResource( SHADERS_SKYBOX_VERT, SHADERS_SKYBOX_FRAG );
-	constexpr int            numFaces = 6;
-	constexpr PackerResource faces[ numFaces ] = {
+	constexpr int              numFaces = 6;
+	constexpr PackerResourceID faces[ numFaces ] = {
 	    SKYBOX_RIGHT_PNG, SKYBOX_LEFT_PNG, SKYBOX_TOP_PNG, SKYBOX_BOTTOM_PNG, SKYBOX_FRONT_PNG, SKYBOX_BACK_PNG,
 	};
 	glGenTextures( 1, &textureID );
@@ -42,8 +42,9 @@ void Skybox::Init() {
 
 	int width, height, nrChannels;
 	for ( int i = 0; i < numFaces; i++ ) {
-		stbi_uc * data = stbi_load_from_memory( theGame->package.GrabResourceData( faces[ i ] ), faces[ i ].size,
-		                                        &width, &height, &nrChannels, 0 );
+		PackerResource * res = theGame->package.GrabResource( faces[ i ] );
+		stbi_uc *        data =
+		    stbi_load_from_memory( theGame->package.data + res->offset, res->size, &width, &height, &nrChannels, 0 );
 		if ( data ) {
 			glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 			              data );
@@ -74,17 +75,10 @@ void Skybox::Init() {
 	glBindVertexArray( 0 );
 }
 
-void Skybox::Draw( const glm::mat4 & view, const glm::mat4 & projection ) {
+void Skybox::Draw() {
 	ZoneScoped;
 	glDepthMask( GL_FALSE );
 	shader.Use();
-
-	int       viewLoc = glGetUniformLocation( shader.ID, "view" );
-	glm::mat4 noTranslateView = glm::mat4( glm::mat3( view ) );
-	glUniformMatrix4fv( viewLoc, 1, GL_FALSE, glm::value_ptr( noTranslateView ) );
-
-	int projLoc = glGetUniformLocation( shader.ID, "projection" );
-	glUniformMatrix4fv( projLoc, 1, GL_FALSE, glm::value_ptr( projection ) );
 
 	glBindVertexArray( this->VAO );
 	glBindTexture( GL_TEXTURE_CUBE_MAP, textureID );

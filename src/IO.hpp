@@ -65,6 +65,7 @@ struct Mouse {
 	bool IsButtonPressed( Button button ) const;
 
 	glm::vec2 offset;
+	bool debugMouse = false;
 };
 
 struct IO {

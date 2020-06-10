@@ -1,13 +1,6 @@
-#include "ChunkManager.hpp"
-#include <Chunk.hpp>
 #include <HeightMap.hpp>
 #include <math.h>
 #include <tracy/Tracy.hpp>
-
-static constexpr s32 rockLevel = ( CHUNK_HEIGHT / 2 ) + CHUNK_SIZE * 3;
-static constexpr s32 snowLevel = rockLevel + CHUNK_SIZE * 2;
-static constexpr s32 caveLevel = ( CHUNK_HEIGHT / 2 ) - CHUNK_SIZE;
-static constexpr s32 waterLevel = ( CHUNK_HEIGHT / 2 ) + CHUNK_SIZE;
 
 void HeightMap::Init( int seed ) {
 	elevationFreq = 0.003f;
@@ -47,50 +40,4 @@ float HeightMap::GetHeightAt( s32 x, s32 y ) const {
 	               ( heightMapNoise.GetNoise( x * 4, y * 4 ) + 1 ) * 0.25f * CHUNK_SIZE;
 
 	return pow( height, exponant ) + offset;
-}
-
-void HeightMap::SetupChunk( Chunk * chunk ) const {
-	ZoneScoped;
-
-	auto chunkPos = ChunkToWorldPosition( chunk->position );
-
-	for ( s32 x = 0; x < CHUNK_SIZE; x++ ) {
-		for ( s32 z = 0; z < CHUNK_SIZE; z++ ) {
-			// auto type = ( caveNoise.GetNoise( chunkPos.x + x, chunkPos.z + z ) + 1.f ) / 2.f;
-			for ( s32 y = 0; y < caveLevel; y++ ) {
-				// auto height = ( caveNoise.GetNoise( chunkPos.x + x, chunkPos.z + z, chunkPos.y + y ) );
-				// if ( height > 0.0f ) {
-				//	if ( type < 0.33f )
-				//		chunk->cubes[ x ][ y ][ z ] = eBlockType::SAND;
-				//	else if ( type < 0.5f )
-				//		chunk->cubes[ x ][ y ][ z ] = eBlockType::DIRT;
-				//	else
-				//		chunk->cubes[ x ][ y ][ z ] = eBlockType::ROCK;
-				//} else
-				//	chunk->cubes[ x ][ y ][ z ] = eBlockType::INACTIVE;
-				chunk->cubes[ x ][ y ][ z ] = eBlockType::STONE;
-			}
-
-			int   height = ( int )( GetHeightAt( chunkPos.x + x, chunkPos.z + z ) + CHUNK_HEIGHT / 2 );
-			float type = GetMoistureAt( chunkPos.x + x, chunkPos.z + z );
-			for ( s32 y = caveLevel; y < CHUNK_HEIGHT; y++ ) {
-				if ( y <= height ) {
-					if ( height < rockLevel ) {
-						chunk->cubes[ x ][ y ][ z ] =
-						    y == height && y >= waterLevel - 1 ? eBlockType::GRASS : eBlockType::DIRT;
-					} else if ( height < snowLevel ) {
-						if ( type < 0.5f )
-							chunk->cubes[ x ][ y ][ z ] = y == height ? eBlockType::GRASS : eBlockType::DIRT;
-						else
-							chunk->cubes[ x ][ y ][ z ] = eBlockType::SNOW;
-					} else
-						chunk->cubes[ x ][ y ][ z ] = eBlockType::SNOW;
-				} else if ( y < waterLevel ) {
-					chunk->cubes[ x ][ y ][ z ] = eBlockType::WATER;
-				} else {
-					chunk->cubes[ x ][ y ][ z ] = eBlockType::INACTIVE;
-				}
-			}
-		}
-	}
 }

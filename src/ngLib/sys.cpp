@@ -52,7 +52,7 @@ int64 SysGetTimeInMicro() {
 
 float SysGetTimeInMs() { return ( float )SysGetTimeInMicro() / 1000.0f; }
 
-FileOffset File::TellOffset() {
+FileOffset File::TellOffset() const {
 #if defined( SYS_WIN )
 	LARGE_INTEGER offset;
 	LARGE_INTEGER liOffset;
@@ -92,7 +92,7 @@ bool File::SeekOffset( FileOffset offset, SeekWhence whence ) {
 bool File::Open( const char * path, int mode ) {
 	this->mode = mode;
 	this->path = path;
-	char fopenStr[ 4 ] = {'b', 0, 0, 0};
+	char fopenStr[ 4 ] = { 'b', 0, 0, 0 };
 
 #if defined( SYS_WIN )
 	DWORD dwDesiredAccess = 0;
@@ -155,12 +155,22 @@ size_t File::Write( const void * src, size_t size ) {
 #endif
 }
 
-int64 File::GetSize() {
+int64 File::GetSize() const {
 #if defined( SYS_WIN )
 	LARGE_INTEGER size;
 	BOOL          success = GetFileSizeEx( handler, &size );
 	ng_assert( success != 0 );
 	return size.QuadPart;
+#else
+	NG_UNSUPPORTED_PLATFORM
+#endif
+}
+
+void File::Truncate() {
+#if defined( SYS_WIN )
+	SeekOffset( 0, SeekWhence::START );
+	BOOL success = SetEndOfFile( handler );
+	ng_assert( success != 0 );
 #else
 	NG_UNSUPPORTED_PLATFORM
 #endif
@@ -172,7 +182,7 @@ bool ListFilesInDirectory( const char *                 path,
 	bool success = true;
 #if defined( SYS_WIN )
 	for ( const auto & entry : std::filesystem::directory_iterator( path ) ) {
-		if ( entry.is_directory() ) {
+		if ( entry.is_directory() && mode == ListFileMode::RECURSIVE ) {
 			success &= ListFilesInDirectory( entry.path().string().c_str(), results, mode );
 		} else {
 			results.push_back( entry.path().string() );
@@ -204,11 +214,30 @@ bool ListFilesInDirectory( const char *                 path,
 	return success;
 }
 
+bool FileExists( const char * path ) {
+#if defined( SYS_WIN )
+	DWORD attributes = GetFileAttributesA( path );
+	return attributes != INVALID_FILE_ATTRIBUTES;
+#else
+	NG_UNSUPPORTED_PLATFORM
+#endif
+}
+
 bool IsDirectory( const char * path ) {
 #if defined( SYS_WIN )
 	DWORD attributes = GetFileAttributesA( path );
 	ng_assert( attributes != INVALID_FILE_ATTRIBUTES );
 	return ( attributes & FILE_ATTRIBUTE_DIRECTORY ) != 0;
+#else
+	NG_UNSUPPORTED_PLATFORM
+#endif
+}
+
+bool CreateDirectory( const char * path ) {
+#if defined( SYS_WIN )
+	BOOL success = ::CreateDirectoryA( path, nullptr );
+	ng_assert( success != 0 );
+	return success != 0;
 #else
 	NG_UNSUPPORTED_PLATFORM
 #endif

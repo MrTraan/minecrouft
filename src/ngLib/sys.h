@@ -56,8 +56,9 @@ struct File {
 
 	size_t Read( void * dst, size_t size );
 	size_t Write( const void * src, size_t size );
+	void   Truncate();
 
-	int64 GetSize();
+	int64 GetSize() const;
 
 	int         mode = 0;
 	std::string path;
@@ -68,10 +69,10 @@ struct File {
 	static constexpr int MODE_CREATE = 1 << 3;
 	static constexpr int MODE_TRUNCATE = 1 << 4;
 
-	inline bool ModeCanRead() { return ( mode & MODE_READ ) != 0; }
-	inline bool ModeCanWrite() { return ( mode & MODE_WRITE ) != 0; }
-	inline bool ModeCanCreate() { return ( mode & MODE_CREATE ) != 0; }
-	inline bool ModeCanTruncate() { return ( mode & MODE_TRUNCATE ) != 0; }
+	inline bool ModeCanRead() const { return ( mode & MODE_READ ) != 0; }
+	inline bool ModeCanWrite() const { return ( mode & MODE_WRITE ) != 0; }
+	inline bool ModeCanCreate() const { return ( mode & MODE_CREATE ) != 0; }
+	inline bool ModeCanTruncate() const { return ( mode & MODE_TRUNCATE ) != 0; }
 
 	enum class SeekWhence {
 		START,
@@ -79,7 +80,7 @@ struct File {
 		END,
 	};
 
-	FileOffset TellOffset();
+	FileOffset TellOffset() const;
 	bool       SeekOffset( FileOffset offset, SeekWhence whence );
 };
 
@@ -96,6 +97,8 @@ bool ListFilesInDirectory( const char *                 path,
                            std::vector< std::string > & results,
                            ListFileMode                 mode = ListFileMode::NORMAL );
 
+bool FileExists( const char * path );
+bool CreateDirectory( const char * path );
 bool IsDirectory( const char * path );
 
 }; // namespace ng

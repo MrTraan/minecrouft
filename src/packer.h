@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+using PackerResourceID = u64;
+
 struct PackerResource {
 	enum class Type {
 		PNG,
@@ -13,11 +15,11 @@ struct PackerResource {
 		INVALID,
 	};
 
-	u64  id;
-	char name[ 64 ];
-	u64  offset;
-	u64  size;
-	Type type;
+	PackerResourceID id;
+	char             name[ 64 ];
+	u64              offset;
+	u64              size;
+	Type             type;
 };
 
 struct PackerPackage {
@@ -25,8 +27,11 @@ struct PackerPackage {
 	u64                           size;
 	std::vector< PackerResource > resourceList;
 
-	u8 * GrabResourceData( const PackerResource & resource );
+	PackerResource * GrabResource( PackerResourceID resourceID );
+	u8 *             GrabResourceData( PackerResourceID resourceID );
+	u8 *             GrabResourceData( const PackerResource & resource );
 };
 
 bool PackerReadArchive( const char * path, PackerPackage * package );
 bool PackerCreateArchive( const char * resourcesPath, const char * outPath );
+bool PackerCreateRuntimeArchive( const char * resourcesPath, PackerPackage * package );

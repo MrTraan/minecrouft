@@ -75,6 +75,64 @@ PackerResource::Type GuessTypeFromExtension( const std::string & ext ) {
 	return PackerResource::Type::INVALID;
 }
 
+bool PackerCreateRuntimeArchive( const char * resourcesPath, PackerPackage * package ) {
+	std::vector< std::string > filesInFolder;
+	bool success = ng::ListFilesInDirectory( resourcesPath, filesInFolder, ng::ListFileMode::RECURSIVE );
+	ng_assert( success == true );
+	if ( success == false ) {
+		return false;
+	}
+
+	u64  nextID = 0;
+	u8 * archiveData = nullptr;
+	u64  archiveDataSize = 0;
+	for ( const std::string & filePath : filesInFolder ) {
+		std::filesystem::path fsPath( filePath );
+		PackerResource::Type  type = GuessTypeFromExtension( fsPath.extension().string() );
+		ng_assert( filePath.starts_with( resourcesPath ) );
+		std::string fileName = filePath.substr( strlen( resourcesPath ) );
+		while ( fileName.at( 0 ) == '\\' || fileName.at( 0 ) == '/' ) {
+			fileName.erase( 0, 1 );
+		}
+		std::replace( fileName.begin(), fileName.end(), '\\', '/' );
+		if ( type == PackerResource::Type::INVALID ) {
+			ng::Printf( "Skipping unkown type resource %s\n", filePath.c_str() );
+			continue;
+		}
+
+		ng::File file;
+		success = file.Open( filePath.c_str(), ng::File::MODE_READ );
+		ng_assert( success == true );
+
+		u64 fileSize = file.GetSize();
+		archiveData = ( u8 * )realloc( archiveData, archiveDataSize + fileSize + sizeof( PackerResource ) );
+		ng_assert( archiveData != nullptr );
+
+		PackerResource * header = ( PackerResource * )( archiveData + archiveDataSize );
+		header->type = type;
+		strncpy( header->name, fileName.c_str(), 63 );
+		header->id = nextID++;
+		header->name[ 63 ] = 0;
+		header->size = fileSize;
+		header->offset = archiveDataSize + sizeof( PackerResource );
+
+		file.Read( archiveData + archiveDataSize + sizeof( PackerResource ), fileSize );
+		archiveDataSize += fileSize + sizeof( PackerResource );
+	}
+	package->data = archiveData;
+	package->size = archiveDataSize;
+	package->resourceList.clear();
+
+	u64 offset = 0;
+	while ( offset < package->size ) {
+		PackerResource * res = ( PackerResource * )( package->data + offset );
+		offset += sizeof( PackerResource );
+		offset += res->size;
+		package->resourceList.push_back( *res );
+	}
+	return true;
+}
+
 bool PackerCreateArchive( const char * resourcesPath, const char * outPath ) {
 	u8 * archiveData = nullptr;
 	u64  archiveDataSize = 0;
@@ -118,24 +176,16 @@ bool PackerCreateArchive( const char * resourcesPath, const char * outPath ) {
 		header->name[ 63 ] = 0;
 		header->size = fileSize;
 		header->offset = archiveDataSize + sizeof( PackerResource );
-		
-		headerFileSource += "constexpr PackerResource ";
+
+		headerFileSource += "constexpr PackerResourceID ";
 		std::string varName = header->name;
 		std::replace( varName.begin(), varName.end(), '/', '_' );
 		std::replace( varName.begin(), varName.end(), '.', '_' );
 		std::transform( varName.begin(), varName.end(), varName.begin(), ::toupper );
 		headerFileSource += varName;
-		headerFileSource += " = {\n\t";
+		headerFileSource += " = ";
 		headerFileSource += std::to_string( header->id );
-		headerFileSource += "u,\n\t\"";
-		headerFileSource += header->name;
-		headerFileSource += "\",\n\t";
-		headerFileSource += std::to_string( header->offset );
-		headerFileSource += "u,\n\t";
-		headerFileSource += std::to_string( header->size );
-		headerFileSource += "u,\n\t";
-		headerFileSource += ResourceTypeToString( header->type );
-		headerFileSource += ",\n};\n\n";
+		headerFileSource += "u;\n";
 
 		file.Read( archiveData + archiveDataSize + sizeof( PackerResource ), fileSize );
 		archiveDataSize += fileSize + sizeof( PackerResource );
@@ -146,7 +196,7 @@ bool PackerCreateArchive( const char * resourcesPath, const char * outPath ) {
 	                           ng::File::MODE_TRUNCATE | ng::File::MODE_CREATE | ng::File::MODE_WRITE );
 	ng_assert( success == true );
 	headerFile.Write( headerFileSource.c_str(), headerFileSource.size() );
-	ng::Printf("Generate header file at %s\n", headerFile.path.c_str() );
+	ng::Printf( "Generate header file at %s\n", headerFile.path.c_str() );
 	headerFile.Close();
 
 	int  maxCompressedSize = LZ4_compressBound( archiveDataSize );
@@ -173,6 +223,26 @@ bool PackerCreateArchive( const char * resourcesPath, const char * outPath ) {
 	free( archiveData );
 	free( compressedData );
 	return true;
+}
+
+PackerResource * PackerPackage::GrabResource( PackerResourceID resourceID ) {
+	for ( auto & r : resourceList ) {
+		if ( r.id == resourceID ) {
+			return &r;
+		}
+	}
+	return nullptr;
+}
+
+u8 * PackerPackage::GrabResourceData( PackerResourceID resourceID ) {
+	for ( auto & r : resourceList ) {
+		if ( r.id == resourceID ) {
+			ng_assert( r.offset + r.size <= size );
+			return data + r.offset;
+		}
+	}
+	ng_assert( false );
+	return nullptr;
 }
 
 u8 * PackerPackage::GrabResourceData( const PackerResource & resource ) {

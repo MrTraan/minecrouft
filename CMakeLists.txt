@@ -6,6 +6,8 @@ project (minecrouft)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_definitions(-DFS_BASE_PATH="${CMAKE_SOURCE_DIR}/resources/")
+add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd26812")
 
 set (CMAKE_CXX_STANDARD 20)

@@ -1,20 +1,20 @@
 #include <TextureAtlas.hpp>
 #define STB_IMAGE_IMPLEMENTATION
+#include "Game.h"
 #include "ngLib/logs.h"
 #include <stb_image.h>
 #include <stdexcept>
-#include "Game.h"
 
-TextureAtlas loadTextureAtlas( const PackerResource & resource, s32 lines, s32 columns ) {
+TextureAtlas loadTextureAtlas( const PackerResourceID & resourceID, s32 lines, s32 columns ) {
 	int width, height, channels;
 
-	ng_assert( resource.type == PackerResource::Type::PNG );
-
-	stbi_uc * data = stbi_load_from_memory( theGame->package.GrabResourceData( resource ), resource.size, &width,
-	                                           &height, &channels, 0 );
+	PackerResource * resource = theGame->package.GrabResource( resourceID );
+	ng_assert( resource->type == PackerResource::Type::PNG );
+	stbi_uc * data = stbi_load_from_memory( theGame->package.GrabResourceData( *resource ), resource->size, &width,
+	                                        &height, &channels, 0 );
 
 	if ( !data ) {
-		printf( "Could not load resource %s\n", resource.name );
+		printf( "Could not load resource %s\n", resource->name );
 		throw std::runtime_error( "Failed to load texture file" );
 	}
 

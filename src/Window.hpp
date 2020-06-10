@@ -3,10 +3,11 @@
 #include <SDL2/SDL.h>
 #include <glad/glad.h>
 #include <stdexcept>
+#include "ngLib/logs.h"
 
 constexpr char WINDOW_TITLE[] = "Minecrouft";
-constexpr int  WINDOW_WIDTH = 1080;
-constexpr int  WINDOW_HEIGHT = 720;
+constexpr int  WINDOW_WIDTH = 1920;
+constexpr int  WINDOW_HEIGHT = 1080;
 
 class Window {
   public:
@@ -20,14 +21,14 @@ class Window {
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG ); // Always required on Mac
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 6 );
 #else
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, 0 );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 6 );
 #endif
-		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 8 );
+		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 4 );
 		SDL_WindowFlags window_flags =
 		    ( SDL_WindowFlags )( SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI );
 		glWindow =
@@ -38,6 +39,11 @@ class Window {
 		glContext = SDL_GL_CreateContext( glWindow );
 		SDL_GL_MakeCurrent( glWindow, glContext );
 		SDL_GL_SetSwapInterval( 1 ); // Enable vsync
+
+		int major, minor;
+		SDL_GL_GetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, &major );
+		SDL_GL_GetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, &minor );
+		ng::Printf("OpenGL version: %d.%d\n", major, minor );
 
 		// glad: load all OpenGL function pointers
 		if ( !gladLoadGL() )

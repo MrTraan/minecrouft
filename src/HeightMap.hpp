@@ -2,46 +2,45 @@
 
 #include <FastNoise/FastNoise.h>
 
-#include <stdio.h>
+#include <constants.hpp>
 #include <cstdlib>
 #include <ctime>
-#include <constants.hpp>
-
-// Forward declaration
-struct Chunk;
+#include <stdio.h>
 
 struct HeightMap {
+	static constexpr s32 rockLevel = ( CHUNK_HEIGHT / 2 ) + CHUNK_SIZE * 3;
+	static constexpr s32 snowLevel = rockLevel + CHUNK_SIZE * 2;
+	static constexpr s32 caveLevel = ( CHUNK_HEIGHT / 2 ) - CHUNK_SIZE;
+	static constexpr s32 waterLevel = ( CHUNK_HEIGHT / 2 ) + CHUNK_SIZE;
+
 	void Init( int seed );
 
-	void SetupChunk(Chunk* chunk) const;
-
 	FastNoise heightMapNoise;
-	float surfaceFreq;
-	float GetHeightAt(s32 x, s32 y) const;
+	float     surfaceFreq;
+	float     GetHeightAt( s32 x, s32 y ) const;
 
 	FastNoise elevationNoise;
-	float elevationFreq;
-	float elevationMultiplier;
+	float     elevationFreq;
+	float     elevationMultiplier;
 
 	FastNoise moistureNoise;
-	float moistureFreq;
+	float     moistureFreq;
 
 	FastNoise offsetNoise;
-	float offsetFreq;
+	float     offsetFreq;
 
 	FastNoise caveNoise;
-	float caveFreq;
+	float     caveFreq;
 
-	inline float GetElevationAt(s32 x, s32 y) const {
-		return (elevationNoise.GetNoise((float)x, (float)y) + 1.0f) / 2.0f * elevationMultiplier;
+	inline float GetElevationAt( s32 x, s32 y ) const {
+		return ( elevationNoise.GetNoise( ( float )x, ( float )y ) + 1.0f ) / 2.0f * elevationMultiplier;
 	}
 
-	inline float GetOffsetAt(s32 x, s32 y) const {
-		return (offsetNoise.GetNoise((float)x, (float)y) + 1.0f) / 2.0f * CHUNK_SIZE;
+	inline float GetOffsetAt( s32 x, s32 y ) const {
+		return ( offsetNoise.GetNoise( ( float )x, ( float )y ) + 1.0f ) / 2.0f * CHUNK_SIZE;
 	}
 
-	inline float GetMoistureAt(s32 x, s32 y) const {
-		return (moistureNoise.GetNoise((float)x, (float)y) + 1.0f) / 2.0f;
+	inline float GetMoistureAt( s32 x, s32 y ) const {
+		return ( moistureNoise.GetNoise( ( float )x, ( float )y ) + 1.0f ) / 2.0f;
 	}
-
 };

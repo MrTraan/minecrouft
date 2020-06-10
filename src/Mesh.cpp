@@ -13,7 +13,8 @@ void meshCreateGLBuffers( VoxelMesh * mesh ) {
 
 	glBindVertexArray( mesh->VAO );
 	glBindBuffer( GL_ARRAY_BUFFER, mesh->VBO );
-	glBufferData( GL_ARRAY_BUFFER, mesh->verticesCount * sizeof( VoxelVertex ), &( mesh->Vertices[ 0 ] ), GL_STATIC_DRAW );
+	glBufferData( GL_ARRAY_BUFFER, mesh->verticesCount * sizeof( VoxelVertex ), &( mesh->Vertices[ 0 ] ),
+	              GL_STATIC_DRAW );
 
 	glEnableVertexAttribArray( 0 );
 	glVertexAttribIPointer( 0, 1, GL_UNSIGNED_BYTE, sizeof( VoxelVertex ), ( void * )offsetof( VoxelVertex, x ) );
@@ -23,17 +24,22 @@ void meshCreateGLBuffers( VoxelMesh * mesh ) {
 
 	glEnableVertexAttribArray( 2 );
 	glVertexAttribIPointer( 2, 1, GL_UNSIGNED_SHORT, sizeof( VoxelVertex ), ( void * )offsetof( VoxelVertex, y ) );
-	
+
 	// texture index
 	glEnableVertexAttribArray( 3 );
-	glVertexAttribIPointer( 3, 1, GL_UNSIGNED_BYTE, sizeof( VoxelVertex ), ( void * )offsetof( VoxelVertex, texIndex ) );
+	glVertexAttribIPointer( 3, 1, GL_UNSIGNED_BYTE, sizeof( VoxelVertex ),
+	                        ( void * )offsetof( VoxelVertex, texIndex ) );
 
 	// texture coords
 	glEnableVertexAttribArray( 4 );
 	glVertexAttribIPointer( 4, 1, GL_UNSIGNED_BYTE, sizeof( VoxelVertex ), ( void * )offsetof( VoxelVertex, texX ) );
-	
+
 	glEnableVertexAttribArray( 5 );
 	glVertexAttribIPointer( 5, 1, GL_UNSIGNED_SHORT, sizeof( VoxelVertex ), ( void * )offsetof( VoxelVertex, texY ) );
+
+	glEnableVertexAttribArray( 6 );
+	glVertexAttribIPointer( 6, 1, GL_UNSIGNED_BYTE, sizeof( VoxelVertex ),
+	                        ( void * )offsetof( VoxelVertex, direction ) );
 
 	glBindVertexArray( 0 );
 }
@@ -41,7 +47,8 @@ void meshCreateGLBuffers( VoxelMesh * mesh ) {
 void meshUpdateBuffer( VoxelMesh * mesh ) {
 	glBindVertexArray( mesh->VAO );
 	glBindBuffer( GL_ARRAY_BUFFER, mesh->VBO );
-	glBufferData( GL_ARRAY_BUFFER, mesh->verticesCount * sizeof( VoxelVertex ), &( mesh->Vertices[ 0 ] ), GL_STATIC_DRAW );
+	glBufferData( GL_ARRAY_BUFFER, mesh->verticesCount * sizeof( VoxelVertex ), &( mesh->Vertices[ 0 ] ),
+	              GL_STATIC_DRAW );
 	glBindVertexArray( 0 );
 }
 
@@ -53,7 +60,6 @@ void meshDeleteBuffers( VoxelMesh * mesh ) {
 void meshDraw( VoxelMesh * mesh ) {
 	TracyGpuZone( "meshDraw" );
 	glBindVertexArray( mesh->VAO );
-	// glDrawElements( GL_TRIANGLES, mesh->IndicesCount, GL_UNSIGNED_INT, 0 );
 	glDrawArrays( GL_TRIANGLES, 0, mesh->verticesCount );
 	glBindVertexArray( 0 );
 }
@@ -61,7 +67,6 @@ void meshDraw( VoxelMesh * mesh ) {
 void meshDrawWireframe( VoxelMesh * mesh ) {
 	TracyGpuZone( "meshDrawWireframe" );
 	glBindVertexArray( mesh->VAO );
-	// glDrawElements( GL_LINES, mesh->IndicesCount, GL_UNSIGNED_INT, 0 );
 	glDrawArrays( GL_LINES, 0, mesh->verticesCount );
 	glBindVertexArray( 0 );
 }

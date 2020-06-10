@@ -6,7 +6,7 @@
 struct Skybox {
 	void Init();
 
-	void Draw( const glm::mat4 & view, const glm::mat4 & projection );
+	void Draw();
 
 	Shader       shader;
 	unsigned int textureID;

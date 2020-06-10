@@ -1,7 +1,8 @@
 #pragma once
 
-#include <glm/glm.hpp>
 #include "Frustrum.hpp"
+#include "ngLib/types.h"
+#include <glm/glm.hpp>
 
 constexpr float CAM_DEFAULT_SENSITIVITY = 25.0f;
 constexpr float CAM_DEFAULT_ZOOM = 45.0f;
@@ -19,11 +20,23 @@ struct Camera {
 	glm::mat4 projMatrix;
 	glm::mat4 viewMatrix;
 
+	glm::vec3 lightPosition = { 10, 20, 10 };
+	glm::vec3 lightDirection;
+	glm::mat4 lightViewMatrix;
+	glm::mat4 lightProjectionMatrix;
+
+	u32 uboMatrices;
+
 	// Euler angles
 	float yaw = 45.0f;
 	float pitch = 0.0f;
-	float viewDistance = 300.0f;
-	float fov = glm::radians( 80.0f );
+	float zNear = 0.1f;
+	float zFar = 300.0f;
+	float shadowZNear = 0.1f;
+	float shadowZFar = 100.0f;
+	float shadowOffset = 0.0f;
+	float fov = glm::radians( 90.0f );
+	float aspectRatio = 0.0f;
 
 	// Camera options
 	float sensitivity = CAM_DEFAULT_SENSITIVITY;

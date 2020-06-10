@@ -51,12 +51,14 @@ bool Shader::CompileFromCode( const char * vertexCode, int vertexSize, const cha
 	return true;
 }
 
-bool Shader::CompileFromResource( const PackerResource & vertex, const PackerResource & frag ) {
-	ng_assert( vertex.type == PackerResource::Type::VERTEX_SHADER );
-	ng_assert( frag.type == PackerResource::Type::FRAGMENT_SHADER );
+bool Shader::CompileFromResource( const PackerResourceID & vertexID, const PackerResourceID & fragID ) {
+	auto vertex = theGame->package.GrabResource( vertexID );
+	auto frag = theGame->package.GrabResource( fragID );
+	ng_assert( vertex->type == PackerResource::Type::VERTEX_SHADER );
+	ng_assert( frag->type == PackerResource::Type::FRAGMENT_SHADER );
 
-	return CompileFromCode( ( char * )theGame->package.GrabResourceData( vertex ), vertex.size,
-	                        ( char * )theGame->package.GrabResourceData( frag ), frag.size );
+	return CompileFromCode( ( char * )theGame->package.GrabResourceData( *vertex ), vertex->size,
+	                        ( char * )theGame->package.GrabResourceData( *frag ), frag->size );
 }
 
 int Shader::checkCompileErrors( unsigned int shader ) {

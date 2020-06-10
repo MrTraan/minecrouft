@@ -7,5 +7,5 @@
 
 typedef GLuint TextureAtlas;
 
-TextureAtlas loadTextureAtlas( const PackerResource & resource, s32 lines, s32 columns );
+TextureAtlas loadTextureAtlas( const PackerResourceID & resource, s32 lines, s32 columns );
 void         bindTextureAtlas( TextureAtlas ta );

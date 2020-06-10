@@ -25,7 +25,7 @@ void Player::Update( const IO & io, float dt ) {
 	if ( io.keyboard.IsKeyDown( eKey::KEY_SPACE ) )
 		moveSpeed = 20 * dt;
 
-	glm::vec3 translation(0.0f, 0.0f, 0.0f);
+	glm::vec3 translation( 0.0f, 0.0f, 0.0f );
 	if ( io.keyboard.IsKeyDown( eKey::KEY_W ) )
 		translation += moveSpeed * front;
 	if ( io.keyboard.IsKeyDown( eKey::KEY_S ) )
@@ -54,11 +54,11 @@ void Player::Update( const IO & io, float dt ) {
 				hitCubeWorldCoord = hitInfo.cubeWorldCoord;
 			}
 			hittingSince += dt;
-			eBlockType blockType = hitInfo.hitChunk->cubes[ cx ][ cy ][ cz ];
+			eBlockType blockType = hitInfo.hitChunk->GetBlock( cx, cy, cz );
 			if ( hittingSince >= BlockGetResistance( blockType ) ||
 			     ( destroyCubeInstant && io.mouse.IsButtonPressed( Mouse::Button::LEFT ) ) ) {
-				hitInfo.hitChunk->cubes[ cx ][ cy ][ cz ] = eBlockType::INACTIVE;
-				chunkCreateGeometry( hitInfo.hitChunk );
+				hitInfo.hitChunk->SetBlock( cx, cy, cz, eBlockType::INACTIVE );
+				hitInfo.hitChunk->CreateGeometry();
 				hitInfo.hitChunk->UpdateGLBuffers();
 			} else {
 				// Update damage texture
@@ -126,8 +126,8 @@ void Player::Update( const IO & io, float dt ) {
 				offsetZ = 0;
 			}
 
-			chunkToUpdate->cubes[ cx + offsetX ][ cy + offsetY ][ cz + offsetZ ] = eBlockType::STONE;
-			chunkCreateGeometry( chunkToUpdate );
+			chunkToUpdate->SetBlock( cx + offsetX, cy + offsetY, cz + offsetZ, eBlockType::STONE );
+			chunkToUpdate->CreateGeometry();
 			chunkToUpdate->UpdateGLBuffers();
 		}
 
@@ -139,36 +139,36 @@ void Player::Update( const IO & io, float dt ) {
 
 void Player::FixedUpdate() {
 	return;
-	auto feetPosition = position - glm::vec3(0.0f, 1.0f, 0.0f );
-	auto       chunkPosition = WorldToChunkPosition( feetPosition );
-	auto const currentChunk = theGame->chunkManager.GetChunkAt( chunkPosition );
-	auto       chunkWorldPos = ChunkToWorldPosition( currentChunk->position );
-	auto       positionInsideChunk = feetPosition - chunkWorldPos;
-	int        cx = positionInsideChunk.x;
-	int        cy = positionInsideChunk.y;
-	int        cz = positionInsideChunk.z;
+	// auto       feetPosition = position - glm::vec3( 0.0f, 1.0f, 0.0f );
+	// auto       chunkPosition = WorldToChunkPosition( feetPosition );
+	// auto const currentChunk = theGame->chunkManager.GetChunkAt( chunkPosition );
+	// auto       chunkWorldPos = ChunkToWorldPosition( currentChunk->position );
+	// auto       positionInsideChunk = feetPosition - chunkWorldPos;
+	// int        cx = positionInsideChunk.x;
+	// int        cy = positionInsideChunk.y;
+	// int        cz = positionInsideChunk.z;
 
-	if ( !BlockTypeIsCollidable( currentChunk->cubes[ cx ][ cy ][ cz ] ) ) {
-		position.y -= rb.mass * FIXED_TIMESTEP;
-	}
-	feetPosition = position - glm::vec3(0.0f, 1.0f, 0.0f );
-	positionInsideChunk = feetPosition - chunkWorldPos;
-	cx = positionInsideChunk.x;
-	cy = positionInsideChunk.y;
-	cz = positionInsideChunk.z;
-	while ( BlockTypeIsCollidable( currentChunk->cubes[ cx ][ cy ][ cz ] ) ) {
-		// push outside the cube
-		float deltaY = feetPosition.y - ( int )feetPosition.y;
-		float deltaX = feetPosition.x - ( int )feetPosition.x;
+	// if ( !BlockTypeIsCollidable( currentChunk->cubes[ cx ][ cy ][ cz ] ) ) {
+	//	position.y -= rb.mass * FIXED_TIMESTEP;
+	//}
+	// feetPosition = position - glm::vec3( 0.0f, 1.0f, 0.0f );
+	// positionInsideChunk = feetPosition - chunkWorldPos;
+	// cx = positionInsideChunk.x;
+	// cy = positionInsideChunk.y;
+	// cz = positionInsideChunk.z;
+	// while ( BlockTypeIsCollidable( currentChunk->cubes[ cx ][ cy ][ cz ] ) ) {
+	//	// push outside the cube
+	//	float deltaY = feetPosition.y - ( int )feetPosition.y;
+	//	float deltaX = feetPosition.x - ( int )feetPosition.x;
 
-		if ( deltaY < 0.5f ) {
-			feetPosition.y -= 1.0f + deltaY;
-			cy--;
-		} else {
-			feetPosition.y += 1.0f - deltaY;
-			cy++;
-		}
-	}
+	//	if ( deltaY < 0.5f ) {
+	//		feetPosition.y -= 1.0f + deltaY;
+	//		cy--;
+	//	} else {
+	//		feetPosition.y += 1.0f - deltaY;
+	//		cy++;
+	//	}
+	//}
 }
 
 static int   sign( float x ) { return ( x > 0 ) ? 1 : ( ( x < 0 ) ? -1 : 0 ); }
@@ -229,7 +229,7 @@ bool Player::TrySelectingBlock( const IO & io, ChunkManager & chunkManager, HitI
 		int cy = y - chunkPos.y;
 		int cz = z - chunkPos.z;
 
-		if ( BlockTypeIsCollidable( chunk->cubes[ cx ][ cy ][ cz ] ) ) {
+		if ( BlockTypeIsCollidable( chunk->GetBlock( cx, cy, cz ) ) ) {
 			hitInfo.cubeWorldCoord = glm::vec3( x, y, z );
 			hitInfo.hitChunk = chunk;
 			hitInfo.hitDirection = direction;
@@ -240,13 +240,9 @@ bool Player::TrySelectingBlock( const IO & io, ChunkManager & chunkManager, HitI
 	return false;
 }
 
-void Player::Draw( const Camera & camera ) {
+void Player::Draw() {
 	if ( isHittingCube ) {
 		damageSpriteShader.Use();
-		int viewLoc = glGetUniformLocation( damageSpriteShader.ID, "view" );
-		glUniformMatrix4fv( viewLoc, 1, GL_FALSE, glm::value_ptr( camera.viewMatrix ) );
-		int projLoc = glGetUniformLocation( damageSpriteShader.ID, "projection" );
-		glUniformMatrix4fv( projLoc, 1, GL_FALSE, glm::value_ptr( camera.projMatrix ) );
 		int  modelLoc = glGetUniformLocation( damageSpriteShader.ID, "model" );
 		auto translationMatrix = glm::translate( glm::mat4( 1.0f ), hitCubeWorldCoord );
 		// auto translationMatrix = glm::mat4( 1.0f );

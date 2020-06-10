@@ -28,7 +28,7 @@ struct Player {
 	void FixedUpdate();
 	bool TrySelectingBlock( const IO & io, ChunkManager & chunkManager, HitInfo & hitInfo );
 
-	void Draw( const Camera & camera );
+	void Draw();
 
 	bool grounded = false;
 	RigidBody rb;

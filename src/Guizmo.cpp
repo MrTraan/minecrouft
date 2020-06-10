@@ -77,24 +77,22 @@ void LinesAroundCube( glm::vec3 cubePosition ) {
 	              glm::vec3( x + 1 + 2 * o, y + 1 + 2 * o, z + 1 + 2 * o ) + ov, Guizmo::colWhite );
 }
 
-void Draw( const Camera & camera ) {
+void Draw() {
 	ZoneScoped;
 	if ( lineDrawList.size() == 0 )
 		return;
 
 	colorShader.Use();
-	int viewLoc = glGetUniformLocation( colorShader.ID, "view" );
-	glUniformMatrix4fv( viewLoc, 1, GL_FALSE, glm::value_ptr( camera.viewMatrix ) );
-	int projLoc = glGetUniformLocation( colorShader.ID, "projection" );
-	glUniformMatrix4fv( projLoc, 1, GL_FALSE, glm::value_ptr( camera.projMatrix ) );
 
 	glBindVertexArray( VAO );
 	glBindBuffer( GL_ARRAY_BUFFER, VBO );
 	glBufferData( GL_ARRAY_BUFFER, lineDrawList.size() * sizeof( LineData ), &( lineDrawList[ 0 ] ), GL_STATIC_DRAW );
 
+	glLineWidth(5.0f);
 	for ( int i = 0; i < lineDrawList.size(); i++ ) {
 		glDrawArrays( GL_LINE_STRIP, i * 2, 2 );
 	}
+	glLineWidth(1.0f);
 	glBindVertexArray( 0 );
 }
 

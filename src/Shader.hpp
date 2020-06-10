@@ -1,6 +1,8 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "ngLib/nglib.h"
 #include "packer.h"
@@ -16,7 +18,7 @@ class Shader {
 
 	bool CompileFromPath( const char * vertexPath, const char * fragmentPath );
 	bool CompileFromCode( const char * vertexCode, int vertexSize, const char * fragmentCode, int fragmentSize );
-	bool CompileFromResource( const PackerResource & vertex, const PackerResource & frag );
+	bool CompileFromResource( const PackerResourceID & vertex, const PackerResourceID & frag );
 
 	void Use() { glUseProgram( this->ID ); }
 
@@ -28,6 +30,14 @@ class Shader {
 
 	void SetFloat( const char * name, float value ) const {
 		glUniform1f( glGetUniformLocation( this->ID, name ), value );
+	}
+
+	void SetVector( const char * name, const glm::vec3 & v ) const {
+		glUniform3f( glGetUniformLocation( this->ID, name ), v.x, v.y, v.z );
+	}
+	
+	void SetMatrix( const char * name, const glm::mat4x4 & mat ) const {
+		glUniformMatrix4fv( glGetUniformLocation( ID, name ), 1, GL_FALSE, glm::value_ptr( mat ) );
 	}
 
   private:
