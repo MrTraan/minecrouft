@@ -2,7 +2,7 @@
 
 #include "packer.h"
 #include <constants.hpp>
-#include <glad/glad.h>
+#include <GL/gl3w.h>
 #include <string>
 
 typedef GLuint TextureAtlas;

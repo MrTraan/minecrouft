@@ -17,7 +17,7 @@ find_package(OpenGL REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(lz4 REQUIRED)
 
-add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
+add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GL3W)
 
 if ( ENABLE_PROFILING )
 	add_compile_definitions( TRACY_ENABLE=1 )
@@ -52,7 +52,7 @@ add_executable(minecrouft
 	"src/ngLib/nglib.cpp"
 	"src/ngLib/sys.cpp"
 
-	"lib/glad.c"
+	"lib/gl3w.c"
 	# imgui
 	"./lib/imgui/imgui.cpp"
 	"./lib/imgui/imgui_widgets.cpp"

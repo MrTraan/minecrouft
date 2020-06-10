@@ -3,7 +3,7 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtx/euler_angles.hpp"
 #include "packer_resource_list.h"
-#include <glad/glad.h>
+#include <GL/gl3w.h>
 
 constexpr glm::vec3 red = {1.0f, 0.0f,0.0f};
 constexpr glm::vec3 green = {0.0f, 1.0f,0.0f};

@@ -1,4 +1,4 @@
-#include <glad/glad.h>
+#include <GL/gl3w.h>
 
 #include "glm/gtc/type_ptr.hpp"
 #include <LZ4.h>

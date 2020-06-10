@@ -1,4 +1,4 @@
-#version 460 core
+#version 450 core
 layout (location = 0) in uint x;
 layout (location = 1) in uint z;
 layout (location = 2) in uint y;

@@ -1,6 +1,6 @@
 #include <Skybox.hpp>
 
-#include <glad/glad.h>
+#include <GL/gl3w.h>
 #include <stb_image.h>
 
 #include "Game.h"

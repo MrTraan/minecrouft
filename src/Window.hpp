@@ -1,13 +1,13 @@
 #pragma once
-#include "tracy/Tracy.hpp"
-#include <SDL2/SDL.h>
-#include <glad/glad.h>
-#include <stdexcept>
 #include "ngLib/logs.h"
+#include "tracy/Tracy.hpp"
+#include <GL/gl3w.h>
+#include <SDL2/SDL.h>
+#include <stdexcept>
 
 constexpr char WINDOW_TITLE[] = "Minecrouft";
-constexpr int  WINDOW_WIDTH = 1920;
-constexpr int  WINDOW_HEIGHT = 1080;
+constexpr int  WINDOW_WIDTH = 1280;
+constexpr int  WINDOW_HEIGHT = 720;
 
 class Window {
   public:
@@ -21,12 +21,12 @@ class Window {
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG ); // Always required on Mac
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 6 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
 #else
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, 0 );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 6 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
 #endif
 		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 4 );
 		SDL_WindowFlags window_flags =
@@ -43,11 +43,14 @@ class Window {
 		int major, minor;
 		SDL_GL_GetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, &major );
 		SDL_GL_GetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, &minor );
-		ng::Printf("OpenGL version: %d.%d\n", major, minor );
+		ng::Printf( "OpenGL version: %d.%d\n", major, minor );
 
-		// glad: load all OpenGL function pointers
-		if ( !gladLoadGL() )
-			throw std::runtime_error( "Failed to initialize glad\n" );
+		// gl3w: load all OpenGL function pointers
+		if ( gl3wInit() )
+			throw std::runtime_error( "Failed to initialize OpenGL\n" );
+		ng::Printf( "OpenGL %s, GLSL %s\n", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
+		if ( !gl3wIsSupported( 4, 5 ) )
+			throw std::runtime_error( "OpenGL 4.5 is not supported\n" );
 
 		// configure global opengl state
 		glDepthFunc( GL_LEQUAL );
@@ -79,7 +82,7 @@ class Window {
 		SDL_GL_SwapWindow( glWindow );
 	}
 
-	bool           shouldClose = false;
-	SDL_Window *   glWindow;
-	SDL_GLContext  glContext;
+	bool          shouldClose = false;
+	SDL_Window *  glWindow;
+	SDL_GLContext glContext;
 };

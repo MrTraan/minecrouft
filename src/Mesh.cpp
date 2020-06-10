@@ -1,4 +1,4 @@
-#include <glad/glad.h>
+#include <GL/gl3w.h>
 
 #include "Mesh.hpp"
 #include "ngLib/nglib.h"
