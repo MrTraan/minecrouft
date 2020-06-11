@@ -40,17 +40,12 @@ class Window {
 		SDL_GL_MakeCurrent( glWindow, glContext );
 		SDL_GL_SetSwapInterval( 1 ); // Enable vsync
 
-		int major, minor;
-		SDL_GL_GetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, &major );
-		SDL_GL_GetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, &minor );
-		ng::Printf( "OpenGL version: %d.%d\n", major, minor );
-
 		// gl3w: load all OpenGL function pointers
 		if ( gl3wInit() )
 			throw std::runtime_error( "Failed to initialize OpenGL\n" );
-		ng::Printf( "OpenGL %s, GLSL %s\n", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
 		if ( !gl3wIsSupported( 4, 5 ) )
 			throw std::runtime_error( "OpenGL 4.5 is not supported\n" );
+		ng::Printf( "OpenGL %s, GLSL %s\n", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
 
 		// configure global opengl state
 		glDepthFunc( GL_LEQUAL );

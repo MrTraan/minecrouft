@@ -62,9 +62,11 @@ TextureAtlas loadTextureAtlas( const PackerResourceID & resourceID, s32 lines, s
 	}
 	glGenerateMipmap( GL_TEXTURE_2D_ARRAY );
 
-	//float aniso;
-	//glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso );
-	//glTexParameterf( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso );
+	constexpr GLenum GL_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FE;
+	constexpr GLenum GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
+	float            aniso;
+	glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso );
+	glTexParameterf( GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso );
 
 	delete[] singleImage;
 	stbi_image_free( data );
