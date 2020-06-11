@@ -6,8 +6,8 @@
 #include <stdexcept>
 
 constexpr char WINDOW_TITLE[] = "Minecrouft";
-constexpr int  WINDOW_WIDTH = 1280;
-constexpr int  WINDOW_HEIGHT = 720;
+constexpr int  WINDOW_WIDTH = 1920;
+constexpr int  WINDOW_HEIGHT = 1080;
 
 class Window {
   public:
@@ -38,7 +38,7 @@ class Window {
 		}
 		glContext = SDL_GL_CreateContext( glWindow );
 		SDL_GL_MakeCurrent( glWindow, glContext );
-		SDL_GL_SetSwapInterval( 1 ); // Enable vsync
+		SDL_GL_SetSwapInterval( 0 ); // Enable vsync
 
 		// gl3w: load all OpenGL function pointers
 		if ( gl3wInit() )

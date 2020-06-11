@@ -99,7 +99,6 @@ void Camera::Update( const IO & io, Player & player, float dt ) {
 		pitch = -89.0f;
 	}
 	UpdateCameraVectors();
-	frustrum.Update( viewMatrix, projMatrix );
 
 	// Rotate player
 	player.front = front;
@@ -110,10 +109,10 @@ void Camera::Update( const IO & io, Player & player, float dt ) {
 
 	lightDirection = glm::normalize( -1.0f * lightPosition );
 	{
-		float farHalfWidth = shadowZFar * tanf( fov / 2 );
-		float nearHalfWidth = shadowZNear * tanf( fov / 2 );
-		float farHalfHeight = farHalfWidth / aspectRatio;
-		float nearHalfHeight = nearHalfWidth / aspectRatio;
+		float farHalfHeight = shadowZFar * tanf( fov / 2 );
+		float nearHalfHeight = shadowZNear * tanf( fov / 2 );
+		float farHalfWidth = farHalfHeight * aspectRatio;
+		float nearHalfWidth = nearHalfHeight * aspectRatio;
 
 		glm::vec3 toFar = front * shadowZFar;
 		glm::vec3 toNear = front * shadowZNear;
@@ -175,6 +174,8 @@ void Camera::Update( const IO & io, Player & player, float dt ) {
 		min.z += shadowOffset;
 		lightProjectionMatrix = glm::ortho( min.x, max.x, min.y, max.y, min.z, max.z );
 	}
+	frustrum.Update( viewMatrix, projMatrix );
+	shadowFrustrum.Update( lightViewMatrix, lightProjectionMatrix );
 
 	glm::mat4 viewProj = projMatrix * viewMatrix;
 	glm::mat4 lightViewProj = lightProjectionMatrix * lightViewMatrix;

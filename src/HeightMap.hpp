@@ -13,24 +13,24 @@ struct HeightMap {
 	static constexpr s32 caveLevel = ( CHUNK_HEIGHT / 2 ) - CHUNK_SIZE;
 	static constexpr s32 waterLevel = ( CHUNK_HEIGHT / 2 ) + CHUNK_SIZE;
 
-	void Init( int seed );
+	void  Init( int seed );
+	float GetHeightAt( s32 x, s32 y ) const;
+	bool  DebugDraw();
 
+	int       seed;
 	FastNoise heightMapNoise;
-	float     surfaceFreq;
-	float     GetHeightAt( s32 x, s32 y ) const;
-
 	FastNoise elevationNoise;
-	float     elevationFreq;
-	float     elevationMultiplier;
-
 	FastNoise moistureNoise;
-	float     moistureFreq;
-
 	FastNoise offsetNoise;
-	float     offsetFreq;
-
 	FastNoise caveNoise;
-	float     caveFreq;
+	FastNoise treeNoise;
+	float     surfaceFreq;
+	float     moistureFreq = 0.08f;
+	float     offsetFreq = 0.015f;
+	float     caveFreq = 0.08f;
+	float     treeFreq = 0.05f;
+	float     elevationFreq = 0.003f;
+	float     elevationMultiplier = 1.55f;
 
 	inline float GetElevationAt( s32 x, s32 y ) const {
 		return ( elevationNoise.GetNoise( ( float )x, ( float )y ) + 1.0f ) / 2.0f * elevationMultiplier;

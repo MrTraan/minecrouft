@@ -1,7 +1,7 @@
 #pragma once
 #include "constants.hpp"
 
-enum class eBlockType : char { INACTIVE = 0, GRASS, DIRT, SAND, STONE, COBBLESTONE, SNOW, WATER };
+enum class eBlockType : char { INACTIVE = 0, GRASS, DIRT, SAND, STONE, COBBLESTONE, SNOW, WATER, WOOD, LEAVES };
 
 bool BlockTypeIsCollidable( eBlockType type );
 float BlockGetResistance( eBlockType type );

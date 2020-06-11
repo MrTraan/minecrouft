@@ -41,6 +41,14 @@ void BlockGetTextureIndices( eBlockType type, u8 & top, u8 & bottom, u8 & side )
 		bottom = 9;
 		side = 9;
 		break;
+	case eBlockType::WOOD:
+		top = 22;
+		bottom = 22;
+		side = 21;
+	case eBlockType::LEAVES:
+		top = 23;
+		bottom = 23;
+		side = 23;
 	default:
 		ng_assert( false );
 		break;
@@ -49,15 +57,19 @@ void BlockGetTextureIndices( eBlockType type, u8 & top, u8 & bottom, u8 & side )
 
 float BlockGetResistance( eBlockType type ) {
 	switch ( type ) {
+	case eBlockType::LEAVES:
+		return 0.2f;
+	case eBlockType::SAND:
+		return 0.5f;
 	case eBlockType::GRASS:
 	case eBlockType::DIRT:
 	case eBlockType::SNOW:
-		return 5.0f;
+		return 1.0f;
+	case eBlockType::WOOD:
+		return 1.5f;
 	case eBlockType::COBBLESTONE:
 	case eBlockType::STONE:
-		return 20.0f;
-	case eBlockType::SAND:
-		return 3.0f;
+		return 2.0f;
 	case eBlockType::WATER:
 	case eBlockType::INACTIVE:
 	default:

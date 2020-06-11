@@ -43,6 +43,7 @@ struct Camera {
 	float zoom = CAM_DEFAULT_ZOOM;
 
 	Frustrum frustrum;
+	Frustrum shadowFrustrum;
 
 	void Init( float aspectRatio, const glm::vec3 & position, const glm::vec3 up );
 

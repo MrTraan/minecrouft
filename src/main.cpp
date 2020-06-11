@@ -60,7 +60,7 @@ static void Render() {
 	glEnable( GL_DEPTH_TEST );
 	glDisable( GL_BLEND );
 	glCullFace( GL_NONE );
-	theGame->chunkManager.DrawShadows( theGame->camera.frustrum );
+	theGame->chunkManager.DrawShadows( theGame->camera.shadowFrustrum );
 	glCullFace( GL_BACK );
 	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 	glViewport( 0, 0, theGame->window.width, theGame->window.height );
@@ -93,7 +93,7 @@ static void Render() {
 	glClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
 	glEnable( GL_DEPTH_TEST );
 	glDisable( GL_BLEND );
-	theGame->chunkManager.Draw( theGame->camera.frustrum, fakeTextureMap );
+	theGame->chunkManager.Draw( theGame->camera.shadowFrustrum, fakeTextureMap );
 	Guizmo::Draw();
 	Guizmo::NewFrame();
 	glBindFramebuffer( GL_FRAMEBUFFER, 0 );

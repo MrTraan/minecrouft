@@ -84,7 +84,7 @@ struct ChunkManager {
 
 	char                                  worldName[ WORLD_NAME_MAX_SIZE ];
 	std::string                           saveFolderPath;
-	int                                   worldSeed;
+	int                                   worldSeed = 0;
 	std::map< ChunkCoordinates, Chunk * > chunks;
 	HeightMap                             heightMap;
 

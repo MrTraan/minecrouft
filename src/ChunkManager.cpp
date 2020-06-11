@@ -191,9 +191,10 @@ std::string GenerateSaveFolderPath( const char * worldName ) {
 
 void ChunkManager::Init( const char * worldName, const glm::vec3 & playerPos ) {
 	ZoneScoped;
+	buildersShouldRun.store( true );
 	shader.CompileFromResource( SHADERS_VOXEL_VERT, SHADERS_VOXEL_FRAG );
 	shadowShader.CompileFromResource( SHADERS_VOXEL_SHADOW_VERT, SHADERS_VOXEL_SHADOW_FRAG );
-	textureAtlas = loadTextureAtlas( BLOCKS_PIXEL_PERFECT_PNG, 7, 3 );
+	textureAtlas = loadTextureAtlas( BLOCKS_PIXEL_PERFECT_PNG, 8, 3 );
 
 	strncpy( this->worldName, worldName, WORLD_NAME_MAX_SIZE );
 	saveFolderPath = GenerateSaveFolderPath( worldName );
@@ -207,11 +208,18 @@ void ChunkManager::Init( const char * worldName, const glm::vec3 & playerPos ) {
 }
 
 void ChunkManager::LoadWorld( const std::string & saveFileFolder ) {
-	int seed = 0;
-	std::srand( ( u32 )std::time( nullptr ) );
-	seed = std::rand();
-	ng::Printf( "Generated new seed %d for world\n", seed );
-	worldSeed = seed;
+	if ( worldSeed == 0 ) {
+		ng::File    seedFile;
+		std::string seedFilePath = saveFolderPath + "/seed.txt";
+		seedFile.Open( seedFilePath.c_str(), ng::File::MODE_READ );
+		u64    fileSize = seedFile.GetSize();
+		char * buffer = new char[ fileSize + 1 ];
+		seedFile.Read( buffer, fileSize );
+		buffer[ fileSize ] = 0;
+		worldSeed = atoi( buffer );
+		seedFile.Close();
+		ng::Printf( "Loaded world with seed %d\n", worldSeed );
+	}
 }
 
 void ChunkManager::CreateNewWorld( const char * worldName ) {
@@ -223,6 +231,18 @@ void ChunkManager::CreateNewWorld( const char * worldName ) {
 	} else {
 		ng_assert( false );
 	}
+	int seed = 0;
+	std::srand( ( u32 )std::time( nullptr ) );
+	seed = std::rand();
+	ng::Printf( "Generated new seed %d for world\n", seed );
+	worldSeed = seed;
+
+	ng::File    seedFile;
+	std::string seedFilePath = saveFolderPath + "/seed.txt";
+	seedFile.Open( seedFilePath.c_str(), ng::File::MODE_CREATE | ng::File::MODE_TRUNCATE | ng::File::MODE_WRITE );
+	std::string seedStr = std::to_string( worldSeed );
+	seedFile.Write( seedStr.c_str(), seedStr.length() );
+	seedFile.Close();
 }
 
 void ChunkManager::Shutdown() {
@@ -233,14 +253,17 @@ void ChunkManager::Shutdown() {
 		delete mc->thread;
 		delete mc;
 	}
+	megaChunks.clear();
 	for ( MegaChunk * mc : megaChunkPool ) {
 		delete mc;
 	}
+	megaChunkPool.clear();
 	for ( auto & e : chunks ) {
 		e.second->DeleteGLBuffers();
 		e.second->Destroy();
 		delete e.second;
 	}
+	chunks.clear();
 	while ( poolHead != nullptr ) {
 		poolHead->Destroy();
 		auto newHead = poolHead->poolNextItem;
@@ -316,13 +339,15 @@ void ChunkManager::Update( const glm::vec3 & playerPos ) {
 void ChunkManager::FlushLoadingQueue() {
 	Chunk * builtChunk = nullptr;
 	while ( buildingQueueOut.try_dequeue( builtChunk ) ) {
-		if ( !ChunkIsLoaded( builtChunk->position ) ) {
-			chunks[ builtChunk->position ] = builtChunk;
-			builtChunk->CreateGLBuffers();
-		} else {
-			// Race condition: the element was built twice
-			pushChunkToPool( builtChunk );
+		// TODO: We create a lot of chunks multiple, this should not happend as often
+		if ( chunks.find( builtChunk->position ) != chunks.end() ) {
+			Chunk * oldChunk = chunks[ builtChunk->position ];
+			oldChunk->DeleteGLBuffers();
+			MegaChunk * megaChunk = FindOrCreateMegaChunk( oldChunk->position, saveFolderPath.c_str(), heightMap );
+			megaChunk->chunksToUnload.enqueue( oldChunk );
 		}
+		chunks[ builtChunk->position ] = builtChunk;
+		builtChunk->CreateGLBuffers();
 	}
 }
 
@@ -372,8 +397,7 @@ void ChunkManager::Draw( const Frustrum & frustrum, u32 shadowMap ) {
 		bounds.min = chunk->worldPosition;
 		bounds.max = chunk->worldPosition + sizeOffset;
 		// Check if any of eight corners of the chunk is in sight
-		//if ( frustrum.IsCubeIn( bounds ) ) {
-		if (true) {
+		if ( frustrum.IsCubeIn( bounds ) ) {
 			shader.SetVector( "chunkWorldPosition", chunk->worldPosition );
 			meshDraw( chunk->mesh );
 			drawCallsLastFrame++;
@@ -402,19 +426,20 @@ void ChunkManager::DrawShadows( const Frustrum & frustrum ) {
 	ZoneScoped;
 	shadowShader.Use();
 	static glm::vec3 sizeOffset = glm::vec3( ( float )CHUNK_SIZE, ( float )CHUNK_HEIGHT, ( float )CHUNK_SIZE );
-	
+	Aabb             bounds;
+
 	for ( auto & it : chunks ) {
 		Chunk * chunk = it.second;
 
 		ng_assert( chunk != nullptr );
 		auto worldPosition = ChunkToWorldPosition( chunk->position );
-		// bounds.min = worldPosition;
-		// bounds.max = worldPosition + sizeOffset;
+		bounds.min = worldPosition;
+		bounds.max = worldPosition + sizeOffset;
 		// Check if any of eight corners of the chunk is in sight
-		// if ( frustrum.IsCubeIn( bounds ) ) {
-		shader.SetVector( "chunkWorldPosition", chunk->worldPosition );
-		meshDraw( chunk->mesh );
-		//}
+		if ( frustrum.IsCubeIn( bounds ) ) {
+			shader.SetVector( "chunkWorldPosition", chunk->worldPosition );
+			meshDraw( chunk->mesh );
+		}
 	}
 
 	// for ( auto & it : chunks ) {
@@ -511,5 +536,13 @@ void ChunkManager::DebugDraw() {
 
 	if ( ImGui::Button( "Save the world" ) ) {
 		SaveWorld();
+	}
+	if ( ImGui::TreeNode( "HeightMap" ) ) {
+		bool shouldRegenerateWorld = heightMap.DebugDraw();
+		if ( shouldRegenerateWorld ) {
+			Shutdown();
+			Init( worldName, ChunkToWorldPosition( lastPosition ) );
+		}
+		ImGui::TreePop();
 	}
 }
